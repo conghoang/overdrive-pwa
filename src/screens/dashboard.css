@@ -144,8 +144,9 @@
   border-radius: 999px; transition: color 0.15s ease, background 0.15s ease;
 }
 .prnd-item.on { color: var(--app-bg); background: var(--accent-bright); }
-.charging-wrap { margin-top: 12px; }
-.charging-line { text-align: center; font-size: 14px; font-weight: 600; color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px; }
+.charging-wrap { margin-top: 0; }
+.charging-line { text-align: center; margin-top: 14px; font-size: 14px; font-weight: 600; color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px; }
+.charging-wrap .charging-line { margin-top: 12px; }
 .charging-line.on { color: var(--success); }
 .charging-sub { text-align: center; margin-top: 3px; font-size: 12px; font-weight: 600; color: var(--muted); }
 

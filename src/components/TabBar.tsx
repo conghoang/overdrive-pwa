@@ -1,13 +1,13 @@
 import type { JSX } from 'preact'
 import type { Tab } from '../app'
-import { IconCar, IconGauge, IconSliders } from './icons'
+import { IconGauge, IconGear, IconSliders } from './icons'
 import { t } from '../lib/i18n'
 import './TabBar.css'
 
 const TABS: { id: Tab; key: string; icon: (p: { size?: number }) => JSX.Element }[] = [
   { id: 'dashboard', key: 'tab.vehicle', icon: IconGauge },
   { id: 'controls', key: 'tab.controls', icon: IconSliders },
-  { id: 'account', key: 'tab.device', icon: IconCar },
+  { id: 'account', key: 'tab.device', icon: IconGear },
 ]
 
 export function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {

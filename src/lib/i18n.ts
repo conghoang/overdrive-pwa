@@ -18,7 +18,7 @@ export function setLang(l: Lang): void {
 const EN: Record<string, string> = {
   'tab.vehicle': 'Vehicle',
   'tab.controls': 'Controls',
-  'tab.device': 'Device',
+  'tab.device': 'Settings',
 
   'common.live': 'Live',
   'common.reconnecting': 'Reconnecting…',
@@ -148,7 +148,7 @@ const EN: Record<string, string> = {
 const VI: Record<string, string> = {
   'tab.vehicle': 'Xe',
   'tab.controls': 'Điều khiển',
-  'tab.device': 'Thiết bị',
+  'tab.device': 'Cài đặt',
 
   'common.live': 'Trực tiếp',
   'common.reconnecting': 'Đang kết nối lại…',
