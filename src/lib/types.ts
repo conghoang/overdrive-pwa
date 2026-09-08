@@ -65,6 +65,7 @@ export interface StatusResponse {
   safeZoneSuppressed?: boolean
   safeZoneName?: string
   tripStatus?: TripStatus
+  recordingStatus?: { gear?: string; accOn?: boolean }
 }
 
 // --- /api/vehicle/state ---

@@ -16,6 +16,7 @@ import {
 } from '../components/icons'
 import { wicarlink } from '../lib/settings'
 import { WiCarlinkGrid } from '../components/WiCarlinkControls'
+import { SeatCooling } from '../components/SeatCooling'
 import '../components/controls.css'
 
 const TEMP_MIN = 16
@@ -142,6 +143,8 @@ export function Controls() {
           </button>
         </div>
       </div>
+
+      <SeatCooling />
     </div>
   )
 }

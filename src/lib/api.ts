@@ -188,6 +188,10 @@ export const setChargeCap = (percent: number, enabled = true): Promise<ControlRe
   apiPost('/api/vehicle/charge-cap', { percent, enabled })
 export const startCharging = (): Promise<ControlResult> => apiPost('/api/vehicle/start-charging')
 
+// Seat ventilation (cooling): position 1 = driver, 2 = passenger; level 0-2 (off/low/high).
+export const setSeatVent = (position: 1 | 2, level: number): Promise<ControlResult> =>
+  apiPost('/api/vehicle/seat', { action: 'ventilation', position, level })
+
 // --- WiCarlink / 51DK: run actions on the head unit via the keymap daemon ---
 // Launch an installed app (no special permission needed).
 export const openApp = (pkg: string, label?: string): Promise<ControlResult> =>

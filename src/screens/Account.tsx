@@ -3,7 +3,8 @@ import { connected, reset, status } from '../lib/store'
 import { IconPower, IconRefresh } from '../components/icons'
 import * as store from '../lib/store'
 import { Switch } from '../components/Switch'
-import { setWicarlink, wicarlink } from '../lib/settings'
+import { CarImage } from '../components/CarImage'
+import { CAR_COLORS, carColor, setCarColor, setWicarlink, wicarlink } from '../lib/settings'
 
 export function Account({ onSignOut }: { onSignOut: () => void }) {
   const s = status.value
@@ -18,13 +19,38 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
     <div>
       <div class="screen-head">
         <div>
-          <h1 class="screen-title">Account</h1>
+          <h1 class="screen-title">Device</h1>
           <div class="screen-sub">{connected.value ? 'Connected' : 'Offline'}</div>
         </div>
         <span class={'dot ' + (connected.value ? 'ok' : 'bad')} />
       </div>
 
-      <div class="card">
+      {/* car hero + colour */}
+      <div class="card car-hero">
+        <CarImage color={carColor.value} />
+        <div class="car-title">Sealion 6 DMi</div>
+        <div class="car-sub">{s?.deviceId || getDeviceId() || ''}</div>
+        <div class="swatches">
+          {CAR_COLORS.map((c) => (
+            <button
+              key={c}
+              class={'swatch' + (carColor.value.toLowerCase() === c.toLowerCase() ? ' on' : '')}
+              style={{ background: c }}
+              aria-label={c}
+              onClick={() => setCarColor(c)}
+            />
+          ))}
+          <label class="swatch swatch-custom" style={{ background: carColor.value }} aria-label="Custom colour">
+            <input
+              type="color"
+              value={carColor.value}
+              onInput={(e) => setCarColor((e.target as HTMLInputElement).value)}
+            />
+          </label>
+        </div>
+      </div>
+
+      <div class="card" style={{ marginTop: '14px' }}>
         <div class="card-title">Connection</div>
         <InfoRow label="Car URL" value={getBaseUrl()} mono />
         <InfoRow label="Device" value={s?.deviceId || getDeviceId() || '--'} mono />
