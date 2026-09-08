@@ -26,6 +26,7 @@ let cloudFetched = false
 async function fetchCloud(): Promise<void> {
   try {
     const s = await getCloudStatus()
+    if (!active) return // signed out while in flight — don't rewrite what reset() cleared
     const c = !!s.configured
     cloudConfigured.value = c
     localStorage.setItem(K_CLOUD, c ? '1' : '0')
@@ -34,7 +35,7 @@ async function fetchCloud(): Promise<void> {
 
 const POLL_OK = 5000
 const POLL_RETRY = 2000
-const POLL_HIDDEN = 60000
+const POLL_HIDDEN = 60000 // tab in the background
 
 let timer: ReturnType<typeof setTimeout> | null = null
 let active = false
@@ -157,6 +158,9 @@ export function reset(): void {
   vehicleState.value = null
   connected.value = false
   lastError.value = null
+  chargeEtaMin.value = null
+  chargeTargetPct.value = null
+  authLost.value = false
   cloudConfigured.value = null
   cloudFetched = false
   localStorage.removeItem(K_CLOUD)
