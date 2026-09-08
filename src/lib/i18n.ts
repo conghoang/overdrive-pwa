@@ -37,8 +37,7 @@ const EN: Record<string, string> = {
   'setup.car_url': 'Car URL',
   'setup.car_url_hint': 'Your cloudflared/zrok tunnel URL, or http://192.168.x.x:8080 on the same Wi-Fi.',
   'setup.access_code': 'Access code',
-  'setup.access_code_hint':
-    'The 8-character code from OverDrive → Dashboard → Access Code. Tip: enter demo to preview with sample data.',
+  'setup.access_code_hint': 'The 8-character code from OverDrive → Dashboard → Access Code.',
   'setup.connect': 'Connect',
   'setup.connecting': 'Connecting…',
 
@@ -167,8 +166,7 @@ const VI: Record<string, string> = {
   'setup.car_url': 'Địa chỉ xe',
   'setup.car_url_hint': 'URL tunnel cloudflared/zrok của bạn, hoặc http://192.168.x.x:8080 khi cùng Wi-Fi.',
   'setup.access_code': 'Mã truy cập',
-  'setup.access_code_hint':
-    'Mã 8 ký tự từ OverDrive → Dashboard → Access Code. Mẹo: nhập demo để xem thử với dữ liệu mẫu.',
+  'setup.access_code_hint': 'Mã 8 ký tự từ OverDrive → Dashboard → Access Code.',
   'setup.connect': 'Kết nối',
   'setup.connecting': 'Đang kết nối…',
 
