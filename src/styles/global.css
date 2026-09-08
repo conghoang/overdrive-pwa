@@ -6,6 +6,16 @@ html, body {
   height: 100%;
 }
 
+html {
+  /* Pin the base size and stop mobile font-inflation. Firefox Android inflates
+     text on its own heuristics, which desynced it from the px-based layout and
+     made the whole page render small. */
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   background:
     radial-gradient(1200px 600px at 50% -10%, rgba(45, 212, 191, 0.06), transparent 60%),
