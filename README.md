@@ -53,6 +53,13 @@ and "Add to Home Screen" to install.
 - **Controls** — lock / unlock (hold) / flash / find-car / trunk (hold),
   climate on-off + temp, windows (vent/open/close), charge-limit cap
 
+## Assets
+
+`public/car/sealion6.png` is a user-supplied product image of the BYD Sealion 6
+DM-i with its background removed; it ships as the default car illustration. You
+can override it per-device via Device → **Change photo** (stored locally, never
+uploaded). Replace the bundled file if you don't have rights to distribute it.
+
 ## Roadmap (not yet built)
 
 - Live camera (H.264 over `ws://host/ws?token=` via WebCodecs)

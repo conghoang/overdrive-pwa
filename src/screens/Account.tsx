@@ -3,8 +3,11 @@ import { connected, reset, status } from '../lib/store'
 import { IconPower, IconRefresh } from '../components/icons'
 import * as store from '../lib/store'
 import { Switch } from '../components/Switch'
-import { CarImage } from '../components/CarImage'
-import { CAR_COLORS, carColor, setCarColor, setWicarlink, wicarlink } from '../lib/settings'
+import { CarHero } from '../components/CarHero'
+import { EnergyGauges } from '../components/EnergyGauges'
+import { carPhoto, setCarPhoto, setWicarlink, wicarlink } from '../lib/settings'
+import { fileToResizedDataUrl } from '../lib/image'
+import { toast } from '../lib/toast'
 
 export function Account({ onSignOut }: { onSignOut: () => void }) {
   const s = status.value
@@ -13,6 +16,16 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
     reset()
     clearAll()
     onSignOut()
+  }
+
+  async function pickPhoto(e: Event) {
+    const file = (e.target as HTMLInputElement).files?.[0]
+    if (!file) return
+    try {
+      setCarPhoto(await fileToResizedDataUrl(file, 1100))
+    } catch {
+      toast('Could not load that image', 'err')
+    }
   }
 
   return (
@@ -25,28 +38,28 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
         <span class={'dot ' + (connected.value ? 'ok' : 'bad')} />
       </div>
 
-      {/* car hero + colour */}
-      <div class="card car-hero">
-        <CarImage color={carColor.value} />
-        <div class="car-title">Sealion 6 DMi</div>
-        <div class="car-sub">{s?.deviceId || getDeviceId() || ''}</div>
-        <div class="swatches">
-          {CAR_COLORS.map((c) => (
-            <button
-              key={c}
-              class={'swatch' + (carColor.value.toLowerCase() === c.toLowerCase() ? ' on' : '')}
-              style={{ background: c }}
-              aria-label={c}
-              onClick={() => setCarColor(c)}
-            />
-          ))}
-          <label class="swatch swatch-custom" style={{ background: carColor.value }} aria-label="Custom colour">
-            <input
-              type="color"
-              value={carColor.value}
-              onInput={(e) => setCarColor((e.target as HTMLInputElement).value)}
-            />
+      {/* car hero + energy */}
+      {s ? (
+        <>
+          <CarHero s={s} />
+          <div style={{ marginTop: '14px' }}>
+            <EnergyGauges s={s} />
+          </div>
+        </>
+      ) : (
+        <div class="card"><div class="center-note">Connecting…</div></div>
+      )}
+
+      <div class="card" style={{ marginTop: '14px' }}>
+        <div class="card-title">Car photo</div>
+        <div class="grid grid-2">
+          <label class="btn" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+            Change photo
+            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={pickPhoto} />
           </label>
+          <button class="btn" disabled={!carPhoto.value} onClick={() => setCarPhoto(null)}>
+            Use default
+          </button>
         </div>
       </div>
 

@@ -1,19 +1,10 @@
 import { connected, lastError, status, vehicleState } from '../lib/store'
-import { fmtDistance, distanceUnitLabel, fmtNum, fmtTemp, ago } from '../lib/format'
-import { BatteryRing } from '../components/BatteryRing'
+import { fmtNum, fmtTemp, ago } from '../lib/format'
+import { CarHero } from '../components/CarHero'
+import { EnergyGauges } from '../components/EnergyGauges'
 import { StatTile } from '../components/StatTile'
 import { DoorStatus } from '../components/DoorStatus'
-import {
-  IconArrow,
-  IconBolt,
-  IconFuel,
-  IconPin,
-  IconPlug,
-  IconThermo,
-  IconWifi,
-  IconWind,
-  IconWindow,
-} from '../components/icons'
+import { IconArrow, IconPin, IconPlug, IconThermo, IconWifi, IconWind, IconWindow } from '../components/icons'
 import type { WindowsState } from '../lib/types'
 import './dashboard.css'
 
@@ -26,8 +17,6 @@ function windowsOpenCount(w: WindowsState | undefined): number {
 export function Dashboard() {
   const s = status.value
   const vs = vehicleState.value
-  const unit = s?.distanceUnit || 'km'
-  const unitLabel = distanceUnitLabel(unit)
 
   if (!s) {
     return (
@@ -42,13 +31,7 @@ export function Dashboard() {
     )
   }
 
-  const soc = s.soc?.percent
-  const range = s.range?.totalRangeKm ?? s.range?.elecRangeKm
-  const isPhev = !!s.range?.isPhev
-  const fuelPct = s.range?.fuelPercent
-  const charging = !!s.charging?.charging
-  const plugged = !!s.charging?.plugged
-  const chargePower = s.charging?.chargingPowerKW ?? s.charging?.powerKw
+  const unit = s.distanceUnit || 'km'
   const winOpen = windowsOpenCount(vs?.windows)
   const climateOn = !!(vs?.climate?.acOn || vs?.climate?.remoteClimateActive)
   const inside = vs?.climate?.insideTempC
@@ -68,29 +51,7 @@ export function Dashboard() {
     <div>
       <Header connected={connected.value} />
 
-      {/* hero */}
-      <div class="card hero">
-        <BatteryRing percent={soc} charging={charging} subLabel={s.soc?.status} />
-        <div class="hero-range">
-          <span class="big mono">{fmtDistance(range, unit)}</span>
-          <span class="unit">{unitLabel} range</span>
-        </div>
-        <div class="hero-badges">
-          {charging ? (
-            <span class="pill good">
-              Charging{chargePower ? ` · ${fmtNum(chargePower, 1)} kW` : ''}
-            </span>
-          ) : s.charging?.plugged ? (
-            <span class="pill">Plugged in</span>
-          ) : (
-            <span class="pill">{s.acc ? 'Awake' : 'Parked'}</span>
-          )}
-          {s.range?.isPhev && s.range?.fuelPercent != null && (
-            <span class="pill">Fuel {Math.round(s.range.fuelPercent)}%</span>
-          )}
-          {s.inSafeZone && <span class="pill">{s.safeZoneName || 'Safe zone'}</span>}
-        </div>
-      </div>
+      <CarHero s={s} />
 
       {/* power / gear / speed */}
       <div class="card" style={{ marginTop: '14px' }}>
@@ -110,31 +71,8 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* energy: battery (+ fuel for PHEV) */}
-      <div class="card" style={{ marginTop: '14px' }}>
-        <div class="card-title">Energy</div>
-        <div class="energy-row">
-          <div class="energy">
-            <div class="energy-head">
-              <span class="lab"><IconBolt size={16} /> Battery</span>
-              <span class="val"><b>{soc == null ? '--' : Math.round(soc)}%</b> · {fmtDistance(s.range?.elecRangeKm, unit)} {unitLabel}</span>
-            </div>
-            <div class="energy-bar">
-              <div class="energy-fill" style={{ width: `${soc || 0}%`, background: 'var(--accent-bright)' }} />
-            </div>
-          </div>
-          {isPhev && (
-            <div class="energy">
-              <div class="energy-head">
-                <span class="lab"><IconFuel size={16} /> Fuel</span>
-                <span class="val"><b>{fuelPct == null ? '--' : Math.round(fuelPct)}%</b> · {fmtDistance(s.range?.fuelRangeKm, unit)} {unitLabel}</span>
-              </div>
-              <div class="energy-bar">
-                <div class="energy-fill" style={{ width: `${fuelPct || 0}%`, background: 'var(--m-orange)' }} />
-              </div>
-            </div>
-          )}
-        </div>
+      <div style={{ marginTop: '14px' }}>
+        <EnergyGauges s={s} />
       </div>
 
       {/* metric tiles */}
@@ -146,12 +84,7 @@ export function Dashboard() {
           unit="%"
           accent="var(--m-teal)"
         />
-        <StatTile
-          icon={<IconThermo size={20} />}
-          label="Cabin temp"
-          value={fmtTemp(inside)}
-          accent="var(--m-orange)"
-        />
+        <StatTile icon={<IconThermo size={20} />} label="Cabin temp" value={fmtTemp(inside)} accent="var(--m-orange)" />
         <StatTile
           icon={<IconWifi size={20} />}
           label={s.network?.type === 'wifi' ? s.network?.ssid || 'Wi-Fi' : 'Network'}
@@ -167,28 +100,6 @@ export function Dashboard() {
         />
       </div>
 
-      {/* charging (only when relevant) */}
-      {(charging || plugged) && (
-        <div class="card" style={{ marginTop: '14px' }}>
-          <div class="spread">
-            <div class="card-title" style={{ margin: 0 }}>Charging</div>
-            <span class={'pill ' + (charging ? 'good' : '')}>
-              {charging ? 'Charging' : s.charging?.full ? 'Full' : 'Plugged in'}
-            </span>
-          </div>
-          <div class="charge-grid">
-            <div class="charge-stat">
-              <div class="v mono">{fmtNum(chargePower, 1)}<small> kW</small></div>
-              <div class="l">Power</div>
-            </div>
-            <div class="charge-stat">
-              <div class="v">{s.charging?.stateName || '–'}</div>
-              <div class="l">State</div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* doors */}
       <div class="card" style={{ marginTop: '14px' }}>
         <DoorStatus doors={vs?.doors} />
@@ -202,11 +113,7 @@ export function Dashboard() {
             <IconWindow size={20} />
             <span class="srow-label">Windows</span>
           </div>
-          {winOpen > 0 ? (
-            <span class="pill warn">{winOpen} open</span>
-          ) : (
-            <span class="pill good">Closed</span>
-          )}
+          {winOpen > 0 ? <span class="pill warn">{winOpen} open</span> : <span class="pill good">Closed</span>}
         </div>
         <div class="srow">
           <div class="srow-left">

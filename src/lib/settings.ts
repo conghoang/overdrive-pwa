@@ -16,6 +16,15 @@ export function setCarColor(c: string): void {
   localStorage.setItem(K_CARCOLOR, c)
 }
 
+// Optional user-supplied car photo (data URL), overriding the bundled default.
+const K_CARPHOTO = 'odpwa.carPhoto'
+export const carPhoto = signal<string | null>(localStorage.getItem(K_CARPHOTO))
+export function setCarPhoto(dataUrl: string | null): void {
+  carPhoto.value = dataUrl
+  if (dataUrl) localStorage.setItem(K_CARPHOTO, dataUrl)
+  else localStorage.removeItem(K_CARPHOTO)
+}
+
 export function setWicarlink(on: boolean): void {
   wicarlink.value = on
   localStorage.setItem(K_WICARLINK, on ? '1' : '0')
