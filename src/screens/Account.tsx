@@ -11,7 +11,7 @@ import { fileToResizedDataUrl } from '../lib/image'
 import { toast } from '../lib/toast'
 import { lang, setLang, t } from '../lib/i18n'
 import { hapticsEnabled, hapticsSupported, setHapticsEnabled, tapFeedback } from '../lib/haptics'
-import { setSoundEnabled, soundEnabled, soundSupported, tapSound } from '../lib/sound'
+import { setSoundEnabled, soundEnabled, soundSupported, tapSound, unlockAudio } from '../lib/sound'
 
 export function Account({ onSignOut }: { onSignOut: () => void }) {
   const s = status.value
@@ -75,7 +75,7 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
       {(hapticsSupported() || soundSupported()) && (
         <div class="card" style={{ marginTop: '14px' }}>
           {hapticsSupported() && (
-          <div class="srow" style={{ padding: 0 }}>
+          <div class="srow" style={{ paddingTop: 0 }}>
             <div class="stack">
               <span class="srow-label">{t('dev.haptics')}</span>
               <span class="screen-sub" style={{ marginTop: '2px' }}>{t('dev.haptics_desc')}</span>
@@ -101,7 +101,10 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
                 onChange={(v) => {
                   setSoundEnabled(v)
                   setSound(v)
-                  if (v) tapSound() // the tap that enables it also demos it
+                  if (v) {
+                    unlockAudio() // open the output while we still have the gesture
+                    tapSound() // and demo it
+                  }
                 }}
               />
             </div>
