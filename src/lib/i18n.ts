@@ -127,7 +127,7 @@ const EN: Record<string, string> = {
   'dev.edit_51dk': 'Edit 51DK buttons',
   'dev.refresh': 'Refresh now',
   'dev.sign_out': 'Sign out',
-  'dev.footer': 'OverDrive PWA · unofficial companion',
+  'dev.footer': 'BYD Sealion 6 Vietnam Group',
 
   'wc.choose_icon': 'Choose icon',
   'wc.edit_title': 'Edit 51DK',
@@ -257,7 +257,7 @@ const VI: Record<string, string> = {
   'dev.edit_51dk': 'Sửa nút 51DK',
   'dev.refresh': 'Làm mới',
   'dev.sign_out': 'Đăng xuất',
-  'dev.footer': 'OverDrive PWA · ứng dụng không chính thức',
+  'dev.footer': 'BYD Sealion 6 Vietnam Group',
 
   'wc.choose_icon': 'Chọn biểu tượng',
   'wc.edit_title': 'Sửa 51DK',
