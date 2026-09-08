@@ -1,15 +1,23 @@
 import type { JSX } from 'preact'
 import * as api from '../lib/api'
-import { connected, refresh, vehicleState } from '../lib/store'
+import { ApiError } from '../lib/api'
+import { connected, refresh } from '../lib/store'
 import { toast, toastResult } from '../lib/toast'
-import type { ControlResult } from '../lib/types'
-import { IconBell, IconLock, IconUnlock, IconWind } from './icons'
+import { IconBolt, IconLock, IconTrunk, IconUnlock } from './icons'
 
-async function run(fn: () => Promise<ControlResult>, ok: string) {
+// 51DK commands (same as the WiCarlink buttons): fire an intent at the app.
+const WC_ACTIVITY = 'com.wicarlink.digitalcarkey/.ui.activity.LauncherActivity'
+const wc = (cmd: string) => `am start -n ${WC_ACTIVITY} --es cmd ${cmd}`
+
+async function fire(cmd: string, ok: string) {
   try {
-    toastResult(await fn(), ok)
+    toastResult(await api.fireShell(wc(cmd)), ok)
   } catch (e) {
-    toast(e instanceof Error ? e.message : 'Failed', 'err')
+    if (e instanceof ApiError && e.status === 403) {
+      toast('Enable "Advanced actions" in OverDrive → Key Mapping', 'err')
+    } else {
+      toast(e instanceof Error ? e.message : 'Failed', 'err')
+    }
   } finally {
     refresh()
   }
@@ -34,33 +42,29 @@ function QuickBtn({
   )
 }
 
-/** Row of 4 common remote actions, shown under the car image on the Device page. */
+/** Row of 4 common 51DK actions, shown under the car image on the Device page. */
 export function QuickActions() {
   const disabled = !connected.value
-  const climateOn = !!(vehicleState.value?.climate?.acOn || vehicleState.value?.climate?.remoteClimateActive)
-
   return (
     <div class="quick-row">
-      <QuickBtn icon={<IconLock size={22} />} label="Lock" disabled={disabled} onClick={() => run(api.lock, 'Locked')} />
+      <QuickBtn icon={<IconLock size={22} />} label="Lock" disabled={disabled} onClick={() => fire('lock', 'Locked')} />
       <QuickBtn
         icon={<IconUnlock size={22} />}
         label="Unlock"
         disabled={disabled}
-        onClick={() => run(api.unlock, 'Unlocked')}
+        onClick={() => fire('unlock', 'Unlocked')}
       />
       <QuickBtn
-        icon={<IconWind size={22} />}
-        label={climateOn ? 'A/C off' : 'A/C on'}
+        icon={<IconBolt size={22} />}
+        label="Start"
         disabled={disabled}
-        onClick={() =>
-          run(() => (climateOn ? api.climateOff() : api.climateOn(22)), climateOn ? 'Climate off' : 'Climate on')
-        }
+        onClick={() => fire('start', 'Start / Stop')}
       />
       <QuickBtn
-        icon={<IconBell size={22} />}
-        label="Find"
+        icon={<IconTrunk size={22} />}
+        label="Trunk"
         disabled={disabled}
-        onClick={() => run(api.findCar, 'Sounding horn')}
+        onClick={() => fire('trunk', 'Trunk')}
       />
     </div>
   )
