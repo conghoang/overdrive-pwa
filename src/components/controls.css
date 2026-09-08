@@ -126,7 +126,26 @@
 .fan-num { flex: 0 0 auto; font-size: 13px; color: var(--muted); font-weight: 600; }
 .fan-num b { color: var(--text); font-size: 15px; margin-left: 4px; }
 
-/* seat illustration — glows with live heat/cool state */
+/* cabin photo with a live glow over each seat */
+.cabin {
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  margin: 2px auto 16px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  isolation: isolate;
+}
+.cabin-img { display: block; width: 100%; height: auto; }
+.cabin-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: screen; /* light ADDS to the seat, like real illumination */
+  transition: opacity 0.35s ease, background 0.35s ease;
+}
+
+/* drawn fallback, only if the photo fails */
 .seat-visual {
   display: block;
   width: 100%;
