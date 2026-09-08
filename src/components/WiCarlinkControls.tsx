@@ -156,6 +156,7 @@ export function WiCarlinkGrid() {
 export function WiCarlinkEditor({ onDone }: { onDone: () => void }) {
   const [draft, setDraft] = useState<WcCommand[]>(() => wcCommands.value.map((c) => ({ ...c })))
   const [dragId, setDragId] = useState<string | null>(null)
+  const [iconPickFor, setIconPickFor] = useState<string | null>(null)
   const rowEls = useRef<Record<string, HTMLElement | null>>({})
   const dragging = useRef<string | null>(null)
 
@@ -241,62 +242,57 @@ export function WiCarlinkEditor({ onDone }: { onDone: () => void }) {
       </div>
 
       <div class="card">
-        {draft.map((c) => (
-          <div
-            class={'wc-edit-row' + (dragId === c.id ? ' dragging' : '')}
-            key={c.id}
-            ref={(el) => {
-              rowEls.current[c.id] = el
-            }}
-          >
-            <button class="wc-grip" aria-label="Drag to reorder" onPointerDown={(e) => onDragStart(e, c.id)}>
-              <IconGrip size={20} />
-            </button>
-            <div class="wc-edit-fields">
-              <div class="wc-row-top">
+        {draft.map((c) => {
+          const RowIcon = iconFor(c.icon)
+          return (
+            <div
+              class={'wc-edit-row' + (dragId === c.id ? ' dragging' : '')}
+              key={c.id}
+              ref={(el) => {
+                rowEls.current[c.id] = el
+              }}
+            >
+              <button class="wc-grip" aria-label="Drag to reorder" onPointerDown={(e) => onDragStart(e, c.id)}>
+                <IconGrip size={20} />
+              </button>
+              <div class="wc-edit-fields">
+                <div class="wc-row-top">
+                  <button
+                    type="button"
+                    class="wc-icon-btn"
+                    aria-label="Change icon"
+                    onClick={() => setIconPickFor(c.id)}
+                  >
+                    <RowIcon size={20} />
+                  </button>
+                  <input
+                    class="wc-input"
+                    value={c.label}
+                    placeholder="Label"
+                    onInput={(e) => update(c.id, { label: (e.target as HTMLInputElement).value })}
+                  />
+                  <select
+                    class="wc-kind"
+                    value={c.kind}
+                    onChange={(e) => update(c.id, { kind: (e.target as HTMLSelectElement).value as WcKind })}
+                  >
+                    <option value="openApp">app</option>
+                    <option value="shell">shell</option>
+                  </select>
+                </div>
                 <input
-                  class="wc-input"
-                  value={c.label}
-                  placeholder="Label"
-                  onInput={(e) => update(c.id, { label: (e.target as HTMLInputElement).value })}
+                  class="wc-input mono"
+                  value={c.value}
+                  placeholder={c.kind === 'openApp' ? 'com.package.name' : 'am start -n …'}
+                  onInput={(e) => update(c.id, { value: (e.target as HTMLInputElement).value })}
                 />
-                <select
-                  class="wc-kind"
-                  value={c.kind}
-                  onChange={(e) => update(c.id, { kind: (e.target as HTMLSelectElement).value as WcKind })}
-                >
-                  <option value="openApp">app</option>
-                  <option value="shell">shell</option>
-                </select>
               </div>
-              <input
-                class="wc-input mono"
-                value={c.value}
-                placeholder={c.kind === 'openApp' ? 'com.package.name' : 'am start -n …'}
-                onInput={(e) => update(c.id, { value: (e.target as HTMLInputElement).value })}
-              />
-              <div class="wc-icons">
-                {ICON_KEYS.map((k) => {
-                  const Ico = iconFor(k)
-                  return (
-                    <button
-                      key={k}
-                      type="button"
-                      class={'wc-icon' + (c.icon === k ? ' on' : '')}
-                      aria-label={k}
-                      onClick={() => update(c.id, { icon: k })}
-                    >
-                      <Ico size={18} />
-                    </button>
-                  )
-                })}
-              </div>
+              <button class="wc-del" onClick={() => remove(c.id)} aria-label="Remove">
+                <IconTrash size={20} />
+              </button>
             </div>
-            <button class="wc-del" onClick={() => remove(c.id)} aria-label="Remove">
-              <IconTrash size={20} />
-            </button>
-          </div>
-        ))}
+          )
+        })}
         <button class="btn block" style={{ marginTop: '12px' }} onClick={add}>
           <IconPlus size={18} /> Add button
         </button>
@@ -320,6 +316,34 @@ export function WiCarlinkEditor({ onDone }: { onDone: () => void }) {
           </button>
         </div>
       </div>
+
+      {iconPickFor && (
+        <div class="modal-backdrop" onClick={() => setIconPickFor(null)}>
+          <div class="modal" onClick={(e) => e.stopPropagation()}>
+            <h3 class="modal-title">Choose icon</h3>
+            <div class="icon-grid">
+              {ICON_KEYS.map((k) => {
+                const Ico = iconFor(k)
+                const on = draft.find((c) => c.id === iconPickFor)?.icon === k
+                return (
+                  <button
+                    key={k}
+                    type="button"
+                    class={'icon-cell' + (on ? ' on' : '')}
+                    aria-label={k}
+                    onClick={() => {
+                      update(iconPickFor, { icon: k })
+                      setIconPickFor(null)
+                    }}
+                  >
+                    <Ico size={22} />
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

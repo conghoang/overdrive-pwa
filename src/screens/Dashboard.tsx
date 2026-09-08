@@ -2,6 +2,7 @@ import { connected, lastError, status, vehicleState } from '../lib/store'
 import { fmtNum, fmtTemp, ago } from '../lib/format'
 import { AppHeader } from '../components/AppHeader'
 import { CarHero } from '../components/CarHero'
+import { QuickActions } from '../components/QuickActions'
 import { EnergyGauges } from '../components/EnergyGauges'
 import { StatTile } from '../components/StatTile'
 import { Tyres } from '../components/Tyres'
@@ -64,6 +65,7 @@ export function Dashboard() {
       <AppHeader title="Vehicle" sub={connected.value ? 'Live' : 'Reconnecting…'} dot={connected.value ? 'ok' : 'wait'} />
 
       <CarHero s={s} />
+      <QuickActions />
 
       {/* power / gear / speed */}
       <div class="card" style={{ marginTop: '14px' }}>

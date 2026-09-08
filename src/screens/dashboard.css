@@ -130,6 +130,7 @@
 .veh-range-unit { font-size: 18px; color: var(--muted); font-weight: 600; }
 .veh-range-label { color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
 .car-photo { display: block; width: 100%; max-width: 380px; margin: 6px auto 4px; height: auto; filter: drop-shadow(0 16px 22px rgba(0,0,0,0.45)); }
+.car-photo-preview { display: block; width: 100%; max-width: 300px; height: auto; margin: 0 auto; filter: drop-shadow(0 10px 16px rgba(0,0,0,0.4)); }
 .car-svg { display: block; }
 
 .prnd {

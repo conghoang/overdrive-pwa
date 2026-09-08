@@ -5,9 +5,6 @@ import * as store from '../lib/store'
 import { useState } from 'preact/hooks'
 import { AppHeader } from '../components/AppHeader'
 import { Switch } from '../components/Switch'
-import { CarHero } from '../components/CarHero'
-import { QuickActions } from '../components/QuickActions'
-import { EnergyGauges } from '../components/EnergyGauges'
 import { WiCarlinkEditor } from '../components/WiCarlinkControls'
 import { carPhoto, setCarPhoto, setWicarlink, wicarlink } from '../lib/settings'
 import { fileToResizedDataUrl } from '../lib/image'
@@ -39,22 +36,15 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
     <div>
       <AppHeader title="Device" sub={connected.value ? 'Connected' : 'Offline'} dot={connected.value ? 'ok' : 'bad'} />
 
-      {/* car hero + energy */}
-      {s ? (
-        <>
-          <CarHero s={s} />
-          <QuickActions />
-          <div style={{ marginTop: '14px' }}>
-            <EnergyGauges s={s} />
-          </div>
-        </>
-      ) : (
-        <div class="card"><div class="center-note">Connecting…</div></div>
-      )}
-
-      <div class="card" style={{ marginTop: '14px' }}>
+      {/* car photo (setting) */}
+      <div class="card">
         <div class="card-title">Car photo</div>
-        <div class="grid grid-2">
+        <img
+          class="car-photo-preview"
+          src={carPhoto.value || `${import.meta.env.BASE_URL}car/sealion6.png`}
+          alt="Car"
+        />
+        <div class="grid grid-2" style={{ marginTop: '12px' }}>
           <label class="btn" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
             Change photo
             <input type="file" accept="image/*" style={{ display: 'none' }} onChange={pickPhoto} />
