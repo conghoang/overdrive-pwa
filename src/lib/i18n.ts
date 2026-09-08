@@ -227,7 +227,7 @@ const VI: Record<string, string> = {
 
   'energy.title': 'Năng lượng',
   'energy.battery': 'Pin',
-  'energy.fuel': 'Nhiên liệu',
+  'energy.fuel': 'Xăng',
   'energy.range': 'quãng đường',
 
   'tile.battery_health': 'Sức khỏe pin',
