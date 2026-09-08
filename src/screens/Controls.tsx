@@ -17,7 +17,7 @@ import {
 } from '../components/icons'
 import { wicarlink } from '../lib/settings'
 import { WiCarlinkGrid } from '../components/WiCarlinkControls'
-import { SeatCooling } from '../components/SeatCooling'
+import { SeatClimate } from '../components/SeatClimate'
 import { AppHeader } from '../components/AppHeader'
 import '../components/controls.css'
 
@@ -168,7 +168,8 @@ export function Controls() {
         </div>
       </div>
 
-      <SeatCooling />
+      <SeatClimate mode="heat" />
+      <SeatClimate mode="cool" />
     </div>
   )
 }

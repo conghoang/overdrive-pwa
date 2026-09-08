@@ -43,7 +43,7 @@ export function mockVehicleState(): VehicleState {
     windows: { lf: 0, rf: 0, lr: 0, rr: 0, sunroof: 0 },
     battery: { soc, rangeKm: soc * 5.2 },
     climate: { acOn: false, insideTempC: 29, remoteClimateActive: false },
-    seats: { heat: [0, 0], cool: [0, 0], ventilatedSupported: true },
+    seats: { heat: [1, 0], cool: [0, 2], ventilatedSupported: true },
     tyres: {
       available: true,
       fl: { kPa: 250, psi: 36.3, temperatureC: 32, pressureState: 0, available: true },
