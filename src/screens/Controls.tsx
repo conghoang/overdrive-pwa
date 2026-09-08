@@ -20,8 +20,6 @@ import '../components/controls.css'
 
 const TEMP_MIN = 16
 const TEMP_MAX = 30
-const CAP_MIN = 50
-const CAP_MAX = 100
 
 async function run(fn: () => Promise<ControlResult>, okMsg: string) {
   try {
@@ -36,7 +34,6 @@ async function run(fn: () => Promise<ControlResult>, okMsg: string) {
 
 export function Controls() {
   const [temp, setTemp] = useState(22)
-  const [cap, setCap] = useState(80)
 
   // WiCarlink mode swaps only the top remote-action buttons for 51DK commands.
   const wc = wicarlink.value
@@ -144,32 +141,6 @@ export function Controls() {
             Close all
           </button>
         </div>
-      </div>
-
-      {/* charge limit */}
-      <div class="card" style={{ marginTop: '14px' }}>
-        <div class="spread">
-          <div class="card-title" style={{ margin: 0 }}>Charge limit</div>
-          <span class="mono" style={{ fontSize: '20px', fontWeight: 700 }}>{cap}%</span>
-        </div>
-        <input
-          class="slider"
-          style={{ marginTop: '16px', ['--fill' as string]: `${((cap - CAP_MIN) / (CAP_MAX - CAP_MIN)) * 100}%` }}
-          type="range"
-          min={CAP_MIN}
-          max={CAP_MAX}
-          step={5}
-          value={cap}
-          onInput={(e) => setCap(parseInt((e.target as HTMLInputElement).value, 10))}
-        />
-        <button
-          class="btn accent block"
-          style={{ marginTop: '16px' }}
-          disabled={disabled}
-          onClick={() => run(() => api.setChargeCap(cap), `Charge limit set to ${cap}%`)}
-        >
-          Apply limit
-        </button>
       </div>
     </div>
   )
