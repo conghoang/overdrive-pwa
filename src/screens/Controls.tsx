@@ -1,7 +1,8 @@
 import { useState } from 'preact/hooks'
 import * as api from '../lib/api'
+import { ApiError } from '../lib/api'
 import { cloudConfigured, connected, refresh, vehicleState } from '../lib/store'
-import { toastResult } from '../lib/toast'
+import { toast, toastResult } from '../lib/toast'
 import type { ControlResult } from '../lib/types'
 import { ActionButton } from '../components/HoldButton'
 import {
@@ -23,12 +24,40 @@ import '../components/controls.css'
 const TEMP_MIN = 16
 const TEMP_MAX = 30
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+// One transient-network retry — covers a dropped request when the tunnel hiccups.
+async function sendOnce(fn: () => Promise<ControlResult>): Promise<ControlResult> {
+  try {
+    return await fn()
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 0) {
+      await sleep(700)
+      return fn()
+    }
+    throw e
+  }
+}
+
 async function run(fn: () => Promise<ControlResult>, okMsg: string) {
   try {
-    const r = await fn()
-    toastResult(r, okMsg)
+    toastResult(await sendOnce(fn), okMsg)
   } catch (e) {
-    toastResult({ success: false, error: e instanceof Error ? e.message : 'Failed' }, okMsg)
+    toast(e instanceof Error ? e.message : 'Failed', 'err')
+  } finally {
+    refresh()
+  }
+}
+
+// Climate direct commands are fire-and-forget; a dormant car may only wake on the
+// first send and not act on it. Send once to wake, then again to act (idempotent).
+async function runClimate(fn: () => Promise<ControlResult>, okMsg: string) {
+  try {
+    await sendOnce(fn)
+    await sleep(1800)
+    toastResult(await sendOnce(fn), okMsg)
+  } catch (e) {
+    toast(e instanceof Error ? e.message : 'Failed', 'err')
   } finally {
     refresh()
   }
@@ -113,11 +142,11 @@ export function Controls() {
           <button
             class="btn accent"
             disabled={disabled}
-            onClick={() => run(() => api.climateOn(temp), `Climate on · ${temp}°C`)}
+            onClick={() => runClimate(() => api.climateOn(temp), `Climate on · ${temp}°C`)}
           >
             <IconWind size={18} /> Start 15 min
           </button>
-          <button class="btn" disabled={disabled} onClick={() => run(api.climateOff, 'Climate off')}>
+          <button class="btn" disabled={disabled} onClick={() => runClimate(api.climateOff, 'Climate off')}>
             Turn off
           </button>
         </div>
