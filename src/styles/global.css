@@ -37,6 +37,12 @@ h1, h2, h3, p { margin: 0; }
   margin: 0 auto;
 }
 
+.screen-anim { animation: screen-in 0.22s ease; }
+@keyframes screen-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .screen-head {
   display: flex;
   align-items: center;
