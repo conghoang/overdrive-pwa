@@ -4,6 +4,7 @@ import { ApiError } from '../lib/api'
 import { connected, refresh } from '../lib/store'
 import { toast, toastResult } from '../lib/toast'
 import { t } from '../lib/i18n'
+import { tapFeedback } from '../lib/haptics'
 import { IconBolt, IconLock, IconTrunk, IconUnlock } from './icons'
 
 // 51DK commands (same as the WiCarlink buttons): fire an intent at the app.
@@ -36,7 +37,7 @@ function QuickBtn({
   onClick: () => void
 }) {
   return (
-    <button class="quick-btn" disabled={disabled} onClick={onClick}>
+    <button class="quick-btn" disabled={disabled} onClick={() => { tapFeedback(); onClick() }}>
       <span class="quick-icon">{icon}</span>
       <span class="quick-label">{label}</span>
     </button>

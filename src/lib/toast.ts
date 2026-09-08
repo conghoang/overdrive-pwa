@@ -1,6 +1,7 @@
 import { signal } from '@preact/signals'
 import type { ControlResult } from './types'
 import { t } from './i18n'
+import { errorFeedback, successFeedback } from './haptics'
 
 export type ToastKind = 'ok' | 'err' | 'info'
 export interface ToastItem { id: number; msg: string; kind: ToastKind }
@@ -23,9 +24,11 @@ export function toast(msg: string, kind: ToastKind = 'info'): void {
 export function toastResult(r: ControlResult | undefined, okMsg: string): boolean {
   const failed = !!(r && (r.success === false || (r.error && r.success !== true)))
   if (failed) {
+    errorFeedback()
     toast(r!.error || r!.message || t('common.failed'), 'err')
     return false
   }
+  successFeedback()
   toast((r && r.message) || okMsg, 'ok')
   return true
 }

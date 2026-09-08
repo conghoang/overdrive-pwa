@@ -2,6 +2,7 @@ import type { JSX } from 'preact'
 import type { Tab } from '../app'
 import { IconGauge, IconGear, IconSliders } from './icons'
 import { t } from '../lib/i18n'
+import { tapFeedback } from '../lib/haptics'
 import './TabBar.css'
 
 const TABS: { id: Tab; key: string; icon: (p: { size?: number }) => JSX.Element }[] = [
@@ -20,7 +21,7 @@ export function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) =
             <button
               key={item.id}
               class={'tab' + (active === item.id ? ' active' : '')}
-              onClick={() => onChange(item.id)}
+              onClick={() => { tapFeedback(); onChange(item.id) }}
               aria-current={active === item.id ? 'page' : undefined}
             >
               <Icon size={23} />

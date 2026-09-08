@@ -10,10 +10,14 @@ import { carPhoto, setCarPhoto, setWicarlink, wicarlink } from '../lib/settings'
 import { fileToResizedDataUrl } from '../lib/image'
 import { toast } from '../lib/toast'
 import { lang, setLang, t } from '../lib/i18n'
+import { hapticsEnabled, hapticsSupported, setHapticsEnabled, tapFeedback } from '../lib/haptics'
+import { setSoundEnabled, soundEnabled, soundSupported, tapSound } from '../lib/sound'
 
 export function Account({ onSignOut }: { onSignOut: () => void }) {
   const s = status.value
   const [editWc, setEditWc] = useState(false)
+  const [haptics, setHaptics] = useState(hapticsEnabled())
+  const [sound, setSound] = useState(soundEnabled())
 
   if (editWc) return <WiCarlinkEditor onDone={() => setEditWc(false)} />
 
@@ -67,6 +71,43 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
           </div>
         </div>
       </div>
+
+      {(hapticsSupported() || soundSupported()) && (
+        <div class="card" style={{ marginTop: '14px' }}>
+          {hapticsSupported() && (
+          <div class="srow" style={{ padding: 0 }}>
+            <div class="stack">
+              <span class="srow-label">{t('dev.haptics')}</span>
+              <span class="screen-sub" style={{ marginTop: '2px' }}>{t('dev.haptics_desc')}</span>
+            </div>
+            <Switch
+              on={haptics}
+              onChange={(v) => {
+                setHapticsEnabled(v)
+                setHaptics(v)
+                if (v) tapFeedback() // let them feel it immediately
+              }}
+            />
+          </div>
+          )}
+          {soundSupported() && (
+            <div class="srow">
+              <div class="stack">
+                <span class="srow-label">{t('dev.sound')}</span>
+                <span class="screen-sub" style={{ marginTop: '2px' }}>{t('dev.sound_desc')}</span>
+              </div>
+              <Switch
+                on={sound}
+                onChange={(v) => {
+                  setSoundEnabled(v)
+                  setSound(v)
+                  if (v) tapSound() // the tap that enables it also demos it
+                }}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       <div class="card" style={{ marginTop: '14px' }}>
         <div class="card-title">{t('dev.connection')}</div>

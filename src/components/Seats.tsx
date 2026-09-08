@@ -2,6 +2,7 @@ import * as api from '../lib/api'
 import { connected, refresh, vehicleState } from '../lib/store'
 import { toast, toastResult } from '../lib/toast'
 import { t } from '../lib/i18n'
+import { tapFeedback } from '../lib/haptics'
 import { SeatVisual } from './SeatVisual'
 import { IconFlame, IconSnow } from './icons'
 
@@ -23,7 +24,7 @@ function Seg({
   return (
     <div class={'seg3 ' + tone}>
       {levelLabels().map((lab, lvl) => (
-        <button key={lvl} class={value === lvl ? 'on' : ''} disabled={disabled} onClick={() => onSet(lvl)}>
+        <button key={lvl} class={value === lvl ? 'on' : ''} disabled={disabled} onClick={() => { tapFeedback(); onSet(lvl) }}>
           {lab}
         </button>
       ))}
