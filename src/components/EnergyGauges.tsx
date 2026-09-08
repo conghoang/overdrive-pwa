@@ -1,5 +1,6 @@
 import { CircularGauge } from './CircularGauge'
 import { distanceUnitLabel, fmtDistance } from '../lib/format'
+import { t } from '../lib/i18n'
 import { IconBolt } from './icons'
 import type { StatusResponse } from '../lib/types'
 
@@ -12,14 +13,14 @@ export function EnergyGauges({ s }: { s: StatusResponse }) {
   return (
     <div class="card">
       <div class="card-title" style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-        <IconBolt size={15} /> Energy
+        <IconBolt size={15} /> {t('energy.title')}
       </div>
       <div class={'gauges' + (isPhev ? '' : ' single')}>
-        <CircularGauge percent={s.soc?.percent} color="var(--success)" label="Battery" />
-        {isPhev && <CircularGauge percent={s.range?.fuelPercent} color="var(--m-orange)" label="Fuel" />}
+        <CircularGauge percent={s.soc?.percent} color="var(--success)" label={t('energy.battery')} />
+        {isPhev && <CircularGauge percent={s.range?.fuelPercent} color="var(--m-orange)" label={t('energy.fuel')} />}
       </div>
       <div class="gauges-range">
-        <span class="mono">{fmtDistance(range, unit)}</span> {distanceUnitLabel(unit)} range
+        <span class="mono">{fmtDistance(range, unit)}</span> {distanceUnitLabel(unit)} {t('energy.range')}
       </div>
     </div>
   )

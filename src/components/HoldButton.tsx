@@ -1,5 +1,6 @@
 import { useRef, useState } from 'preact/hooks'
 import type { JSX } from 'preact'
+import { t } from '../lib/i18n'
 
 interface Props {
   label: string
@@ -85,7 +86,7 @@ export function ActionButton({ label, icon, hold, tone = 'default', disabled, on
       )}
       <span class="action-icon">{icon}</span>
       <span class="action-label">{label}</span>
-      {hold && <span class="action-hint">hold</span>}
+      {hold && <span class="action-hint">{t('ctrl.hold')}</span>}
     </button>
   )
 }

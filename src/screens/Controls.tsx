@@ -16,6 +16,7 @@ import {
   IconWind,
 } from '../components/icons'
 import { wicarlink } from '../lib/settings'
+import { t } from '../lib/i18n'
 import { WiCarlinkGrid } from '../components/WiCarlinkControls'
 import { Seats } from '../components/Seats'
 import { AppHeader } from '../components/AppHeader'
@@ -82,7 +83,7 @@ export function Controls() {
 
   return (
     <div>
-      <AppHeader title="Controls" sub={disabled ? 'Reconnecting…' : 'Ready'} dot={disabled ? 'wait' : 'ok'} />
+      <AppHeader title={t('tab.controls')} sub={disabled ? t('common.reconnecting') : t('common.ready')} dot={disabled ? 'wait' : 'ok'} />
 
       {/* remote actions — 51DK commands in WiCarlink mode; otherwise the BYD
           Cloud buttons, hidden entirely when BYD Cloud isn't configured. */}
@@ -91,38 +92,38 @@ export function Controls() {
       ) : cloudConfigured.value === false ? null : (
         <div class="grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
           <ActionButton
-            label="Lock"
+            label={t('ctrl.lock')}
             tone="accent"
             icon={<IconLock size={26} />}
             disabled={disabled}
-            onFire={() => run(api.lock, 'Locked')}
+            onFire={() => run(api.lock, t('ctrl.lock'))}
           />
           <ActionButton
-            label="Unlock"
+            label={t('ctrl.unlock')}
             tone="danger"
             hold
             icon={<IconUnlock size={26} />}
             disabled={disabled}
-            onFire={() => run(api.unlock, 'Unlocked')}
+            onFire={() => run(api.unlock, t('ctrl.unlock'))}
           />
           <ActionButton
-            label="Flash"
+            label={t('ctrl.flash')}
             icon={<IconBolt size={26} />}
             disabled={disabled}
-            onFire={() => run(api.flash, 'Flashed lights')}
+            onFire={() => run(api.flash, t('ctrl.flash'))}
           />
           <ActionButton
-            label="Find car"
+            label={t('ctrl.find')}
             icon={<IconBell size={26} />}
             disabled={disabled}
-            onFire={() => run(api.findCar, 'Sounding horn')}
+            onFire={() => run(api.findCar, t('ctrl.find'))}
           />
           <ActionButton
-            label="Trunk"
+            label={t('ctrl.trunk')}
             hold
             icon={<IconTrunk size={26} />}
             disabled={disabled}
-            onFire={() => run(() => api.setTrunk('open'), 'Trunk opening')}
+            onFire={() => run(() => api.setTrunk('open'), t('ctrl.trunk'))}
           />
         </div>
       )}
@@ -131,15 +132,15 @@ export function Controls() {
       <div class="card" style={{ marginTop: '14px' }}>
         <div class="spread">
           <div class="card-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '7px' }}>
-            <IconWind size={15} /> Climate
+            <IconWind size={15} /> {t('ctrl.climate')}
           </div>
           <button
             class={'climate-toggle' + (climateActive ? ' on' : '')}
             disabled={disabled}
             onClick={() =>
               climateActive
-                ? runClimate(api.climateOff, 'Climate off')
-                : runClimate(() => api.climateOn(temp), `Climate on · ${temp}°C`)
+                ? runClimate(api.climateOff, `${t('ctrl.climate')} · ${t('common.off')}`)
+                : runClimate(() => api.climateOn(temp), `${t('ctrl.climate')} · ${temp}°C`)
             }
           >
             {climateActive ? 'ON' : 'OFF'}
@@ -174,22 +175,22 @@ export function Controls() {
               />
             ))}
           </div>
-          <div class="fan-num">Fan <b>{fanLevel ?? '–'}</b></div>
+          <div class="fan-num">{t('ctrl.fan')} <b>{fanLevel ?? '–'}</b></div>
         </div>
       </div>
 
       {/* windows */}
       <div class="card" style={{ marginTop: '14px' }}>
-        <div class="card-title">Windows</div>
+        <div class="card-title">{t('ctrl.windows')}</div>
         <div class="grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
-          <button class="btn" disabled={disabled} onClick={() => run(api.ventWindows, 'Venting')}>
-            Vent
+          <button class="btn" disabled={disabled} onClick={() => run(api.ventWindows, t('ctrl.vent'))}>
+            {t('ctrl.vent')}
           </button>
-          <button class="btn" disabled={disabled} onClick={() => run(api.openAllWindows, 'Opening')}>
-            Open all
+          <button class="btn" disabled={disabled} onClick={() => run(api.openAllWindows, t('ctrl.open_all'))}>
+            {t('ctrl.open_all')}
           </button>
-          <button class="btn" disabled={disabled} onClick={() => run(api.closeAllWindows, 'Closing')}>
-            Close all
+          <button class="btn" disabled={disabled} onClick={() => run(api.closeAllWindows, t('ctrl.close_all'))}>
+            {t('ctrl.close_all')}
           </button>
         </div>
       </div>

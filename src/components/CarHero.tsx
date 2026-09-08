@@ -2,6 +2,7 @@ import { useState } from 'preact/hooks'
 import { carPhoto } from '../lib/settings'
 import { chargeEtaMin, chargeTargetPct } from '../lib/store'
 import { distanceUnitLabel, fmtDistance, fmtEta, fmtNum } from '../lib/format'
+import { t } from '../lib/i18n'
 import { IconBolt, IconCar } from './icons'
 import { CarImage } from './CarImage'
 import type { StatusResponse } from '../lib/types'
@@ -29,7 +30,7 @@ export function CarHero({ s }: { s: StatusResponse }) {
         <span class="veh-range-num mono">{fmtDistance(range, unit)}</span>
         <span class="veh-range-unit">{distanceUnitLabel(unit)}</span>
       </div>
-      <div class="veh-range-label">Range</div>
+      <div class="veh-range-label">{t('car.range')}</div>
 
       {imgOk ? (
         <img class="car-photo" src={photo} alt="Sealion 6 DMi" onError={() => setImgOk(false)} />
@@ -46,16 +47,18 @@ export function CarHero({ s }: { s: StatusResponse }) {
       {charging ? (
         <div class="charging-wrap">
           <div class="charging-line on">
-            <IconBolt size={16} /> Charging{power ? ` · ${fmtNum(power, 1)} kW` : ''}
+            <IconBolt size={16} /> {t('car.charging')}{power ? ` · ${fmtNum(power, 1)} kW` : ''}
           </div>
           {chargeEtaMin.value != null && chargeEtaMin.value > 0 && (
             <div class="charging-sub">
-              ~{fmtEta(chargeEtaMin.value)} to {chargeTargetPct.value ? `${chargeTargetPct.value}%` : 'full'}
+              ~{fmtEta(chargeEtaMin.value)} {t('car.to')} {chargeTargetPct.value ? `${chargeTargetPct.value}%` : t('car.full')}
             </div>
           )}
         </div>
       ) : (
-        <div class="charging-line">{s.acc ? 'Ready' : s.charging?.plugged ? 'Plugged in' : 'Parked'}</div>
+        <div class="charging-line">
+          {s.acc ? t('car.ready') : s.charging?.plugged ? t('car.plugged') : t('car.parked')}
+        </div>
       )}
     </div>
   )

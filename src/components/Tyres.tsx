@@ -1,4 +1,5 @@
 import { fmtPressure, pressureUnitLabel } from '../lib/format'
+import { t } from '../lib/i18n'
 import type { TyreCorner, TyresState } from '../lib/types'
 
 function abnormal(t: TyreCorner | undefined): boolean {
@@ -21,7 +22,7 @@ export function Tyres({ tyres, unit }: { tyres: TyresState | undefined; unit: st
 
   return (
     <div class="card">
-      <div class="card-title">Tyre pressure</div>
+      <div class="card-title">{t('tyre.title')}</div>
       {available ? (
         <div class="tyre-diagram">
           {read('fl')}
@@ -42,7 +43,7 @@ export function Tyres({ tyres, unit }: { tyres: TyresState | undefined; unit: st
           {read('rr')}
         </div>
       ) : (
-        <div class="screen-sub">Unavailable — start the car to read TPMS.</div>
+        <div class="screen-sub">{t('tyre.unavailable')}</div>
       )}
     </div>
   )

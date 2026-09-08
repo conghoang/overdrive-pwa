@@ -4,6 +4,7 @@ import * as api from '../lib/api'
 import { ApiError } from '../lib/api'
 import { connected } from '../lib/store'
 import { toast, toastResult } from '../lib/toast'
+import { t } from '../lib/i18n'
 import {
   DEFAULT_WC_COMMANDS,
   newCommandId,
@@ -132,17 +133,14 @@ export function WiCarlinkGrid() {
       {pending && (
         <div class="modal-backdrop" onClick={() => !enabling && setPending(null)}>
           <div class="modal" onClick={(e) => e.stopPropagation()}>
-            <h3 class="modal-title">Enable advanced actions?</h3>
-            <p class="modal-body">
-              51DK buttons run a command on the head unit, which needs OverDrive's
-              “Advanced actions” turned on. Enable it now and run <b>{pending.label}</b>?
-            </p>
+            <h3 class="modal-title">{t('wc.enable_advanced_q')}</h3>
+            <p class="modal-body">{t('wc.enable_body', { label: pending.label })}</p>
             <div class="grid grid-2">
               <button class="btn" disabled={enabling} onClick={() => setPending(null)}>
-                Cancel
+                {t('wc.cancel')}
               </button>
               <button class="btn accent" disabled={enabling} onClick={confirmEnable}>
-                {enabling ? 'Enabling…' : 'Enable'}
+                {enabling ? t('wc.enabling') : t('wc.enable')}
               </button>
             </div>
           </div>
@@ -233,11 +231,11 @@ export function WiCarlinkEditor({ onDone }: { onDone: () => void }) {
     <div>
       <div class="screen-head">
         <div>
-          <h1 class="screen-title">Edit 51DK</h1>
-          <div class="screen-sub">Add, remove, reorder or edit buttons</div>
+          <h1 class="screen-title">{t('wc.edit_title')}</h1>
+          <div class="screen-sub">{t('wc.edit_sub')}</div>
         </div>
         <button class="btn ghost" style={{ padding: '8px 12px' }} onClick={onDone}>
-          <IconBack size={18} /> Back
+          <IconBack size={18} /> {t('wc.back')}
         </button>
       </div>
 
@@ -294,17 +292,15 @@ export function WiCarlinkEditor({ onDone }: { onDone: () => void }) {
           )
         })}
         <button class="btn block" style={{ marginTop: '12px' }} onClick={add}>
-          <IconPlus size={18} /> Add button
+          <IconPlus size={18} /> {t('wc.add')}
         </button>
       </div>
 
       <div class="card" style={{ marginTop: '14px' }}>
-        <p class="wc-note" style={{ marginBottom: '12px' }}>
-          <b>shell</b> commands (am / input / adb) need OverDrive's <b>Advanced actions</b> enabled.
-        </p>
-        <button class="btn accent block" onClick={save}>Save</button>
+        <p class="wc-note" style={{ marginBottom: '12px' }}>{t('wc.shell_note')}</p>
+        <button class="btn accent block" onClick={save}>{t('wc.save')}</button>
         <div class="grid grid-2" style={{ marginTop: '10px' }}>
-          <button class="btn" onClick={onDone}>Cancel</button>
+          <button class="btn" onClick={onDone}>{t('wc.cancel')}</button>
           <button
             class="btn danger"
             onClick={() => {
@@ -312,7 +308,7 @@ export function WiCarlinkEditor({ onDone }: { onDone: () => void }) {
               onDone()
             }}
           >
-            Reset defaults
+            {t('wc.reset')}
           </button>
         </div>
       </div>
@@ -320,7 +316,7 @@ export function WiCarlinkEditor({ onDone }: { onDone: () => void }) {
       {iconPickFor && (
         <div class="modal-backdrop" onClick={() => setIconPickFor(null)}>
           <div class="modal" onClick={(e) => e.stopPropagation()}>
-            <h3 class="modal-title">Choose icon</h3>
+            <h3 class="modal-title">{t('wc.choose_icon')}</h3>
             <div class="icon-grid">
               {ICON_KEYS.map((k) => {
                 const Ico = iconFor(k)

@@ -9,6 +9,7 @@ import { WiCarlinkEditor } from '../components/WiCarlinkControls'
 import { carPhoto, setCarPhoto, setWicarlink, wicarlink } from '../lib/settings'
 import { fileToResizedDataUrl } from '../lib/image'
 import { toast } from '../lib/toast'
+import { lang, setLang, t } from '../lib/i18n'
 
 export function Account({ onSignOut }: { onSignOut: () => void }) {
   const s = status.value
@@ -34,11 +35,11 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
 
   return (
     <div>
-      <AppHeader title="Device" sub={connected.value ? 'Connected' : 'Offline'} dot={connected.value ? 'ok' : 'bad'} />
+      <AppHeader title={t('tab.device')} sub={connected.value ? t('common.connected') : t('common.offline')} dot={connected.value ? 'ok' : 'bad'} />
 
       {/* car photo (setting) */}
       <div class="card">
-        <div class="card-title">Car photo</div>
+        <div class="card-title">{t('dev.car_photo')}</div>
         <img
           class="car-photo-preview"
           src={carPhoto.value || `${import.meta.env.BASE_URL}car/sealion6.png`}
@@ -46,55 +47,62 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
         />
         <div class="grid grid-2" style={{ marginTop: '12px' }}>
           <label class="btn" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-            Change photo
+            {t('dev.change_photo')}
             <input type="file" accept="image/*" style={{ display: 'none' }} onChange={pickPhoto} />
           </label>
           <button class="btn" disabled={!carPhoto.value} onClick={() => setCarPhoto(null)}>
-            Use default
+            {t('dev.use_default')}
           </button>
         </div>
       </div>
 
+      {/* language */}
       <div class="card" style={{ marginTop: '14px' }}>
-        <div class="card-title">Connection</div>
-        <InfoRow label="Car URL" value={getBaseUrl()} mono />
-        <InfoRow label="Device" value={s?.deviceId || getDeviceId() || '--'} mono />
-        <InfoRow label="App version" value={s?.appVersion || '--'} />
-        <InfoRow label="Build" value={__COMMIT__} mono />
-        <InfoRow label="Units" value={(s?.distanceUnit || 'km').toUpperCase()} />
-        <InfoRow label="Locale" value={s?.locale || '--'} />
+        <div class="spread">
+          <div class="card-title" style={{ margin: 0 }}>{t('dev.language')}</div>
+          <div class="seg">
+            <button class={lang.value === 'en' ? 'on' : ''} onClick={() => setLang('en')}>English</button>
+            <button class={lang.value === 'vi' ? 'on' : ''} onClick={() => setLang('vi')}>Tiếng Việt</button>
+          </div>
+        </div>
       </div>
 
       <div class="card" style={{ marginTop: '14px' }}>
-        <div class="card-title">Integrations</div>
+        <div class="card-title">{t('dev.connection')}</div>
+        <InfoRow label={t('dev.car_url')} value={getBaseUrl()} mono />
+        <InfoRow label={t('dev.device')} value={s?.deviceId || getDeviceId() || '--'} mono />
+        <InfoRow label={t('dev.app_version')} value={s?.appVersion || '--'} />
+        <InfoRow label={t('dev.build')} value={__COMMIT__} mono />
+        <InfoRow label={t('dev.units')} value={(s?.distanceUnit || 'km').toUpperCase()} />
+        <InfoRow label={t('dev.locale')} value={s?.locale || '--'} />
+      </div>
+
+      <div class="card" style={{ marginTop: '14px' }}>
+        <div class="card-title">{t('dev.integrations')}</div>
         <div class="srow">
           <div class="stack">
-            <span class="srow-label">WiCarlink kit (51DK)</span>
-            <span class="screen-sub" style={{ marginTop: '2px' }}>
-              Replace vehicle controls with 51DK commands
-            </span>
+            <span class="srow-label">{t('dev.wicarlink')}</span>
+            <span class="screen-sub" style={{ marginTop: '2px' }}>{t('dev.wicarlink_desc')}</span>
           </div>
           <Switch on={wicarlink.value} onChange={setWicarlink} />
         </div>
         {wicarlink.value && (
           <button class="btn ghost wc-edit-link" onClick={() => setEditWc(true)}>
-            Edit 51DK buttons
+            {t('dev.edit_51dk')}
           </button>
         )}
       </div>
 
       <div class="card" style={{ marginTop: '14px' }}>
         <button class="btn block" onClick={() => store.refresh()}>
-          <IconRefresh size={18} /> Refresh now
+          <IconRefresh size={18} /> {t('dev.refresh')}
         </button>
         <button class="btn block danger" style={{ marginTop: '10px' }} onClick={signOut}>
-          <IconPower size={18} /> Sign out
+          <IconPower size={18} /> {t('dev.sign_out')}
         </button>
       </div>
 
-      <p class="screen-sub" style={{ textAlign: 'center', marginTop: '18px' }}>
-        OverDrive PWA · unofficial companion
-      </p>
+      <p class="screen-sub" style={{ textAlign: 'center', marginTop: '18px' }}>{t('dev.footer')}</p>
     </div>
   )
 }

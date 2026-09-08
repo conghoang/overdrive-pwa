@@ -1,29 +1,30 @@
 import type { JSX } from 'preact'
 import type { Tab } from '../app'
 import { IconCar, IconGauge, IconSliders } from './icons'
+import { t } from '../lib/i18n'
 import './TabBar.css'
 
-const TABS: { id: Tab; label: string; icon: (p: { size?: number }) => JSX.Element }[] = [
-  { id: 'dashboard', label: 'Vehicle', icon: IconGauge },
-  { id: 'controls', label: 'Controls', icon: IconSliders },
-  { id: 'account', label: 'Device', icon: IconCar },
+const TABS: { id: Tab; key: string; icon: (p: { size?: number }) => JSX.Element }[] = [
+  { id: 'dashboard', key: 'tab.vehicle', icon: IconGauge },
+  { id: 'controls', key: 'tab.controls', icon: IconSliders },
+  { id: 'account', key: 'tab.device', icon: IconCar },
 ]
 
 export function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
   return (
     <nav class="tabbar">
       <div class="tabbar-inner">
-        {TABS.map((t) => {
-          const Icon = t.icon
+        {TABS.map((item) => {
+          const Icon = item.icon
           return (
             <button
-              key={t.id}
-              class={'tab' + (active === t.id ? ' active' : '')}
-              onClick={() => onChange(t.id)}
-              aria-current={active === t.id ? 'page' : undefined}
+              key={item.id}
+              class={'tab' + (active === item.id ? ' active' : '')}
+              onClick={() => onChange(item.id)}
+              aria-current={active === item.id ? 'page' : undefined}
             >
               <Icon size={23} />
-              <span>{t.label}</span>
+              <span>{t(item.key)}</span>
             </button>
           )
         })}

@@ -1,5 +1,6 @@
 import { connected, lastError, status, vehicleState } from '../lib/store'
 import { fmtNum, fmtTemp, ago } from '../lib/format'
+import { t } from '../lib/i18n'
 import { AppHeader } from '../components/AppHeader'
 import { CarHero } from '../components/CarHero'
 import { QuickActions } from '../components/QuickActions'
@@ -33,10 +34,10 @@ export function Dashboard() {
   if (!s) {
     return (
       <div>
-        <AppHeader title="Vehicle" sub={connected.value ? 'Live' : 'Reconnecting…'} dot={connected.value ? 'ok' : 'wait'} />
+        <AppHeader title={t('tab.vehicle')} sub={connected.value ? t('common.live') : t('common.reconnecting')} dot={connected.value ? 'ok' : 'wait'} />
         <div class="card">
           <div class="center-note">
-            {connected.value ? 'Loading vehicle…' : lastError.value || 'Connecting to your car…'}
+            {connected.value ? t('common.loading_vehicle') : lastError.value || t('common.connecting_car')}
           </div>
         </div>
       </div>
@@ -62,7 +63,7 @@ export function Dashboard() {
 
   return (
     <div>
-      <AppHeader title="Vehicle" sub={connected.value ? 'Live' : 'Reconnecting…'} dot={connected.value ? 'ok' : 'wait'} />
+      <AppHeader title={t('tab.vehicle')} sub={connected.value ? t('common.live') : t('common.reconnecting')} dot={connected.value ? 'ok' : 'wait'} />
 
       <CarHero s={s} />
       <QuickActions />
@@ -71,47 +72,22 @@ export function Dashboard() {
       <div class="card" style={{ marginTop: '14px' }}>
         <div class="vitals">
           <div class="vital">
-            <div class={'vital-value ' + (powerOn ? 'vital-on' : 'vital-off')}>{powerOn ? 'On' : 'Off'}</div>
-            <div class="vital-label">Power</div>
+            <div class={'vital-value ' + (powerOn ? 'vital-on' : 'vital-off')}>{powerOn ? t('common.on') : t('common.off')}</div>
+            <div class="vital-label">{t('vitals.power')}</div>
           </div>
           <div class="vital">
             <div class="vital-value">{gear || '–'}</div>
-            <div class="vital-label">Gear</div>
+            <div class="vital-label">{t('vitals.gear')}</div>
           </div>
           <div class="vital">
             <div class="vital-value mono">{speedDisp}<small> {speedUnit}</small></div>
-            <div class="vital-label">Speed</div>
+            <div class="vital-label">{t('vitals.speed')}</div>
           </div>
         </div>
       </div>
 
       <div style={{ marginTop: '14px' }}>
         <EnergyGauges s={s} />
-      </div>
-
-      {/* metric tiles */}
-      <div class="tiles" style={{ marginTop: '14px' }}>
-        <StatTile
-          icon={<IconPlug size={20} />}
-          label="Battery health"
-          value={s.soh?.percent != null ? String(Math.round(s.soh.percent)) : '--'}
-          unit="%"
-          accent="var(--m-teal)"
-        />
-        <StatTile icon={<IconThermo size={20} />} label="Cabin temp" value={fmtTemp(inside)} accent="var(--m-orange)" />
-        <StatTile
-          icon={<IconWifi size={20} />}
-          label={s.network?.type === 'wifi' ? s.network?.ssid || 'Wi-Fi' : 'Network'}
-          value={s.network?.type === 'cellular' ? 'Cellular' : s.network?.type === 'wifi' ? 'Wi-Fi' : '--'}
-          accent="var(--m-blue)"
-        />
-        <StatTile
-          icon={<IconPlug size={20} />}
-          label="12V battery"
-          value={v12 != null ? fmtNum(v12, 1) : '--'}
-          unit="V"
-          accent="var(--m-purple)"
-        />
       </div>
 
       {/* tyre pressure */}
@@ -121,40 +97,44 @@ export function Dashboard() {
 
       {/* status */}
       <div class="card" style={{ marginTop: '14px' }}>
-        <div class="card-title">Status</div>
+        <div class="card-title">{t('status.title')}</div>
         <div class="srow">
           <div class="srow-left">
             {doorsLocked === 1 ? <IconLock size={20} /> : <IconUnlock size={20} />}
-            <span class="srow-label">Doors</span>
+            <span class="srow-label">{t('status.doors')}</span>
           </div>
           {doorsLocked === 1 ? (
-            <span class="pill good">Locked</span>
+            <span class="pill good">{t('status.locked')}</span>
           ) : doorsLocked === 2 ? (
-            <span class="pill warn">Unlocked</span>
+            <span class="pill warn">{t('status.unlocked')}</span>
           ) : (
-            <span class="pill">Unknown</span>
+            <span class="pill">{t('common.unknown')}</span>
           )}
         </div>
         <div class="srow">
           <div class="srow-left">
             <IconWindow size={20} />
-            <span class="srow-label">Windows</span>
+            <span class="srow-label">{t('status.windows')}</span>
           </div>
-          {winOpen > 0 ? <span class="pill warn">{winOpen} open</span> : <span class="pill good">Closed</span>}
+          {winOpen > 0 ? (
+            <span class="pill warn">{t('status.open_count', { n: winOpen })}</span>
+          ) : (
+            <span class="pill good">{t('status.closed')}</span>
+          )}
         </div>
         <div class="srow">
           <div class="srow-left">
             <IconWind size={20} />
-            <span class="srow-label">Climate</span>
+            <span class="srow-label">{t('status.climate')}</span>
           </div>
-          <span class={'pill' + (climateOn ? ' good' : '')}>{climateOn ? 'On' : 'Off'}</span>
+          <span class={'pill' + (climateOn ? ' good' : '')}>{climateOn ? t('common.on') : t('common.off')}</span>
         </div>
       </div>
 
       {/* location */}
       {s.gps?.hasLocation && s.gps?.lat != null && s.gps?.lng != null && (
         <div class="card" style={{ marginTop: '14px' }}>
-          <div class="card-title">Location</div>
+          <div class="card-title">{t('loc.title')}</div>
           <div class="row" style={{ gap: '11px' }}>
             <IconPin size={20} />
             <div class="stack">
@@ -162,7 +142,7 @@ export function Dashboard() {
                 {s.gps.lat.toFixed(5)}, {s.gps.lng.toFixed(5)}
               </span>
               <span class="screen-sub">
-                {s.gps.isMoving ? 'Moving' : 'Parked'}
+                {s.gps.isMoving ? t('loc.moving') : t('loc.parked')}
                 {s.gps.lastUpdate ? ` · ${ago(s.gps.lastUpdate)}` : ''}
               </span>
             </div>
@@ -173,10 +153,35 @@ export function Dashboard() {
             target="_blank"
             rel="noopener noreferrer"
           >
-            Open in Maps <IconArrow size={16} />
+            {t('loc.open_maps')} <IconArrow size={16} />
           </a>
         </div>
       )}
+
+      {/* minor info tiles */}
+      <div class="tiles" style={{ marginTop: '14px' }}>
+        <StatTile
+          icon={<IconPlug size={20} />}
+          label={t('tile.battery_health')}
+          value={s.soh?.percent != null ? String(Math.round(s.soh.percent)) : '--'}
+          unit="%"
+          accent="var(--m-teal)"
+        />
+        <StatTile icon={<IconThermo size={20} />} label={t('tile.cabin_temp')} value={fmtTemp(inside)} accent="var(--m-orange)" />
+        <StatTile
+          icon={<IconWifi size={20} />}
+          label={s.network?.type === 'wifi' ? s.network?.ssid || t('tile.wifi') : t('tile.network')}
+          value={s.network?.type === 'cellular' ? t('tile.cellular') : s.network?.type === 'wifi' ? t('tile.wifi') : '--'}
+          accent="var(--m-blue)"
+        />
+        <StatTile
+          icon={<IconPlug size={20} />}
+          label={t('tile.v12')}
+          value={v12 != null ? fmtNum(v12, 1) : '--'}
+          unit="V"
+          accent="var(--m-purple)"
+        />
+      </div>
     </div>
   )
 }

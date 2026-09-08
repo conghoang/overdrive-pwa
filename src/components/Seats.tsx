@@ -1,9 +1,12 @@
 import * as api from '../lib/api'
 import { connected, refresh, vehicleState } from '../lib/store'
 import { toast, toastResult } from '../lib/toast'
+import { t } from '../lib/i18n'
 import { IconFlame, IconSnow } from './icons'
 
-const LEVELS = ['Off', 'Low', 'High'] // 0, 1, 2
+function levelLabels() {
+  return [t('level.off'), t('level.low'), t('level.high')]
+}
 
 function Seg({
   value,
@@ -18,7 +21,7 @@ function Seg({
 }) {
   return (
     <div class={'seg3 ' + tone}>
-      {LEVELS.map((lab, lvl) => (
+      {levelLabels().map((lab, lvl) => (
         <button key={lvl} class={value === lvl ? 'on' : ''} disabled={disabled} onClick={() => onSet(lvl)}>
           {lab}
         </button>
@@ -27,9 +30,9 @@ function Seg({
   )
 }
 
-const COLS: { pos: 1 | 2; name: string; idx: number }[] = [
-  { pos: 1, name: 'Driver', idx: 0 },
-  { pos: 2, name: 'Passenger', idx: 1 },
+const COLS: { pos: 1 | 2; key: string; idx: number }[] = [
+  { pos: 1, key: 'seat.driver', idx: 0 },
+  { pos: 2, key: 'seat.passenger', idx: 1 },
 ]
 
 /** Two side-by-side seat cards (Driver / Passenger), each with Cooling + Heating. */
@@ -41,10 +44,11 @@ export function Seats() {
   const canCool = !!seats?.ventilatedSupported
 
   async function set(kind: 'heat' | 'cool', pos: 1 | 2, level: number) {
-    const who = pos === 1 ? 'Driver' : 'Passenger'
+    const who = t(pos === 1 ? 'seat.driver' : 'seat.passenger')
+    const mode = t(kind === 'heat' ? 'seat.heating' : 'seat.cooling')
     try {
       const r = kind === 'heat' ? await api.setSeatHeat(pos, level) : await api.setSeatVent(pos, level)
-      toastResult(r, `${who} ${kind === 'heat' ? 'heat' : 'cooling'} ${LEVELS[level]}`)
+      toastResult(r, `${who} · ${mode} · ${levelLabels()[level]}`)
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Failed', 'err')
     } finally {
@@ -57,15 +61,15 @@ export function Seats() {
       <div class="seats-grid">
         {COLS.map((c) => (
           <div class="seat-col" key={c.pos}>
-            <div class="seat-col-title">{c.name}</div>
+            <div class="seat-col-title">{t(c.key)}</div>
             {canCool && (
               <div class="seat-mode">
-                <div class="seat-mode-label cool"><IconSnow size={15} /> Cooling</div>
+                <div class="seat-mode-label cool"><IconSnow size={15} /> {t('seat.cooling')}</div>
                 <Seg value={cool[c.idx] ?? 0} tone="cool" disabled={disabled} onSet={(l) => set('cool', c.pos, l)} />
               </div>
             )}
             <div class="seat-mode">
-              <div class="seat-mode-label heat"><IconFlame size={15} /> Heating</div>
+              <div class="seat-mode-label heat"><IconFlame size={15} /> {t('seat.heating')}</div>
               <Seg value={heat[c.idx] ?? 0} tone="heat" disabled={disabled} onSet={(l) => set('heat', c.pos, l)} />
             </div>
           </div>

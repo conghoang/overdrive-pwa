@@ -27,11 +27,22 @@ export function clearAll(): void {
   localStorage.removeItem(K_DEVICE)
 }
 
+/** Reduce a pasted URL to just its origin (scheme://host[:port]) — drops any path/query. */
 export function normalizeBase(url: string): string {
   let u = (url || '').trim()
   if (!u) return ''
   if (!/^https?:\/\//i.test(u)) u = 'https://' + u
-  return u.replace(/\/+$/, '')
+  try {
+    return new URL(u).origin
+  } catch {
+    return u.replace(/\/+$/, '')
+  }
+}
+
+/** demo, or an 8-char access code. */
+export function isValidAccessCode(code: string): boolean {
+  const c = (code || '').trim()
+  return c.toLowerCase() === 'demo' || c.length === 8
 }
 
 export class AuthError extends Error {}
