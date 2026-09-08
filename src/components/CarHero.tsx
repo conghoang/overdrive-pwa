@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks'
 import { carPhoto } from '../lib/settings'
-import { distanceUnitLabel, fmtDistance, fmtNum } from '../lib/format'
+import { chargeEtaMin, chargeTargetPct } from '../lib/store'
+import { distanceUnitLabel, fmtDistance, fmtEta, fmtNum } from '../lib/format'
 import { IconBolt, IconCar } from './icons'
 import { CarImage } from './CarImage'
 import type { StatusResponse } from '../lib/types'
@@ -43,8 +44,15 @@ export function CarHero({ s }: { s: StatusResponse }) {
       </div>
 
       {charging ? (
-        <div class="charging-line on">
-          <IconBolt size={16} /> Charging{power ? ` · ${fmtNum(power, 1)} kW` : ''}
+        <div class="charging-wrap">
+          <div class="charging-line on">
+            <IconBolt size={16} /> Charging{power ? ` · ${fmtNum(power, 1)} kW` : ''}
+          </div>
+          {chargeEtaMin.value != null && chargeEtaMin.value > 0 && (
+            <div class="charging-sub">
+              ~{fmtEta(chargeEtaMin.value)} to {chargeTargetPct.value ? `${chargeTargetPct.value}%` : 'full'}
+            </div>
+          )}
         </div>
       ) : (
         <div class="charging-line">{s.acc ? 'Ready' : s.charging?.plugged ? 'Plugged in' : 'Parked'}</div>

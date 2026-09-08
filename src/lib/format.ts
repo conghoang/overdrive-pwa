@@ -52,6 +52,14 @@ export function fmtPressure(t: TyreCorner | undefined, unit = 'kpa'): string {
   return String(Math.round(t.kPa))
 }
 
+/** Minutes → "2h 15m" / "45m". */
+export function fmtEta(min: number | undefined | null): string {
+  if (!min || min <= 0) return ''
+  const h = Math.floor(min / 60)
+  const m = Math.round(min % 60)
+  return h > 0 ? `${h}h ${m}m` : `${m}m`
+}
+
 export function fmtDuration(sec: number | undefined | null): string {
   if (!sec || sec < 0) return '--'
   const h = Math.floor(sec / 3600)

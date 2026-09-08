@@ -144,8 +144,10 @@
   border-radius: 999px; transition: color 0.15s ease, background 0.15s ease;
 }
 .prnd-item.on { color: var(--app-bg); background: var(--accent-bright); }
-.charging-line { text-align: center; margin-top: 12px; font-size: 14px; font-weight: 600; color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px; }
+.charging-wrap { margin-top: 12px; }
+.charging-line { text-align: center; font-size: 14px; font-weight: 600; color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px; }
 .charging-line.on { color: var(--success); }
+.charging-sub { text-align: center; margin-top: 3px; font-size: 12px; font-weight: 600; color: var(--muted); }
 
 /* quick actions row (Device page) */
 .quick-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; }

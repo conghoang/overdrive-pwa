@@ -1,10 +1,13 @@
 import { signal } from '@preact/signals'
-import { AuthError, getCloudStatus, getStatus, getVehicleState } from './api'
+import { AuthError, getCloudStatus, getStatus, getSummary, getVehicleState } from './api'
 import type { StatusResponse, VehicleState } from './types'
 
 export const status = signal<StatusResponse | null>(null)
 export const vehicleState = signal<VehicleState | null>(null)
 export const connected = signal(false)
+// Charging estimate (minutes to full) + target %, fetched only while charging.
+export const chargeEtaMin = signal<number | null>(null)
+export const chargeTargetPct = signal<number | null>(null)
 export const lastError = signal<string | null>(null)
 /** Set when the backend rejects our JWT — the app drops back to the setup screen. */
 export const authLost = signal(false)
@@ -58,6 +61,19 @@ async function tick(): Promise<void> {
       vehicleState.value = await getVehicleState()
     } catch (e) {
       if (e instanceof AuthError) throw e
+    }
+    // Charging time-to-full: only while charging/plugged (extra call otherwise wasteful).
+    if (s.charging?.charging || s.charging?.plugged) {
+      try {
+        const sum = await getSummary()
+        chargeEtaMin.value = sum.charging?.etaMin ?? null
+        chargeTargetPct.value = sum.charging?.targetPct ?? null
+      } catch (e) {
+        if (e instanceof AuthError) throw e
+      }
+    } else {
+      chargeEtaMin.value = null
+      chargeTargetPct.value = null
     }
     schedule(document.hidden ? POLL_HIDDEN : POLL_OK)
   } catch (e) {

@@ -123,6 +123,16 @@ export interface VehicleState {
   tyres?: TyresState
 }
 
+export interface LauncherSummary {
+  charging?: {
+    active?: boolean
+    kw?: number
+    kwEstimated?: boolean
+    etaMin?: number | null
+    targetPct?: number | null
+  }
+}
+
 export interface CloudStatus {
   success?: boolean
   configured?: boolean

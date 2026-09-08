@@ -1,6 +1,7 @@
 import type {
   CloudStatus,
   ControlResult,
+  LauncherSummary,
   LoginResponse,
   StatusResponse,
   VehicleState,
@@ -151,6 +152,8 @@ async function demoResponse<T>(path: string): Promise<T> {
   await new Promise((r) => setTimeout(r, 180))
   if (path === '/status') return mockStatus() as unknown as T
   if (path === '/api/vehicle/state') return mockVehicleState() as unknown as T
+  if (path === '/api/launcher/v1/summary')
+    return { charging: { active: true, kw: 7.2, etaMin: 135, targetPct: 80 } } as unknown as T
   if (path === '/api/vehicle/cloud-status') {
     // demo aid: set localStorage odpwa.demoNoCloud=1 to preview the no-cloud UI
     const cfg = localStorage.getItem('odpwa.demoNoCloud') !== '1'
@@ -166,6 +169,8 @@ export const apiPost = <T>(path: string, body?: unknown): Promise<T> => request<
 export const getStatus = (): Promise<StatusResponse> => apiGet<StatusResponse>('/status')
 export const getVehicleState = (): Promise<VehicleState> => apiGet<VehicleState>('/api/vehicle/state')
 export const getCloudStatus = (): Promise<CloudStatus> => apiGet<CloudStatus>('/api/vehicle/cloud-status')
+// Launcher summary — used for the charging time-to-full estimate (charging.etaMin).
+export const getSummary = (): Promise<LauncherSummary> => apiGet<LauncherSummary>('/api/launcher/v1/summary')
 
 // --- vehicle controls ---
 export const lock = (): Promise<ControlResult> => apiPost('/api/vehicle/lock')
