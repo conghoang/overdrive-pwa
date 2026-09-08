@@ -126,6 +126,15 @@
 .fan-num { flex: 0 0 auto; font-size: 13px; color: var(--muted); font-weight: 600; }
 .fan-num b { color: var(--text); font-size: 15px; margin-left: 4px; }
 
+/* seat illustration — glows with live heat/cool state */
+.seat-visual {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  margin: 2px auto 16px;
+}
+
 /* two-column seats (Driver / Passenger, cooling + heating) */
 .seats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .seat-col-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; color: var(--info); }

@@ -2,6 +2,7 @@ import * as api from '../lib/api'
 import { connected, refresh, vehicleState } from '../lib/store'
 import { toast, toastResult } from '../lib/toast'
 import { t } from '../lib/i18n'
+import { SeatVisual } from './SeatVisual'
 import { IconFlame, IconSnow } from './icons'
 
 function levelLabels() {
@@ -58,6 +59,12 @@ export function Seats() {
 
   return (
     <div class="card">
+      <SeatVisual
+        driverHeat={heat[0] ?? 0}
+        driverCool={cool[0] ?? 0}
+        passengerHeat={heat[1] ?? 0}
+        passengerCool={cool[1] ?? 0}
+      />
       <div class="seats-grid">
         {COLS.map((c) => (
           <div class="seat-col" key={c.pos}>
