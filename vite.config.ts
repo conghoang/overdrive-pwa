@@ -40,8 +40,8 @@ export default defineConfig({
       injectRegister: 'auto',
       includeAssets: ['icons/*.svg'],
       manifest: {
-        name: 'OverDrive',
-        short_name: 'OverDrive',
+        name: 'BYD SL6 VN',
+        short_name: 'BYD SL6 VN',
         description: 'Remote dashboard & controls for OverDrive',
         theme_color: '#071019',
         background_color: '#071019',
