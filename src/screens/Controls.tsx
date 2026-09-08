@@ -15,7 +15,7 @@ import {
   IconWind,
 } from '../components/icons'
 import { wicarlink } from '../lib/settings'
-import { WiCarlinkControls } from '../components/WiCarlinkControls'
+import { WiCarlinkEditor, WiCarlinkGrid } from '../components/WiCarlinkControls'
 import '../components/controls.css'
 
 const TEMP_MIN = 16
@@ -35,14 +35,16 @@ async function run(fn: () => Promise<ControlResult>, okMsg: string) {
 }
 
 export function Controls() {
-  // WiCarlink mode replaces the default vehicle controls with 51DK commands.
-  if (wicarlink.value) return <WiCarlinkControls />
+  const [temp, setTemp] = useState(22)
+  const [cap, setCap] = useState(80)
+  const [wcEditing, setWcEditing] = useState(false)
+
+  // WiCarlink mode swaps only the top remote-action buttons for 51DK commands.
+  const wc = wicarlink.value
+  if (wc && wcEditing) return <WiCarlinkEditor onDone={() => setWcEditing(false)} />
 
   const vs = vehicleState.value
   const climateActive = !!(vs?.climate?.acOn || vs?.climate?.remoteClimateActive)
-
-  const [temp, setTemp] = useState(22)
-  const [cap, setCap] = useState(80)
   const disabled = !connected.value
 
   return (
@@ -55,43 +57,47 @@ export function Controls() {
         <span class={'dot ' + (disabled ? 'wait' : 'ok')} />
       </div>
 
-      {/* remote actions */}
-      <div class="grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
-        <ActionButton
-          label="Lock"
-          tone="accent"
-          icon={<IconLock size={26} />}
-          disabled={disabled}
-          onFire={() => run(api.lock, 'Locked')}
-        />
-        <ActionButton
-          label="Unlock"
-          tone="danger"
-          hold
-          icon={<IconUnlock size={26} />}
-          disabled={disabled}
-          onFire={() => run(api.unlock, 'Unlocked')}
-        />
-        <ActionButton
-          label="Flash"
-          icon={<IconBolt size={26} />}
-          disabled={disabled}
-          onFire={() => run(api.flash, 'Flashed lights')}
-        />
-        <ActionButton
-          label="Find car"
-          icon={<IconBell size={26} />}
-          disabled={disabled}
-          onFire={() => run(api.findCar, 'Sounding horn')}
-        />
-        <ActionButton
-          label="Trunk"
-          hold
-          icon={<IconTrunk size={26} />}
-          disabled={disabled}
-          onFire={() => run(() => api.setTrunk('open'), 'Trunk opening')}
-        />
-      </div>
+      {/* remote actions — replaced by 51DK commands when WiCarlink is on */}
+      {wc ? (
+        <WiCarlinkGrid onEdit={() => setWcEditing(true)} />
+      ) : (
+        <div class="grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+          <ActionButton
+            label="Lock"
+            tone="accent"
+            icon={<IconLock size={26} />}
+            disabled={disabled}
+            onFire={() => run(api.lock, 'Locked')}
+          />
+          <ActionButton
+            label="Unlock"
+            tone="danger"
+            hold
+            icon={<IconUnlock size={26} />}
+            disabled={disabled}
+            onFire={() => run(api.unlock, 'Unlocked')}
+          />
+          <ActionButton
+            label="Flash"
+            icon={<IconBolt size={26} />}
+            disabled={disabled}
+            onFire={() => run(api.flash, 'Flashed lights')}
+          />
+          <ActionButton
+            label="Find car"
+            icon={<IconBell size={26} />}
+            disabled={disabled}
+            onFire={() => run(api.findCar, 'Sounding horn')}
+          />
+          <ActionButton
+            label="Trunk"
+            hold
+            icon={<IconTrunk size={26} />}
+            disabled={disabled}
+            onFire={() => run(() => api.setTrunk('open'), 'Trunk opening')}
+          />
+        </div>
+      )}
 
       {/* climate */}
       <div class="card" style={{ marginTop: '14px' }}>

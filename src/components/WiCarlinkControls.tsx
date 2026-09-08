@@ -59,24 +59,14 @@ function iconFor(key: string) {
   return ICONS[key] || IconApp
 }
 
-export function WiCarlinkControls() {
-  const [editing, setEditing] = useState(false)
+/**
+ * The 51DK command grid — drops in where the default remote-action buttons are
+ * on the Controls screen (replacing only those, not the whole screen).
+ */
+export function WiCarlinkGrid({ onEdit }: { onEdit: () => void }) {
   const [enabling, setEnabling] = useState(false)
   const disabled = !connected.value
   const cmds = wcCommands.value
-
-  async function enableAdvanced() {
-    if (enabling) return
-    setEnabling(true)
-    try {
-      const r = await api.enableAdvancedActions()
-      toastResult(r, 'Advanced actions enabled')
-    } catch (e) {
-      toast(e instanceof Error ? e.message : 'Failed to enable', 'err')
-    } finally {
-      setEnabling(false)
-    }
-  }
 
   async function fire(cmd: WcCommand) {
     if (disabled) return
@@ -95,20 +85,21 @@ export function WiCarlinkControls() {
     }
   }
 
-  if (editing) {
-    return <Editor onDone={() => setEditing(false)} />
+  async function enableAdvanced() {
+    if (enabling) return
+    setEnabling(true)
+    try {
+      const r = await api.enableAdvancedActions()
+      toastResult(r, 'Advanced actions enabled')
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Failed to enable', 'err')
+    } finally {
+      setEnabling(false)
+    }
   }
 
   return (
     <div>
-      <div class="screen-head">
-        <div>
-          <h1 class="screen-title">51DK</h1>
-          <div class="screen-sub">{disabled ? 'Reconnecting…' : 'WiCarlink kit'}</div>
-        </div>
-        <span class={'dot ' + (disabled ? 'wait' : 'ok')} />
-      </div>
-
       <div class="grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
         {cmds.map((c) => {
           const Icon = iconFor(c.icon)
@@ -125,25 +116,18 @@ export function WiCarlinkControls() {
           )
         })}
       </div>
-
-      <div class="card" style={{ marginTop: '14px' }}>
-        <div class="grid grid-2">
-          <button class="btn" onClick={() => setEditing(true)}>Edit commands</button>
-          <button class="btn accent" disabled={disabled || enabling} onClick={enableAdvanced}>
-            {enabling ? <IconRefresh size={16} class="spin" /> : null} Enable advanced
-          </button>
-        </div>
-        <p class="wc-note" style={{ marginTop: '12px' }}>
-          These fire <span class="mono">am start … --es cmd …</span> at the 51DK app, which needs
-          OverDrive's <b>Advanced actions</b> turned on. Tap <b>Enable advanced</b> once (or set it in
-          OverDrive → Key Mapping). If a button reports “403”, advanced actions are still off.
-        </p>
+      <div class="wc-bar">
+        <button class="btn ghost wc-bar-btn" onClick={onEdit}>Edit 51DK</button>
+        <button class="btn ghost wc-bar-btn" disabled={disabled || enabling} onClick={enableAdvanced}>
+          {enabling ? <IconRefresh size={15} class="spin" /> : null} Enable advanced
+        </button>
       </div>
     </div>
   )
 }
 
-function Editor({ onDone }: { onDone: () => void }) {
+/** Full-screen editor for the 51DK command list. */
+export function WiCarlinkEditor({ onDone }: { onDone: () => void }) {
   const [draft, setDraft] = useState<WcCommand[]>(() => wcCommands.value.map((c) => ({ ...c })))
 
   function update(id: string, patch: Partial<WcCommand>) {
@@ -198,7 +182,7 @@ function Editor({ onDone }: { onDone: () => void }) {
               <input
                 class="wc-input mono"
                 value={c.value}
-                placeholder={c.kind === 'openApp' ? 'com.package.name' : 'input keyevent 85'}
+                placeholder={c.kind === 'openApp' ? 'com.package.name' : 'am start -n …'}
                 onInput={(e) => update(c.id, { value: (e.target as HTMLInputElement).value })}
               />
             </div>
@@ -213,6 +197,9 @@ function Editor({ onDone }: { onDone: () => void }) {
       </div>
 
       <div class="card" style={{ marginTop: '14px' }}>
+        <p class="wc-note" style={{ marginBottom: '12px' }}>
+          <b>shell</b> commands (am / input / adb) need OverDrive's <b>Advanced actions</b> enabled.
+        </p>
         <button class="btn accent block" onClick={save}>Save</button>
         <div class="grid grid-2" style={{ marginTop: '10px' }}>
           <button class="btn" onClick={onDone}>Cancel</button>

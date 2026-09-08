@@ -114,6 +114,16 @@
 }
 .switch.on .switch-knob { transform: translateX(20px); }
 
+/* WiCarlink inline management bar (under the command grid) */
+.wc-bar { display: flex; gap: 10px; margin-top: 12px; }
+.wc-bar-btn {
+  flex: 1;
+  padding: 10px;
+  font-size: 13px;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  color: var(--text-secondary);
+}
+
 /* WiCarlink command editor */
 .wc-note {
   color: var(--muted);
