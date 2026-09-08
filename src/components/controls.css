@@ -126,32 +126,23 @@
 .fan-num { flex: 0 0 auto; font-size: 13px; color: var(--muted); font-weight: 600; }
 .fan-num b { color: var(--text); font-size: 15px; margin-left: 4px; }
 
-/* cabin photo with a live glow over each seat */
-.cabin {
+/* per-seat status chips (car's own seat glyphs) */
+.seat-status { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+.seat-status-col { display: flex; gap: 10px; justify-content: center; }
+.seat-chip {
   position: relative;
-  width: 100%;
-  max-width: 340px;
-  margin: 2px auto 16px;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  isolation: isolate;
+  width: 62px; height: 58px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 14px;
+  border: 1.5px solid var(--border-soft);
+  background: var(--surface-2);
+  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
-.cabin-img { display: block; width: 100%; height: auto; }
-.cabin-glow {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  mix-blend-mode: screen; /* light ADDS to the seat, like real illumination */
-  transition: opacity 0.35s ease, background 0.35s ease;
-}
-
-/* drawn fallback, only if the photo fails */
-.seat-visual {
+.seat-pips { position: absolute; bottom: 6px; display: flex; gap: 4px; }
+.seat-pips i {
+  width: 12px; height: 3px; border-radius: 2px;
+  background: rgba(255,255,255,0.16);
   display: block;
-  width: 100%;
-  max-width: 300px;
-  height: auto;
-  margin: 2px auto 16px;
 }
 
 /* two-column seats (Driver / Passenger, cooling + heating) */
