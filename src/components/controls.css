@@ -1,0 +1,103 @@
+/* action button grid used on the Controls screen */
+.action {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text);
+  border-radius: var(--radius-lg);
+  padding: 18px 12px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  min-height: 104px;
+  justify-content: center;
+  transition: transform 0.08s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.action:active { transform: scale(0.96); }
+.action:disabled { opacity: 0.5; }
+.action .action-icon { color: var(--text-secondary); display: flex; }
+.action .action-label { font-size: 14px; font-weight: 600; }
+.action .action-hint {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.action.tone-accent { border-color: var(--accent-border); }
+.action.tone-accent .action-icon { color: var(--accent-bright); }
+.action.tone-danger { border-color: rgba(255, 124, 132, 0.32); }
+.action.tone-danger .action-icon { color: var(--danger); }
+.action.busy { opacity: 0.7; }
+.action-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  transform-origin: left center;
+  background: var(--accent-soft);
+  z-index: 0;
+}
+.action > *:not(.action-fill) { position: relative; z-index: 1; }
+
+/* stepper (temp, charge cap) */
+.stepper { display: flex; align-items: center; gap: 14px; }
+.stepper button {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.08s ease;
+}
+.stepper button:active { transform: scale(0.9); }
+.stepper button:disabled { opacity: 0.4; }
+.stepper-value { font-size: 34px; font-weight: 700; min-width: 96px; text-align: center; }
+.stepper-value small { font-size: 16px; color: var(--muted); font-weight: 600; }
+
+/* range slider */
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent) var(--fill, 50%), #16283a var(--fill, 50%));
+  outline: none;
+}
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #eafffb;
+  border: 4px solid var(--accent-strong);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+.slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #eafffb;
+  border: 4px solid var(--accent-strong);
+}
+
+/* segmented toggle */
+.seg { display: inline-flex; background: var(--surface-soft); border: 1px solid var(--border-soft); border-radius: 999px; padding: 3px; }
+.seg button {
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.seg button.on { color: var(--app-bg); background: var(--accent); }
