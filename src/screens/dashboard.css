@@ -84,6 +84,21 @@
 .energy-bar { height: 10px; border-radius: 999px; background: #16283a; overflow: hidden; }
 .energy-fill { height: 100%; border-radius: 999px; transition: width 0.5s ease; }
 
+/* tyres */
+.tyre-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px; }
+.tyre {
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  padding: 13px 14px;
+}
+.tyre.warn { border-color: rgba(243, 180, 94, 0.4); background: rgba(243, 180, 94, 0.08); }
+.tyre-name { color: var(--muted); font-size: 12px; font-weight: 600; }
+.tyre-val { font-size: 22px; font-weight: 700; margin-top: 3px; }
+.tyre-val small { font-size: 12px; color: var(--muted); font-weight: 600; }
+.tyre.warn .tyre-val { color: var(--warning); }
+.tyre-temp { color: var(--muted); font-size: 12px; margin-top: 2px; }
+
 /* doors */
 .door-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 16px; margin-top: 16px; }
 .door-legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }

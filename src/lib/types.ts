@@ -90,6 +90,23 @@ export interface ClimateState {
   fanLevel?: number
   remoteClimateActive?: boolean
 }
+export interface TyreCorner {
+  kPa?: number
+  psi?: number
+  temperatureC?: number
+  pressureState?: number
+  airLeakState?: number
+  signalState?: number
+  available?: boolean
+}
+export interface TyresState {
+  available?: boolean
+  fl?: TyreCorner
+  fr?: TyreCorner
+  rl?: TyreCorner
+  rr?: TyreCorner
+}
+
 export interface VehicleState {
   success?: boolean
   doors?: DoorsState
@@ -103,7 +120,7 @@ export interface VehicleState {
   seats?: SeatsState
   batteryHeat?: boolean
   climate?: ClimateState
-  tyres?: { available?: boolean; [k: string]: unknown }
+  tyres?: TyresState
 }
 
 export interface CloudStatus {

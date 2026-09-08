@@ -20,6 +20,7 @@ export function mockStatus(): StatusResponse {
     vehicleDataReady: true,
     appVersion: '1.0.0-demo',
     distanceUnit: 'km',
+    pressureUnit: 'psi',
     locale: 'en',
     acc: false,
     battery: { voltage: 12.6, available: true },
@@ -43,6 +44,12 @@ export function mockVehicleState(): VehicleState {
     battery: { soc, rangeKm: soc * 5.2 },
     climate: { acOn: false, insideTempC: 29, remoteClimateActive: false },
     seats: { heat: [0, 0], cool: [0, 0], ventilatedSupported: true },
-    tyres: { available: false },
+    tyres: {
+      available: true,
+      fl: { kPa: 250, psi: 36.3, temperatureC: 32, pressureState: 0, available: true },
+      fr: { kPa: 248, psi: 36.0, temperatureC: 32, pressureState: 0, available: true },
+      rl: { kPa: 245, psi: 35.5, temperatureC: 30, pressureState: 0, available: true },
+      rr: { kPa: 228, psi: 33.1, temperatureC: 31, pressureState: 1, available: true },
+    },
   }
 }

@@ -37,6 +37,21 @@ export function ago(ts: number | undefined | null): string {
   return `${Math.floor(h / 24)}d ago`
 }
 
+import type { TyreCorner } from './types'
+
+export function pressureUnitLabel(unit = 'kpa'): string {
+  if (unit === 'psi') return 'psi'
+  if (unit === 'bar') return 'bar'
+  return 'kPa'
+}
+
+export function fmtPressure(t: TyreCorner | undefined, unit = 'kpa'): string {
+  if (!t || !t.available || t.kPa == null) return '--'
+  if (unit === 'psi') return String(t.psi ?? Math.round(t.kPa * 0.1450377 * 10) / 10)
+  if (unit === 'bar') return (t.kPa / 100).toFixed(2)
+  return String(Math.round(t.kPa))
+}
+
 export function fmtDuration(sec: number | undefined | null): string {
   if (!sec || sec < 0) return '--'
   const h = Math.floor(sec / 3600)

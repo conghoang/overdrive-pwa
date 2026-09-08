@@ -3,8 +3,18 @@ import { fmtNum, fmtTemp, ago } from '../lib/format'
 import { CarHero } from '../components/CarHero'
 import { EnergyGauges } from '../components/EnergyGauges'
 import { StatTile } from '../components/StatTile'
-import { DoorStatus } from '../components/DoorStatus'
-import { IconArrow, IconPin, IconPlug, IconThermo, IconWifi, IconWind, IconWindow } from '../components/icons'
+import { Tyres } from '../components/Tyres'
+import {
+  IconArrow,
+  IconLock,
+  IconPin,
+  IconPlug,
+  IconThermo,
+  IconUnlock,
+  IconWifi,
+  IconWind,
+  IconWindow,
+} from '../components/icons'
 import type { WindowsState } from '../lib/types'
 import './dashboard.css'
 
@@ -33,6 +43,7 @@ export function Dashboard() {
 
   const unit = s.distanceUnit || 'km'
   const winOpen = windowsOpenCount(vs?.windows)
+  const doorsLocked = vs?.doors?.overall
   const climateOn = !!(vs?.climate?.acOn || vs?.climate?.remoteClimateActive)
   const inside = vs?.climate?.insideTempC
   const v12 = s.battery?.voltage
@@ -100,14 +111,27 @@ export function Dashboard() {
         />
       </div>
 
-      {/* doors */}
-      <div class="card" style={{ marginTop: '14px' }}>
-        <DoorStatus doors={vs?.doors} />
+      {/* tyre pressure */}
+      <div style={{ marginTop: '14px' }}>
+        <Tyres tyres={vs?.tyres} unit={s.pressureUnit || 'kpa'} />
       </div>
 
       {/* status */}
       <div class="card" style={{ marginTop: '14px' }}>
         <div class="card-title">Status</div>
+        <div class="srow">
+          <div class="srow-left">
+            {doorsLocked === 1 ? <IconLock size={20} /> : <IconUnlock size={20} />}
+            <span class="srow-label">Doors</span>
+          </div>
+          {doorsLocked === 1 ? (
+            <span class="pill good">Locked</span>
+          ) : doorsLocked === 2 ? (
+            <span class="pill warn">Unlocked</span>
+          ) : (
+            <span class="pill">Unknown</span>
+          )}
+        </div>
         <div class="srow">
           <div class="srow-left">
             <IconWindow size={20} />
