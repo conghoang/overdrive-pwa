@@ -42,6 +42,59 @@
 }
 .field .hint { color: var(--muted); font-size: 12px; margin-top: 7px; line-height: 1.45; }
 
+/* URL field + scan button */
+.url-row { display: flex; gap: 10px; align-items: stretch; }
+.url-row input { flex: 1; min-width: 0; }
+.scan-btn {
+  flex: 0 0 auto;
+  width: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent-bright);
+  transition: transform 0.08s ease;
+}
+.scan-btn:active { transform: scale(0.94); }
+
+/* camera overlay */
+.scan-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: var(--app-bg-deep);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+  animation: toast-in 0.18s ease;
+}
+.scan-box {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 1;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: #000;
+  box-shadow: var(--shadow-float);
+}
+.scan-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.scan-frame {
+  position: absolute;
+  inset: 12%;
+  border: 3px solid var(--accent-bright);
+  border-radius: 16px;
+  box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.35);
+}
+.scan-title { font-size: 18px; font-weight: 700; text-align: center; }
+.scan-hint { color: var(--muted); font-size: 13px; line-height: 1.5; text-align: center; max-width: 340px; }
+.scan-overlay .btn { max-width: 340px; }
+
 .setup-error {
   margin-top: 18px;
   padding: 12px 14px;

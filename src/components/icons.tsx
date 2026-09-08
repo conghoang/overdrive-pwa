@@ -89,6 +89,18 @@ export const IconCar = ({ size, class: c }: IconProps) =>
   svg(<><path d="M5 11l1.6-4.5A2 2 0 0 1 8.5 5h7a2 2 0 0 1 1.9 1.5L19 11" /><rect x="3" y="11" width="18" height="6" rx="2" /><circle cx="7.5" cy="17.5" r="1.4" fill="currentColor" stroke="none" /><circle cx="16.5" cy="17.5" r="1.4" fill="currentColor" stroke="none" /></>, size, c)
 export const IconBluetooth = ({ size, class: c }: IconProps) =>
   svg(<path d="M6.5 8L17.5 16L12 20.5V3.5L17.5 8L6.5 16" />, size, c)
+export const IconQr = ({ size, class: c }: IconProps) =>
+  svg(
+    <>
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <path d="M14 14h3v3h-3z" />
+      <path d="M20 14v3M17 20h4M14 20v1" />
+    </>,
+    size,
+    c,
+  )
 export const IconGear = ({ size, class: c }: IconProps) =>
   svg(
     <>

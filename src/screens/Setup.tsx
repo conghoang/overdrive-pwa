@@ -1,7 +1,8 @@
-import { useState } from 'preact/hooks'
+import { useEffect, useRef, useState } from 'preact/hooks'
 import { getBaseUrl, isValidAccessCode, login, normalizeBase } from '../lib/api'
 import { t } from '../lib/i18n'
-import { IconArrow, IconRefresh } from '../components/icons'
+import { QrScanner, qrSupported, urlFromScan } from '../lib/qr'
+import { IconArrow, IconQr, IconRefresh } from '../components/icons'
 import './setup.css'
 
 export function Setup({ onDone }: { onDone: () => void }) {
@@ -9,6 +10,44 @@ export function Setup({ onDone }: { onDone: () => void }) {
   const [token, setToken] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [scanning, setScanning] = useState(false)
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+  const scannerRef = useRef<QrScanner | null>(null)
+  const canScan = qrSupported()
+
+  // Run the scanner while the overlay is open; always tear the camera down.
+  useEffect(() => {
+    if (!scanning) return
+    const video = videoRef.current
+    if (!video) return
+    const scanner = new QrScanner()
+    scannerRef.current = scanner
+    let cancelled = false
+    scanner
+      .start(video)
+      .then((raw) => {
+        if (cancelled) return
+        const found = urlFromScan(raw)
+        setScanning(false)
+        if (found) {
+          setUrl(found)
+          setError(null)
+        } else {
+          setError(t('setup.scan_failed'))
+        }
+      })
+      .catch((e) => {
+        if (cancelled) return
+        setScanning(false)
+        const denied = e instanceof Error && /denied|NotAllowed/i.test(e.name + e.message)
+        setError(denied ? t('setup.scan_denied') : t('setup.scan_failed'))
+      })
+    return () => {
+      cancelled = true
+      scanner.stop()
+      scannerRef.current = null
+    }
+  }, [scanning])
 
   const code = token.trim()
   const codeValid = isValidAccessCode(code)
@@ -38,19 +77,35 @@ export function Setup({ onDone }: { onDone: () => void }) {
       <form onSubmit={submit}>
         <div class="field">
           <label for="url">{t('setup.car_url')}</label>
-          <input
-            id="url"
-            type="url"
-            inputMode="url"
-            autocomplete="url"
-            placeholder="https://my-car.trycloudflare.com"
-            value={url}
-            onInput={(e) => setUrl((e.target as HTMLInputElement).value)}
-            onBlur={(e) => {
-              const v = (e.target as HTMLInputElement).value.trim()
-              if (v) setUrl(normalizeBase(v)) // auto-trim to just the domain
-            }}
-          />
+          <div class="url-row">
+            <input
+              id="url"
+              type="url"
+              inputMode="url"
+              autocomplete="url"
+              placeholder="https://my-car.trycloudflare.com"
+              value={url}
+              onInput={(e) => setUrl((e.target as HTMLInputElement).value)}
+              onBlur={(e) => {
+                const v = (e.target as HTMLInputElement).value.trim()
+                if (v) setUrl(normalizeBase(v)) // auto-trim to just the domain
+              }}
+            />
+            {canScan && (
+              <button
+                type="button"
+                class="scan-btn"
+                aria-label={t('setup.scan')}
+                title={t('setup.scan')}
+                onClick={() => {
+                  setError(null)
+                  setScanning(true)
+                }}
+              >
+                <IconQr size={22} />
+              </button>
+            )}
+          </div>
           <div class="hint">{t('setup.car_url_hint')}</div>
         </div>
 
@@ -89,6 +144,20 @@ export function Setup({ onDone }: { onDone: () => void }) {
           )}
         </button>
       </form>
+
+      {scanning && (
+        <div class="scan-overlay">
+          <div class="scan-box">
+            <video ref={videoRef} class="scan-video" muted playsinline />
+            <div class="scan-frame" />
+          </div>
+          <h3 class="scan-title">{t('setup.scan_title')}</h3>
+          <p class="scan-hint">{t('setup.scan_hint')}</p>
+          <button class="btn block" onClick={() => setScanning(false)}>
+            {t('setup.cancel')}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
