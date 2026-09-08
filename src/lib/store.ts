@@ -1,5 +1,5 @@
 import { signal } from '@preact/signals'
-import { AuthError, getStatus, getVehicleState } from './api'
+import { AuthError, getCloudStatus, getStatus, getVehicleState } from './api'
 import type { StatusResponse, VehicleState } from './types'
 
 export const status = signal<StatusResponse | null>(null)
@@ -8,6 +8,26 @@ export const connected = signal(false)
 export const lastError = signal<string | null>(null)
 /** Set when the backend rejects our JWT — the app drops back to the setup screen. */
 export const authLost = signal(false)
+
+// Whether BYD Cloud is configured (the lock/unlock/flash/find/trunk controls need
+// it). null = not yet known. Cached in localStorage so not-configured users never
+// see the cloud buttons flash in on load.
+const K_CLOUD = 'odpwa.cloud'
+function readCloud(): boolean | null {
+  const v = localStorage.getItem(K_CLOUD)
+  return v === null ? null : v === '1'
+}
+export const cloudConfigured = signal<boolean | null>(readCloud())
+let cloudFetched = false
+
+async function fetchCloud(): Promise<void> {
+  try {
+    const s = await getCloudStatus()
+    const c = !!s.configured
+    cloudConfigured.value = c
+    localStorage.setItem(K_CLOUD, c ? '1' : '0')
+  } catch { /* ignore — leave cached value */ }
+}
 
 const POLL_OK = 5000
 const POLL_RETRY = 2000
@@ -29,6 +49,10 @@ async function tick(): Promise<void> {
     status.value = s
     connected.value = true
     lastError.value = null
+    if (!cloudFetched) {
+      cloudFetched = true
+      void fetchCloud() // once per session; don't block the poll
+    }
     // Control-surface detail; failure here shouldn't knock out the whole poll.
     try {
       vehicleState.value = await getVehicleState()
@@ -79,4 +103,7 @@ export function reset(): void {
   vehicleState.value = null
   connected.value = false
   lastError.value = null
+  cloudConfigured.value = null
+  cloudFetched = false
+  localStorage.removeItem(K_CLOUD)
 }

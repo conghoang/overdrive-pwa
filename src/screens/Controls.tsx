@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks'
 import * as api from '../lib/api'
-import { connected, refresh, vehicleState } from '../lib/store'
+import { cloudConfigured, connected, refresh, vehicleState } from '../lib/store'
 import { toastResult } from '../lib/toast'
 import type { ControlResult } from '../lib/types'
 import { ActionButton } from '../components/HoldButton'
@@ -15,7 +15,7 @@ import {
   IconWind,
 } from '../components/icons'
 import { wicarlink } from '../lib/settings'
-import { WiCarlinkEditor, WiCarlinkGrid } from '../components/WiCarlinkControls'
+import { WiCarlinkGrid } from '../components/WiCarlinkControls'
 import '../components/controls.css'
 
 const TEMP_MIN = 16
@@ -37,11 +37,9 @@ async function run(fn: () => Promise<ControlResult>, okMsg: string) {
 export function Controls() {
   const [temp, setTemp] = useState(22)
   const [cap, setCap] = useState(80)
-  const [wcEditing, setWcEditing] = useState(false)
 
   // WiCarlink mode swaps only the top remote-action buttons for 51DK commands.
   const wc = wicarlink.value
-  if (wc && wcEditing) return <WiCarlinkEditor onDone={() => setWcEditing(false)} />
 
   const vs = vehicleState.value
   const climateActive = !!(vs?.climate?.acOn || vs?.climate?.remoteClimateActive)
@@ -57,10 +55,11 @@ export function Controls() {
         <span class={'dot ' + (disabled ? 'wait' : 'ok')} />
       </div>
 
-      {/* remote actions — replaced by 51DK commands when WiCarlink is on */}
+      {/* remote actions — 51DK commands in WiCarlink mode; otherwise the BYD
+          Cloud buttons, hidden entirely when BYD Cloud isn't configured. */}
       {wc ? (
-        <WiCarlinkGrid onEdit={() => setWcEditing(true)} />
-      ) : (
+        <WiCarlinkGrid />
+      ) : cloudConfigured.value === false ? null : (
         <div class="grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
           <ActionButton
             label="Lock"

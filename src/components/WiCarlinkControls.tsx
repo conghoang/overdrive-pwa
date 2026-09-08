@@ -4,15 +4,7 @@ import * as api from '../lib/api'
 import { ApiError } from '../lib/api'
 import { connected } from '../lib/store'
 import { toast, toastResult } from '../lib/toast'
-import {
-  DEFAULT_WC_COMMANDS,
-  newCommandId,
-  resetCommands,
-  saveCommands,
-  wcCommands,
-  type WcCommand,
-  type WcKind,
-} from '../lib/settings'
+import { DEFAULT_WC_COMMANDS, type WcCommand } from '../lib/settings'
 import {
   IconApp,
   IconBack,
@@ -24,12 +16,9 @@ import {
   IconLock,
   IconNext,
   IconPlay,
-  IconPlus,
   IconPower,
   IconPrev,
-  IconRefresh,
   IconSliders,
-  IconTrash,
   IconTrunk,
   IconUnlock,
   IconWind,
@@ -61,12 +50,14 @@ function iconFor(key: string) {
 
 /**
  * The 51DK command grid — drops in where the default remote-action buttons are
- * on the Controls screen (replacing only those, not the whole screen).
+ * on the Controls screen (replacing only those). Commands are fixed; if the
+ * backend rejects a shell action (403, advanced actions off) we prompt to
+ * enable it on demand rather than showing a permanent control.
  */
-export function WiCarlinkGrid({ onEdit }: { onEdit: () => void }) {
+export function WiCarlinkGrid() {
+  const [pending, setPending] = useState<WcCommand | null>(null)
   const [enabling, setEnabling] = useState(false)
   const disabled = !connected.value
-  const cmds = wcCommands.value
 
   async function fire(cmd: WcCommand) {
     if (disabled) return
@@ -78,21 +69,24 @@ export function WiCarlinkGrid({ onEdit }: { onEdit: () => void }) {
       toastResult(r, cmd.label)
     } catch (e) {
       if (e instanceof ApiError && e.status === 403) {
-        toast('Enable "Advanced actions" in OverDrive → Key Mapping to run shell commands', 'err')
+        setPending(cmd) // advanced actions off → ask to enable
       } else {
         toast(e instanceof Error ? e.message : 'Command failed', 'err')
       }
     }
   }
 
-  async function enableAdvanced() {
+  async function confirmEnable() {
     if (enabling) return
+    const retry = pending
     setEnabling(true)
     try {
-      const r = await api.enableAdvancedActions()
-      toastResult(r, 'Advanced actions enabled')
+      await api.enableAdvancedActions()
+      toast('Advanced actions enabled', 'ok')
+      setPending(null)
+      if (retry) await fire(retry)
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Failed to enable', 'err')
+      toast(e instanceof Error ? e.message : 'Could not enable advanced actions', 'err')
     } finally {
       setEnabling(false)
     }
@@ -101,7 +95,7 @@ export function WiCarlinkGrid({ onEdit }: { onEdit: () => void }) {
   return (
     <div>
       <div class="grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
-        {cmds.map((c) => {
+        {DEFAULT_WC_COMMANDS.map((c) => {
           const Icon = iconFor(c.icon)
           return (
             <button
@@ -116,104 +110,26 @@ export function WiCarlinkGrid({ onEdit }: { onEdit: () => void }) {
           )
         })}
       </div>
-      <div class="wc-bar">
-        <button class="btn ghost wc-bar-btn" onClick={onEdit}>Edit 51DK</button>
-        <button class="btn ghost wc-bar-btn" disabled={disabled || enabling} onClick={enableAdvanced}>
-          {enabling ? <IconRefresh size={15} class="spin" /> : null} Enable advanced
-        </button>
-      </div>
-    </div>
-  )
-}
 
-/** Full-screen editor for the 51DK command list. */
-export function WiCarlinkEditor({ onDone }: { onDone: () => void }) {
-  const [draft, setDraft] = useState<WcCommand[]>(() => wcCommands.value.map((c) => ({ ...c })))
-
-  function update(id: string, patch: Partial<WcCommand>) {
-    setDraft((d) => d.map((c) => (c.id === id ? { ...c, ...patch } : c)))
-  }
-  function remove(id: string) {
-    setDraft((d) => d.filter((c) => c.id !== id))
-  }
-  function add() {
-    setDraft((d) => [
-      ...d,
-      { id: newCommandId(), label: 'New button', kind: 'shell', value: '', icon: 'app' },
-    ])
-  }
-  function save() {
-    const cleaned = draft
-      .map((c) => ({ ...c, label: c.label.trim(), value: c.value.trim() }))
-      .filter((c) => c.label && c.value)
-    saveCommands(cleaned.length ? cleaned : DEFAULT_WC_COMMANDS.map((c) => ({ ...c })))
-    onDone()
-  }
-
-  return (
-    <div>
-      <div class="screen-head">
-        <div>
-          <h1 class="screen-title">Edit 51DK</h1>
-          <div class="screen-sub">Label + command per button</div>
-        </div>
-      </div>
-
-      <div class="card">
-        {draft.map((c) => (
-          <div class="wc-edit-row" key={c.id}>
-            <div class="wc-edit-fields">
-              <div class="wc-row-top">
-                <input
-                  class="wc-input"
-                  value={c.label}
-                  placeholder="Label"
-                  onInput={(e) => update(c.id, { label: (e.target as HTMLInputElement).value })}
-                />
-                <select
-                  class="wc-kind"
-                  value={c.kind}
-                  onChange={(e) => update(c.id, { kind: (e.target as HTMLSelectElement).value as WcKind })}
-                >
-                  <option value="openApp">app</option>
-                  <option value="shell">shell</option>
-                </select>
-              </div>
-              <input
-                class="wc-input mono"
-                value={c.value}
-                placeholder={c.kind === 'openApp' ? 'com.package.name' : 'am start -n …'}
-                onInput={(e) => update(c.id, { value: (e.target as HTMLInputElement).value })}
-              />
+      {pending && (
+        <div class="modal-backdrop" onClick={() => !enabling && setPending(null)}>
+          <div class="modal" onClick={(e) => e.stopPropagation()}>
+            <h3 class="modal-title">Enable advanced actions?</h3>
+            <p class="modal-body">
+              51DK buttons run a command on the head unit, which needs OverDrive's
+              “Advanced actions” turned on. Enable it now and run <b>{pending.label}</b>?
+            </p>
+            <div class="grid grid-2">
+              <button class="btn" disabled={enabling} onClick={() => setPending(null)}>
+                Cancel
+              </button>
+              <button class="btn accent" disabled={enabling} onClick={confirmEnable}>
+                {enabling ? 'Enabling…' : 'Enable'}
+              </button>
             </div>
-            <button class="wc-del" onClick={() => remove(c.id)} aria-label="Remove">
-              <IconTrash size={20} />
-            </button>
           </div>
-        ))}
-        <button class="btn block" style={{ marginTop: '12px' }} onClick={add}>
-          <IconPlus size={18} /> Add button
-        </button>
-      </div>
-
-      <div class="card" style={{ marginTop: '14px' }}>
-        <p class="wc-note" style={{ marginBottom: '12px' }}>
-          <b>shell</b> commands (am / input / adb) need OverDrive's <b>Advanced actions</b> enabled.
-        </p>
-        <button class="btn accent block" onClick={save}>Save</button>
-        <div class="grid grid-2" style={{ marginTop: '10px' }}>
-          <button class="btn" onClick={onDone}>Cancel</button>
-          <button
-            class="btn danger"
-            onClick={() => {
-              resetCommands()
-              onDone()
-            }}
-          >
-            Reset defaults
-          </button>
         </div>
-      </div>
+      )}
     </div>
   )
 }

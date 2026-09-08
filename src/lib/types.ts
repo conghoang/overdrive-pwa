@@ -105,6 +105,13 @@ export interface VehicleState {
   tyres?: { available?: boolean; [k: string]: unknown }
 }
 
+export interface CloudStatus {
+  success?: boolean
+  configured?: boolean
+  verified?: boolean
+  enabled?: boolean
+}
+
 export interface ControlResult {
   success?: boolean
   message?: string
