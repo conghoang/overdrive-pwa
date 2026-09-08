@@ -1,8 +1,7 @@
 /*
  * OverDrive PWA design tokens.
- * Visual language adapted from the Kim Launcher PWA: deep-navy dark theme,
- * teal/mint accent, layered translucent surfaces, generous rounding,
- * soft depth shadows with a subtle top-edge highlight.
+ * Deep-navy dark theme with a teal/mint accent, layered translucent surfaces,
+ * generous rounding, and soft depth shadows with a subtle top-edge highlight.
  */
 :root {
   /* backgrounds */

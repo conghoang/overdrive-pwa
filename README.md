@@ -2,8 +2,8 @@
 
 A mobile-first Progressive Web App — a cleaner phone frontend for the
 [OverDrive](https://github.com/yash-srivastava/Overdrive-release) head-unit backend.
-Standalone: host it anywhere, then point it at your car's tunnel/LAN URL. Design
-language inspired by Kim Launcher's PWA (deep-navy dark theme, teal accent).
+Standalone: host it anywhere, then point it at your car's tunnel/LAN URL. A
+deep-navy dark theme with a teal accent.
 
 ## Stack
 
