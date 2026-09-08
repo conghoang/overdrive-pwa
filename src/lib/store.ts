@@ -96,6 +96,10 @@ export function start(): void {
     document.addEventListener('visibilitychange', () => {
       if (active && !document.hidden) schedule(0)
     })
+    // Poll immediately when the network comes back.
+    window.addEventListener('online', () => {
+      if (active) schedule(0)
+    })
   }
   tick()
 }

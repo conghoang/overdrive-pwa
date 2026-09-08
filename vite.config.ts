@@ -28,6 +28,13 @@ export default defineConfig({
         return html.replace(/(\b(?:src|href)=")(\/[^"]+\.(?:js|css))"/g, `$1$2?v=${commit}"`)
       },
     },
+    {
+      // Emit version.json so the running app can detect a new deploy and reload.
+      name: 'emit-version',
+      generateBundle() {
+        this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ commit }) })
+      },
+    },
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
