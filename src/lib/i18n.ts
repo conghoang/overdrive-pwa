@@ -142,6 +142,37 @@ const EN: Record<string, string> = {
   'wc.enable_body':
     "51DK buttons run a command on the head unit, which needs OverDrive's “Advanced actions” turned on. Enable it now and run {label}?",
   'wc.shell_note': "shell commands (am / input / adb) need OverDrive's Advanced actions enabled.",
+  'wc.command_failed': 'Command failed',
+  'wc.advanced_enabled': 'Advanced actions enabled',
+  'wc.advanced_fail': 'Could not enable advanced actions',
+  'wc.advanced_hint': 'Enable “Advanced actions” in OverDrive → Key Mapping',
+  'wc.new_button': 'New button',
+  'wc.drag': 'Drag to reorder',
+  'wc.change_icon': 'Change icon',
+  'wc.label_ph': 'Label',
+  'wc.remove': 'Remove',
+
+  'common.failed': 'Failed',
+  'ctrl.set_temp': 'Set {temp}°C',
+  'ctrl.auto_mode': 'Auto mode',
+  'setup.code_len': 'Access code must be 8 characters.',
+  'setup.login_failed': 'Login failed',
+  'account.photo_err': 'Could not load that image',
+  'account.photo_big': 'Image too large',
+  'header.open_web': 'Open OverDrive web',
+
+  'err.enter_url': 'Enter your car URL',
+  'err.enter_code': 'Enter your access code',
+  'err.cannot_reach': 'Cannot reach the car. Check the URL and that the tunnel/LAN is up.',
+  'err.no_device': 'Could not read the device ID from the car.',
+  'err.network': 'Network error',
+  'err.login_failed_n': 'Login failed ({status})',
+
+  'ago.now': 'just now',
+  'ago.s': '{n}s ago',
+  'ago.m': '{n}m ago',
+  'ago.h': '{n}h ago',
+  'ago.d': '{n}d ago',
 }
 
 const VI: Record<string, string> = {
@@ -271,6 +302,37 @@ const VI: Record<string, string> = {
   'wc.enable_body':
     'Nút 51DK chạy một lệnh trên màn hình xe, cần bật “Hành động nâng cao” của OverDrive. Bật ngay và chạy {label}?',
   'wc.shell_note': 'Lệnh shell (am / input / adb) cần bật Hành động nâng cao trong OverDrive.',
+  'wc.command_failed': 'Lệnh thất bại',
+  'wc.advanced_enabled': 'Đã bật hành động nâng cao',
+  'wc.advanced_fail': 'Không thể bật hành động nâng cao',
+  'wc.advanced_hint': 'Bật “Hành động nâng cao” trong OverDrive → Key Mapping',
+  'wc.new_button': 'Nút mới',
+  'wc.drag': 'Kéo để sắp xếp',
+  'wc.change_icon': 'Đổi biểu tượng',
+  'wc.label_ph': 'Nhãn',
+  'wc.remove': 'Xóa',
+
+  'common.failed': 'Thất bại',
+  'ctrl.set_temp': 'Đặt {temp}°C',
+  'ctrl.auto_mode': 'Chế độ tự động',
+  'setup.code_len': 'Mã truy cập phải có 8 ký tự.',
+  'setup.login_failed': 'Đăng nhập thất bại',
+  'account.photo_err': 'Không tải được ảnh',
+  'account.photo_big': 'Ảnh quá lớn',
+  'header.open_web': 'Mở web OverDrive',
+
+  'err.enter_url': 'Nhập địa chỉ xe',
+  'err.enter_code': 'Nhập mã truy cập',
+  'err.cannot_reach': 'Không kết nối được tới xe. Kiểm tra URL và tunnel/LAN.',
+  'err.no_device': 'Không đọc được mã thiết bị từ xe.',
+  'err.network': 'Lỗi mạng',
+  'err.login_failed_n': 'Đăng nhập thất bại ({status})',
+
+  'ago.now': 'vừa xong',
+  'ago.s': '{n} giây trước',
+  'ago.m': '{n} phút trước',
+  'ago.h': '{n} giờ trước',
+  'ago.d': '{n} ngày trước',
 }
 
 const DICT: Record<Lang, Record<string, string>> = { en: EN, vi: VI }

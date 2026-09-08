@@ -1,5 +1,6 @@
 import { signal } from '@preact/signals'
 import type { ControlResult } from './types'
+import { t } from './i18n'
 
 export type ToastKind = 'ok' | 'err' | 'info'
 export interface ToastItem { id: number; msg: string; kind: ToastKind }
@@ -15,12 +16,16 @@ export function toast(msg: string, kind: ToastKind = 'info'): void {
   }, 3400)
 }
 
-/** Turn a control-endpoint result envelope into a toast. */
+/**
+ * Turn a control-endpoint result envelope into a toast. A missing body (2xx with
+ * no JSON) or a result that isn't explicitly a failure counts as success.
+ */
 export function toastResult(r: ControlResult | undefined, okMsg: string): boolean {
-  if (r && r.success) {
-    toast(r.message || okMsg, 'ok')
-    return true
+  const failed = !!(r && (r.success === false || (r.error && r.success !== true)))
+  if (failed) {
+    toast(r!.error || r!.message || t('common.failed'), 'err')
+    return false
   }
-  toast((r && (r.error || r.message)) || 'Command failed', 'err')
-  return false
+  toast((r && r.message) || okMsg, 'ok')
+  return true
 }

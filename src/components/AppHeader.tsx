@@ -1,6 +1,7 @@
 import { getBaseUrl } from '../lib/api'
+import { t } from '../lib/i18n'
 
-const OD_LOGO = `${import.meta.env.BASE_URL}icons/icon.svg`
+const OD_LOGO = `${import.meta.env.BASE_URL}icons/od.webp`
 
 /** Screen header with title, status dot, and a logo button that opens the
  *  car's original OverDrive web UI (the base URL) in a new tab. */
@@ -28,10 +29,10 @@ export function AppHeader({
             href={base}
             target="_blank"
             rel="noopener noreferrer"
-            title="Open OverDrive web"
-            aria-label="Open OverDrive web"
+            title={t('header.open_web')}
+            aria-label={t('header.open_web')}
           >
-            <img src={OD_LOGO} alt="OD" width="22" height="22" />
+            <img src={OD_LOGO} alt="OD" width="24" height="24" />
           </a>
         )}
         <span class={'dot ' + dot} />

@@ -64,8 +64,9 @@ export function App() {
     const t = e.changedTouches[0]
     const dx = t.clientX - s.x
     const dy = t.clientY - s.y
-    // mostly-horizontal swipe past the threshold → move one tab
-    if (Math.abs(dx) >= 70 && Math.abs(dx) >= Math.abs(dy) * 2) {
+    // mostly-horizontal swipe past the threshold, with little vertical travel, so
+    // a diagonal gesture during a vertical scroll can't flip tabs.
+    if (Math.abs(dx) >= 70 && Math.abs(dy) <= 45 && Math.abs(dx) >= Math.abs(dy) * 2) {
       const i = TAB_ORDER.indexOf(tab.value) + (dx < 0 ? 1 : -1)
       if (i >= 0 && i < TAB_ORDER.length) tab.value = TAB_ORDER[i]
     }

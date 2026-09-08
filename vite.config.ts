@@ -58,7 +58,7 @@ export default defineConfig({
       workbox: {
         // Never cache API calls — only the app shell. Telemetry must always be live.
         navigateFallback: 'index.html',
-        globPatterns: ['**/*.{js,css,html,svg,woff2}'],
+        globPatterns: ['**/*.{js,css,html,svg,webp,png,woff2}'],
         // Match precached assets even with the ?v=<commit> cache-buster.
         ignoreURLParametersMatching: [/^v$/],
         cleanupOutdatedCaches: true,

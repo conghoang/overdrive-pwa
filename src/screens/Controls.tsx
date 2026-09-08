@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks'
 import * as api from '../lib/api'
-import { ApiError } from '../lib/api'
-import { cloudConfigured, connected, refresh, vehicleState } from '../lib/store'
+import { AuthError } from '../lib/api'
+import { authLost, cloudConfigured, connected, refresh, vehicleState } from '../lib/store'
 import { toast, toastResult } from '../lib/toast'
 import type { ControlResult } from '../lib/types'
 import { ActionButton } from '../components/HoldButton'
@@ -27,38 +27,40 @@ const TEMP_MAX = 30
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-// One transient-network retry — covers a dropped request when the tunnel hiccups.
-async function sendOnce(fn: () => Promise<ControlResult>): Promise<ControlResult> {
-  try {
-    return await fn()
-  } catch (e) {
-    if (e instanceof ApiError && e.status === 0) {
-      await sleep(700)
-      return fn()
-    }
-    throw e
+// Bumped on every climate command so a stale wake-resend can cancel itself.
+let climateGen = 0
+
+function handleError(e: unknown) {
+  if (e instanceof AuthError) {
+    authLost.value = true // drop straight to the setup screen instead of a cryptic toast
+    return
   }
+  toast(e instanceof Error ? e.message : t('common.failed'), 'err')
 }
 
 async function run(fn: () => Promise<ControlResult>, okMsg: string) {
   try {
-    toastResult(await sendOnce(fn), okMsg)
+    toastResult(await fn(), okMsg)
   } catch (e) {
-    toast(e instanceof Error ? e.message : 'Failed', 'err')
+    handleError(e)
   } finally {
     refresh()
   }
 }
 
 // Climate direct commands are fire-and-forget; a dormant car may only wake on the
-// first send. Show feedback immediately, then re-send once in the background so a
-// sleeping car still acts — without making the UI wait.
+// first send. Show feedback immediately, then re-send once so a sleeping car still
+// acts — but skip the resend if a newer climate command has since been issued
+// (so a quick ON→OFF can't be undone by ON's late resend).
 async function runClimate(fn: () => Promise<ControlResult>, okMsg: string) {
+  const gen = ++climateGen
   try {
-    toastResult(await sendOnce(fn), okMsg)
-    void sleep(600).then(() => sendOnce(fn).catch(() => {}))
+    toastResult(await fn(), okMsg)
+    void sleep(600).then(() => {
+      if (gen === climateGen) fn().catch(() => {})
+    })
   } catch (e) {
-    toast(e instanceof Error ? e.message : 'Failed', 'err')
+    handleError(e)
   } finally {
     refresh()
   }
@@ -78,7 +80,7 @@ export function Controls() {
   function changeTemp(delta: number) {
     const nt = Math.min(TEMP_MAX, Math.max(TEMP_MIN, temp + delta))
     setTemp(nt)
-    if (climateActive) run(() => api.setClimateTemp(nt), `Set ${nt}°C`)
+    if (climateActive) run(() => api.setClimateTemp(nt), t('ctrl.set_temp', { temp: nt }))
   }
 
   return (
@@ -161,7 +163,7 @@ export function Controls() {
         </div>
 
         <div class="climate-fan">
-          <button class="btn climate-auto" disabled={disabled} onClick={() => run(() => api.setClimateAuto(true), 'Auto mode')}>
+          <button class="btn climate-auto" disabled={disabled} onClick={() => run(() => api.setClimateAuto(true), t('ctrl.auto_mode'))}>
             AUTO
           </button>
           <div class="fan-bar">
@@ -171,7 +173,7 @@ export function Controls() {
                 class={'fan-seg' + ((fanLevel ?? 0) > i ? ' on' : '')}
                 disabled={disabled}
                 aria-label={`Fan ${i + 1}`}
-                onClick={() => run(() => api.setFan(i + 1), `Fan ${i + 1}`)}
+                onClick={() => run(() => api.setFan(i + 1), `${t('ctrl.fan')} ${i + 1}`)}
               />
             ))}
           </div>

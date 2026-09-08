@@ -12,7 +12,14 @@ export function fileToResizedDataUrl(file: File, maxW = 1000): Promise<string> {
       const ctx = canvas.getContext('2d')
       if (!ctx) return reject(new Error('no canvas'))
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-      resolve(canvas.toDataURL('image/jpeg', 0.82))
+      const out = canvas.toDataURL('image/jpeg', 0.82)
+      // Keep well under the ~5 MB localStorage budget shared with the JWT.
+      if (out.length > 3_500_000) {
+        const err = new Error('QuotaExceeded: image too large')
+        err.name = 'QuotaExceededError'
+        return reject(err)
+      }
+      resolve(out)
     }
     img.onerror = () => {
       URL.revokeObjectURL(url)

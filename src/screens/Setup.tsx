@@ -23,7 +23,7 @@ export function Setup({ onDone }: { onDone: () => void }) {
       await login(url, token)
       onDone()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed')
+      setError(err instanceof Error ? err.message : t('setup.login_failed'))
     } finally {
       setBusy(false)
     }
@@ -69,7 +69,7 @@ export function Setup({ onDone }: { onDone: () => void }) {
             onInput={(e) => setToken((e.target as HTMLInputElement).value)}
           />
           {codeError ? (
-            <div class="hint" style={{ color: 'var(--danger)' }}>Access code must be 8 characters.</div>
+            <div class="hint" style={{ color: 'var(--danger)' }}>{t('setup.code_len')}</div>
           ) : (
             <div class="hint">{t('setup.access_code_hint')}</div>
           )}

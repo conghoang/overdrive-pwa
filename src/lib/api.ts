@@ -7,6 +7,7 @@ import type {
   VehicleState,
 } from './types'
 import { DEMO_BASE, DEMO_TOKEN, mockStatus, mockVehicleState } from './mock'
+import { t } from './i18n'
 
 // --- persisted config (entered once on the setup screen) ---
 const K_BASE = 'odpwa.baseUrl'
@@ -73,26 +74,24 @@ export async function login(baseUrlRaw: string, accessCode: string): Promise<Log
   }
 
   const base = normalizeBase(baseUrlRaw)
-  if (!base) throw new ApiError('Enter your car URL', 0)
-  if (!code) throw new ApiError('Enter your access code', 0)
+  if (!base) throw new ApiError(t('err.enter_url'), 0)
+  if (!code) throw new ApiError(t('err.enter_code'), 0)
 
-  // 1) Read the device ID (public endpoint) unless the user pasted a full token.
+  // 1) Read the device ID (public endpoint) to build the full token.
   let deviceId = ''
-  if (!code.includes('-')) {
-    try {
-      const st = await fetch(base + '/auth/status')
-      const sd = await st.json()
-      deviceId = sd?.deviceId || ''
-    } catch {
-      throw new ApiError('Cannot reach the car. Check the URL and that the tunnel/LAN is up.', 0)
-    }
-    if (!deviceId || deviceId === 'unknown') {
-      throw new ApiError('Could not read the device ID from the car.', 0)
-    }
+  try {
+    const st = await fetch(base + '/auth/status')
+    const sd = await st.json()
+    deviceId = sd?.deviceId || ''
+  } catch {
+    throw new ApiError(t('err.cannot_reach'), 0)
+  }
+  if (!deviceId || deviceId === 'unknown') {
+    throw new ApiError(t('err.no_device'), 0)
   }
 
-  // 2) Combine into the full token (or use as-is if a full token was pasted).
-  const fullToken = code.includes('-') ? code : `${deviceId}-${code}`
+  // 2) The real token is `<deviceId>-<accessCode>`, mirroring OD's login page.
+  const fullToken = `${deviceId}-${code}`
 
   let res: Response
   try {
@@ -107,12 +106,12 @@ export async function login(baseUrlRaw: string, accessCode: string): Promise<Log
       body: JSON.stringify({ token: fullToken }),
     })
   } catch {
-    throw new ApiError('Cannot reach the car. Check the URL and that the tunnel/LAN is up.', 0)
+    throw new ApiError(t('err.cannot_reach'), 0)
   }
   let data: LoginResponse = {}
   try { data = (await res.json()) as LoginResponse } catch { /* ignore */ }
   if (!res.ok || !data.success || !data.jwt) {
-    throw new ApiError(data.error || `Login failed (${res.status})`, res.status)
+    throw new ApiError(data.error || t('err.login_failed_n', { status: res.status }), res.status)
   }
   localStorage.setItem(K_BASE, base)
   localStorage.setItem(K_JWT, data.jwt)
@@ -138,7 +137,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
       body: body !== undefined ? JSON.stringify(body) : undefined,
     })
   } catch {
-    throw new ApiError('Network error', 0)
+    throw new ApiError(t('err.network'), 0)
   }
 
   if (res.status === 401) {
@@ -206,9 +205,6 @@ export const setFan = (fan: number): Promise<ControlResult> =>
 export const setClimateAuto = (on: boolean): Promise<ControlResult> =>
   apiPost('/api/vehicle/climate', { action: on ? 'auto_on' : 'auto_off' })
 
-export const setChargeCap = (percent: number, enabled = true): Promise<ControlResult> =>
-  apiPost('/api/vehicle/charge-cap', { percent, enabled })
-export const startCharging = (): Promise<ControlResult> => apiPost('/api/vehicle/start-charging')
 
 // Seat climate: position 1 = driver, 2 = passenger; level 0-2 (off/low/high).
 export const setSeatVent = (position: 1 | 2, level: number): Promise<ControlResult> =>

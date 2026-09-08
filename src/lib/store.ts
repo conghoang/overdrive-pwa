@@ -39,16 +39,47 @@ const POLL_HIDDEN = 60000
 let timer: ReturnType<typeof setTimeout> | null = null
 let active = false
 let listenerBound = false
+let running = false // a tick() is currently in flight
+let pending = false // an immediate poll was requested during an in-flight tick
 
 function schedule(ms: number): void {
   if (!active) return
   if (timer !== null) clearTimeout(timer)
-  timer = setTimeout(tick, ms)
+  timer = setTimeout(runTick, ms)
+}
+
+/** Request an immediate poll, coalesced with any in-flight tick (no overlap). */
+function requestNow(): void {
+  if (!active) return
+  if (running) {
+    pending = true
+    return
+  }
+  schedule(0)
+}
+
+/** Single-flight wrapper around tick(): never runs two ticks concurrently. */
+async function runTick(): Promise<void> {
+  if (running) {
+    pending = true
+    return
+  }
+  running = true
+  try {
+    await tick()
+  } finally {
+    running = false
+    if (pending && active) {
+      pending = false
+      schedule(0) // honor a refresh that arrived mid-tick
+    }
+  }
 }
 
 async function tick(): Promise<void> {
   try {
     const s = await getStatus()
+    if (!active) return // dropped during sign-out / auth-loss
     status.value = s
     connected.value = true
     lastError.value = null
@@ -58,20 +89,23 @@ async function tick(): Promise<void> {
     }
     // Control-surface detail; failure here shouldn't knock out the whole poll.
     try {
-      vehicleState.value = await getVehicleState()
+      const vs = await getVehicleState()
+      if (active) vehicleState.value = vs
     } catch (e) {
       if (e instanceof AuthError) throw e
     }
     // Charging time-to-full: only while charging/plugged (extra call otherwise wasteful).
-    if (s.charging?.charging || s.charging?.plugged) {
+    if (active && (s.charging?.charging || s.charging?.plugged)) {
       try {
         const sum = await getSummary()
-        chargeEtaMin.value = sum.charging?.etaMin ?? null
-        chargeTargetPct.value = sum.charging?.targetPct ?? null
+        if (active) {
+          chargeEtaMin.value = sum.charging?.etaMin ?? null
+          chargeTargetPct.value = sum.charging?.targetPct ?? null
+        }
       } catch (e) {
         if (e instanceof AuthError) throw e
       }
-    } else {
+    } else if (active) {
       chargeEtaMin.value = null
       chargeTargetPct.value = null
     }
@@ -82,6 +116,7 @@ async function tick(): Promise<void> {
       stop()
       return
     }
+    if (!active) return
     connected.value = false
     lastError.value = e instanceof Error ? e.message : 'Error'
     schedule(POLL_RETRY)
@@ -94,27 +129,26 @@ export function start(): void {
   if (!listenerBound) {
     listenerBound = true
     document.addEventListener('visibilitychange', () => {
-      if (active && !document.hidden) schedule(0)
+      if (active && !document.hidden) requestNow()
     })
     // Poll immediately when the network comes back.
-    window.addEventListener('online', () => {
-      if (active) schedule(0)
-    })
+    window.addEventListener('online', requestNow)
   }
-  tick()
+  runTick()
 }
 
 export function stop(): void {
   active = false
+  pending = false
   if (timer !== null) {
     clearTimeout(timer)
     timer = null
   }
 }
 
-/** Force an immediate poll (e.g. after firing a control). */
+/** Force an immediate poll (e.g. after firing a control), never overlapping. */
 export function refresh(): void {
-  if (active) schedule(0)
+  requestNow()
 }
 
 export function reset(): void {

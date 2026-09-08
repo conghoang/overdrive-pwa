@@ -28,8 +28,9 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
     if (!file) return
     try {
       setCarPhoto(await fileToResizedDataUrl(file, 1100))
-    } catch {
-      toast('Could not load that image', 'err')
+    } catch (err) {
+      const quota = err instanceof Error && /quota/i.test(err.name + err.message)
+      toast(quota ? t('account.photo_big') : t('account.photo_err'), 'err')
     }
   }
 

@@ -50,7 +50,7 @@ export function Seats() {
       const r = kind === 'heat' ? await api.setSeatHeat(pos, level) : await api.setSeatVent(pos, level)
       toastResult(r, `${who} · ${mode} · ${levelLabels()[level]}`)
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Failed', 'err')
+      toast(e instanceof Error ? e.message : t('common.failed'), 'err')
     } finally {
       refresh()
     }

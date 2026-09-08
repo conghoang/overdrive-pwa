@@ -7,22 +7,15 @@ const K_CMDS = 'odpwa.wicarlink.cmds'
 
 export const wicarlink = signal<boolean>(localStorage.getItem(K_WICARLINK) === '1')
 
-// Car illustration colour (Device tab), persisted.
-const K_CARCOLOR = 'odpwa.carColor'
-export const CAR_COLORS = ['#e9edf1', '#15191f', '#7b8794', '#2f5d8a', '#2f6b52', '#9e2b2b', '#c9a227', '#d94f6a']
-export const carColor = signal<string>(localStorage.getItem(K_CARCOLOR) || '#2f5d8a')
-export function setCarColor(c: string): void {
-  carColor.value = c
-  localStorage.setItem(K_CARCOLOR, c)
-}
-
 // Optional user-supplied car photo (data URL), overriding the bundled default.
 const K_CARPHOTO = 'odpwa.carPhoto'
 export const carPhoto = signal<string | null>(localStorage.getItem(K_CARPHOTO))
 export function setCarPhoto(dataUrl: string | null): void {
-  carPhoto.value = dataUrl
+  // Persist first — if localStorage throws (quota), the signal stays unchanged
+  // so the UI never shows a photo that wasn't actually saved.
   if (dataUrl) localStorage.setItem(K_CARPHOTO, dataUrl)
   else localStorage.removeItem(K_CARPHOTO)
+  carPhoto.value = dataUrl
 }
 
 export function setWicarlink(on: boolean): void {

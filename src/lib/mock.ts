@@ -5,10 +5,6 @@ import type { StatusResponse, VehicleState } from './types'
 export const DEMO_BASE = 'demo'
 export const DEMO_TOKEN = 'demo'
 
-export function isDemo(): boolean {
-  return localStorage.getItem('odpwa.baseUrl') === DEMO_BASE
-}
-
 let soc = 68
 
 export function mockStatus(): StatusResponse {

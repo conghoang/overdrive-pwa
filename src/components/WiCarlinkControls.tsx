@@ -90,7 +90,7 @@ export function WiCarlinkGrid() {
       if (e instanceof ApiError && e.status === 403) {
         setPending(cmd) // advanced actions off → ask to enable
       } else {
-        toast(e instanceof Error ? e.message : 'Command failed', 'err')
+        toast(e instanceof Error ? e.message : t('wc.command_failed'), 'err')
       }
     }
   }
@@ -101,11 +101,11 @@ export function WiCarlinkGrid() {
     setEnabling(true)
     try {
       await api.enableAdvancedActions()
-      toast('Advanced actions enabled', 'ok')
+      toast(t('wc.advanced_enabled'), 'ok')
       setPending(null)
       if (retry) await fire(retry)
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Could not enable advanced actions', 'err')
+      toast(e instanceof Error ? e.message : t('wc.advanced_fail'), 'err')
     } finally {
       setEnabling(false)
     }
@@ -216,7 +216,7 @@ export function WiCarlinkEditor({ onDone }: { onDone: () => void }) {
   function add() {
     setDraft((d) => [
       ...d,
-      { id: newCommandId(), label: 'New button', kind: 'shell', value: '', icon: 'app' },
+      { id: newCommandId(), label: t('wc.new_button'), kind: 'shell', value: '', icon: 'app' },
     ])
   }
   function save() {
@@ -250,7 +250,7 @@ export function WiCarlinkEditor({ onDone }: { onDone: () => void }) {
                 rowEls.current[c.id] = el
               }}
             >
-              <button class="wc-grip" aria-label="Drag to reorder" onPointerDown={(e) => onDragStart(e, c.id)}>
+              <button class="wc-grip" aria-label={t('wc.drag')} onPointerDown={(e) => onDragStart(e, c.id)}>
                 <IconGrip size={20} />
               </button>
               <div class="wc-edit-fields">
@@ -258,7 +258,7 @@ export function WiCarlinkEditor({ onDone }: { onDone: () => void }) {
                   <button
                     type="button"
                     class="wc-icon-btn"
-                    aria-label="Change icon"
+                    aria-label={t('wc.change_icon')}
                     onClick={() => setIconPickFor(c.id)}
                   >
                     <RowIcon size={20} />
@@ -266,7 +266,7 @@ export function WiCarlinkEditor({ onDone }: { onDone: () => void }) {
                   <input
                     class="wc-input"
                     value={c.label}
-                    placeholder="Label"
+                    placeholder={t('wc.label_ph')}
                     onInput={(e) => update(c.id, { label: (e.target as HTMLInputElement).value })}
                   />
                   <select
@@ -285,7 +285,7 @@ export function WiCarlinkEditor({ onDone }: { onDone: () => void }) {
                   onInput={(e) => update(c.id, { value: (e.target as HTMLInputElement).value })}
                 />
               </div>
-              <button class="wc-del" onClick={() => remove(c.id)} aria-label="Remove">
+              <button class="wc-del" onClick={() => remove(c.id)} aria-label={t('wc.remove')}>
                 <IconTrash size={20} />
               </button>
             </div>

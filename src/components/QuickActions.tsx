@@ -15,9 +15,9 @@ async function fire(cmd: string, ok: string) {
     toastResult(await api.fireShell(wc(cmd)), ok)
   } catch (e) {
     if (e instanceof ApiError && e.status === 403) {
-      toast('Enable "Advanced actions" in OverDrive → Key Mapping', 'err')
+      toast(t('wc.advanced_hint'), 'err')
     } else {
-      toast(e instanceof Error ? e.message : 'Failed', 'err')
+      toast(e instanceof Error ? e.message : t('common.failed'), 'err')
     }
   } finally {
     refresh()
