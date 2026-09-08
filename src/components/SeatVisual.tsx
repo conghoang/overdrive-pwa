@@ -1,74 +1,72 @@
 /**
- * Seats drawn in the same 3/4 view the car's own Seats screen uses: you look
- * down at the front pair from the right, so both the backrest face and the
- * cushion top — the surfaces that actually heat and ventilate — are visible.
+ * Seats drawn to match the car's own Seats screen: a tilted 3/4 view where the
+ * seating surfaces — a narrow insert down the backrest and across the cushion —
+ * carry the live state colour, with thick grey bolsters either side.
  *
- * The seat body stays neutral; the seating surfaces take the live state colour
- * (BYD's own language: orange = heat, blue = ventilation), dim at Low and full
- * at High.
+ * BYD's colour language: orange = heating, blue = ventilation. Dim at Low, full
+ * at High. Geometry was matched against a photo of the head unit side by side.
  */
 
-const HEAT = '#ff8a3d'
-const COOL = '#49a6ff'
-
-function stateOf(heat: number, cool: number) {
-  const color = heat > 0 ? HEAT : cool > 0 ? COOL : null
-  const level = heat > 0 ? heat : cool
-  return { color, strong: level >= 2 }
-}
-
-// Soft, bulging forms — upholstery, not folded card.
-const BACK =
-  'M31 32 Q30 20 43 18 L66 14 Q79 13 80 25 L87 80 Q88 92 75 94 L43 100 Q31 101 30 90 Z'
-const CUSHION =
-  'M36 96 L83 88 Q97 86 100 97 L104 113 Q107 125 94 128 L50 137 Q38 139 36 128 Z'
-const HEADREST = 'M38 3 Q37 -3 45 -4 L63 -7 Q71 -8 72 -2 L74 11 Q75 18 67 19 L47 22 Q39 23 38 16 Z'
+const HEAT_A = '#ffa254'
+const HEAT_B = '#f5822a'
+const HEAT_C = '#d96a14'
+const COOL_A = '#7cc4ff'
+const COOL_B = '#3d9bf5'
+const COOL_C = '#1f7ad4'
 
 function Seat({ x, heat, cool, id }: { x: number; heat: number; cool: number; id: string }) {
-  const { color, strong } = stateOf(heat, cool)
-  const surface = color ?? '#63717f'
-  const surfaceOpacity = color ? (strong ? 0.95 : 0.55) : 0.9
+  const on = heat > 0 || cool > 0
+  const isHeat = heat > 0
+  const strong = (isHeat ? heat : cool) >= 2
+  const acc = `url(#acc-${id})`
+  // Inactive seats keep the surface visible, just neutral.
+  const surfaceOpacity = on ? (strong ? 1 : 0.6) : 1
 
   return (
     <g transform={`translate(${x} 0)`}>
-      {color && (
-        <g filter={`url(#g-${id})`} opacity={strong ? 0.6 : 0.32}>
-          <path d={BACK} fill={color} />
-          <path d={CUSHION} fill={color} />
-        </g>
-      )}
+      <defs>
+        <linearGradient id={`acc-${id}`} x1="0" y1="0" x2="1" y2="0.5">
+          {on ? (
+            <>
+              <stop offset="0" stop-color={isHeat ? HEAT_A : COOL_A} />
+              <stop offset="0.6" stop-color={isHeat ? HEAT_B : COOL_B} />
+              <stop offset="1" stop-color={isHeat ? HEAT_C : COOL_C} />
+            </>
+          ) : (
+            <>
+              <stop offset="0" stop-color="#8d98a4" />
+              <stop offset="1" stop-color="#6d7783" />
+            </>
+          )}
+        </linearGradient>
+      </defs>
 
-      <ellipse cx="70" cy="141" rx="30" ry="5" fill="#000" opacity="0.42" />
+      <g transform="rotate(-7 100 100)">
+        {/* glow when active */}
+        {on && (
+          <g filter={`url(#soft-${id})`} opacity={strong ? 0.5 : 0.26}>
+            <path d="M88 34 Q87 26 95 24 L112 20 Q120 19 122 27 L134 97 Q136 106 127 108 L104 113 Q95 115 93 106 Z" fill={isHeat ? HEAT_B : COOL_B} />
+            <path d="M82 120 Q80 113 89 111 L120 105 Q129 103 133 112 L144 134 Q148 143 136 146 L100 153 Q90 155 87 146 Z" fill={isHeat ? HEAT_B : COOL_B} />
+          </g>
+        )}
 
-      {/* ---- cushion ---- */}
-      <path d={CUSHION} fill={`url(#top-${id})`} />
-      {/* seating surface — the part that heats / ventilates */}
-      <path
-        d="M47 101 Q46 96 53 95 L80 91 Q88 90 90 97 L93 110 Q95 117 87 119 L57 125 Q49 126 48 119 Z"
-        fill={surface}
-        opacity={surfaceOpacity}
-      />
+        {/* cushion */}
+        <path d="M58 120 Q54 109 69 106 L124 96 Q141 93 148 107 L166 141 Q174 156 154 160 L92 172 Q73 176 67 161 Z" fill="url(#seatTop)" />
+        <path d="M82 120 Q80 113 89 111 L120 105 Q129 103 133 112 L144 134 Q148 143 136 146 L100 153 Q90 155 87 146 Z" fill={acc} opacity={surfaceOpacity} />
+        <path d="M67 161 Q73 176 92 172 L154 160 Q174 156 166 141 L169 152 Q176 168 154 172 L92 184 Q72 188 66 172 Z" fill="#9ba5b0" />
 
-      {/* ---- backrest ---- */}
-      {/* side face for thickness */}
-      <path d="M31 32 Q30 20 43 18 L38 21 Q28 23 29 34 L36 92 Q37 101 45 100 L43 100 Q31 101 30 90 Z" fill={`url(#side-${id})`} />
-      <path d={BACK} fill={`url(#face-${id})`} />
-      {/* centre panel */}
-      <path
-        d="M42 36 Q41 30 48 29 L67 26 Q74 25 75 31 L80 76 Q81 83 74 84 L50 88 Q43 89 42 83 Z"
-        fill={surface}
-        opacity={surfaceOpacity}
-      />
-      {/* bolster seams */}
-      <path d="M42 36 Q39 60 44 87" stroke="rgba(0,0,0,0.20)" stroke-width="1.1" fill="none" />
-      <path d="M75 31 Q79 56 80 78" stroke="rgba(0,0,0,0.20)" stroke-width="1.1" fill="none" />
-      {/* top highlight */}
-      <path d="M35 24 Q52 17 76 20" stroke="rgba(255,255,255,0.22)" stroke-width="1.6" fill="none" stroke-linecap="round" />
+        {/* backrest */}
+        <path d="M114 20 Q126 18 129 31 L144 108 Q147 122 132 125 L126 126 Q139 122 136 109 L121 33 Q118 22 108 23 Z" fill="#98a3ae" />
+        <path d="M62 30 Q60 17 75 14 L114 6 Q129 3 132 18 L147 105 Q150 121 133 124 L82 134 Q66 137 63 121 Z" fill="url(#seatBody)" />
+        <path d="M88 34 Q87 26 95 24 L112 20 Q120 19 122 27 L134 97 Q136 106 127 108 L104 113 Q95 115 93 106 Z" fill={acc} opacity={surfaceOpacity} />
+        <path d="M88 34 Q82 70 93 107" stroke="rgba(105,116,128,0.55)" stroke-width="2.2" fill="none" />
+        <path d="M122 27 Q131 64 136 99" stroke="rgba(105,116,128,0.45)" stroke-width="2.2" fill="none" />
+        <path d="M68 26 Q94 12 124 12" stroke="rgba(255,255,255,0.5)" stroke-width="2.6" fill="none" stroke-linecap="round" />
 
-      {/* ---- headrest ---- */}
-      <path d="M45 20 L47 27 L52 26 L50 19 Z" fill="#2b3947" />
-      <path d={HEADREST} fill={`url(#face-${id})`} />
-      <path d="M38 3 Q37 -3 45 -4 L42 -1 Q39 1 40 6 L42 17 Q43 21 47 21 L47 22 Q39 23 38 16 Z" fill={`url(#side-${id})`} />
+        {/* headrest */}
+        <path d="M88 4 L92 17 L101 15 L97 2 Z" fill="#8b959f" />
+        <path d="M76 -16 Q74 -26 89 -29 L117 -35 Q130 -37 133 -26 L137 -9 Q140 1 124 4 L96 10 Q82 13 80 2 Z" fill="url(#seatBody)" />
+      </g>
     </g>
   )
 }
@@ -85,34 +83,22 @@ export function SeatVisual({
   passengerCool: number
 }) {
   return (
-    <svg viewBox="0 0 240 155" class="seat-visual" aria-hidden="true">
+    <svg viewBox="10 -40 400 240" class="seat-visual" aria-hidden="true">
       <defs>
-        {['d', 'p'].map((id) => (
-          <>
-            <linearGradient id={`face-${id}`} x1="0" y1="0" x2="1" y2="0.4">
-              <stop offset="0" stop-color="#9fb0c1" />
-              <stop offset="1" stop-color="#75879a" />
-            </linearGradient>
-            <linearGradient id={`top-${id}`} x1="0" y1="0" x2="0.4" y2="1">
-              <stop offset="0" stop-color="#a9b9c8" />
-              <stop offset="1" stop-color="#7e8fa1" />
-            </linearGradient>
-            <linearGradient id={`side-${id}`} x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0" stop-color="#5c6b7b" />
-              <stop offset="1" stop-color="#41505f" />
-            </linearGradient>
-            <linearGradient id={`edge-${id}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#6d7e90" />
-              <stop offset="1" stop-color="#4a5967" />
-            </linearGradient>
-            <filter id={`g-${id}`} x="-60%" y="-60%" width="220%" height="220%">
-              <feGaussianBlur stdDeviation="9" />
-            </filter>
-          </>
-        ))}
+        <linearGradient id="seatBody" x1="0" y1="0" x2="1" y2="0.35">
+          <stop offset="0" stop-color="#e6e9ed" />
+          <stop offset="0.45" stop-color="#ccd3da" />
+          <stop offset="1" stop-color="#9ba5b0" />
+        </linearGradient>
+        <linearGradient id="seatTop" x1="0.1" y1="0" x2="0.9" y2="1">
+          <stop offset="0" stop-color="#e8ebee" />
+          <stop offset="1" stop-color="#aab4be" />
+        </linearGradient>
+        <filter id="soft-d" x="-70%" y="-70%" width="240%" height="240%"><feGaussianBlur stdDeviation="10" /></filter>
+        <filter id="soft-p" x="-70%" y="-70%" width="240%" height="240%"><feGaussianBlur stdDeviation="10" /></filter>
       </defs>
-      <Seat x={6} id="d" heat={driverHeat} cool={driverCool} />
-      <Seat x={118} id="p" heat={passengerHeat} cool={passengerCool} />
+      <Seat x={-30} id="d" heat={driverHeat} cool={driverCool} />
+      <Seat x={160} id="p" heat={passengerHeat} cool={passengerCool} />
     </svg>
   )
 }
