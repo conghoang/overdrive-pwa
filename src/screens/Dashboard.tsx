@@ -1,5 +1,6 @@
 import { connected, lastError, status, vehicleState } from '../lib/store'
 import { fmtNum, fmtTemp, ago } from '../lib/format'
+import { AppHeader } from '../components/AppHeader'
 import { CarHero } from '../components/CarHero'
 import { EnergyGauges } from '../components/EnergyGauges'
 import { StatTile } from '../components/StatTile'
@@ -31,7 +32,7 @@ export function Dashboard() {
   if (!s) {
     return (
       <div>
-        <Header connected={connected.value} />
+        <AppHeader title="Vehicle" sub={connected.value ? 'Live' : 'Reconnecting…'} dot={connected.value ? 'ok' : 'wait'} />
         <div class="card">
           <div class="center-note">
             {connected.value ? 'Loading vehicle…' : lastError.value || 'Connecting to your car…'}
@@ -60,7 +61,7 @@ export function Dashboard() {
 
   return (
     <div>
-      <Header connected={connected.value} />
+      <AppHeader title="Vehicle" sub={connected.value ? 'Live' : 'Reconnecting…'} dot={connected.value ? 'ok' : 'wait'} />
 
       <CarHero s={s} />
 
@@ -178,14 +179,3 @@ export function Dashboard() {
   )
 }
 
-function Header({ connected: isConnected }: { connected: boolean }) {
-  return (
-    <div class="screen-head">
-      <div>
-        <h1 class="screen-title">Vehicle</h1>
-        <div class="screen-sub">{isConnected ? 'Live' : 'Reconnecting…'}</div>
-      </div>
-      <span class={'dot ' + (isConnected ? 'ok' : 'wait')} />
-    </div>
-  )
-}

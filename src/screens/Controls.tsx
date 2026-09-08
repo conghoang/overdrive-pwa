@@ -17,6 +17,7 @@ import {
 import { wicarlink } from '../lib/settings'
 import { WiCarlinkGrid } from '../components/WiCarlinkControls'
 import { SeatCooling } from '../components/SeatCooling'
+import { AppHeader } from '../components/AppHeader'
 import '../components/controls.css'
 
 const TEMP_MIN = 16
@@ -45,13 +46,7 @@ export function Controls() {
 
   return (
     <div>
-      <div class="screen-head">
-        <div>
-          <h1 class="screen-title">Controls</h1>
-          <div class="screen-sub">{disabled ? 'Reconnecting…' : 'Ready'}</div>
-        </div>
-        <span class={'dot ' + (disabled ? 'wait' : 'ok')} />
-      </div>
+      <AppHeader title="Controls" sub={disabled ? 'Reconnecting…' : 'Ready'} dot={disabled ? 'wait' : 'ok'} />
 
       {/* remote actions — 51DK commands in WiCarlink mode; otherwise the BYD
           Cloud buttons, hidden entirely when BYD Cloud isn't configured. */}

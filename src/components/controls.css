@@ -150,6 +150,14 @@
 .modal-title { font-size: 18px; font-weight: 700; }
 .modal-body { color: var(--text-secondary); font-size: 14px; line-height: 1.5; margin: 10px 0 18px; }
 
+.wc-edit-link {
+  margin-top: 12px;
+  width: 100%;
+  padding: 9px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
 /* WiCarlink command editor */
 .wc-note {
   color: var(--muted);
@@ -159,11 +167,23 @@
 }
 .wc-edit-row {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
   align-items: center;
   padding: 10px 0;
 }
+.wc-reorder { display: flex; flex-direction: column; gap: 4px; }
+.wc-move {
+  width: 30px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  border-radius: 8px;
+}
+.wc-move:disabled { opacity: 0.35; }
+.rot-up { transform: rotate(-90deg); }
+.rot-down { transform: rotate(90deg); }
 .wc-edit-row + .wc-edit-row { border-top: 1px solid var(--border-soft); }
 .wc-edit-fields { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .wc-input {

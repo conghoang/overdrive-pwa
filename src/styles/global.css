@@ -46,6 +46,21 @@ h1, h2, h3, p { margin: 0; }
 .screen-title { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
 .screen-sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
 
+.head-actions { display: flex; align-items: center; gap: 12px; }
+.od-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  transition: transform 0.08s ease, border-color 0.15s ease;
+}
+.od-btn:active { transform: scale(0.92); }
+.od-btn img { display: block; border-radius: 7px; }
+
 /* ---------- cards ---------- */
 .card {
   background: var(--surface-1);

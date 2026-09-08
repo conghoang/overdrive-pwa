@@ -2,15 +2,21 @@ import { clearAll, getBaseUrl, getDeviceId } from '../lib/api'
 import { connected, reset, status } from '../lib/store'
 import { IconPower, IconRefresh } from '../components/icons'
 import * as store from '../lib/store'
+import { useState } from 'preact/hooks'
+import { AppHeader } from '../components/AppHeader'
 import { Switch } from '../components/Switch'
 import { CarHero } from '../components/CarHero'
 import { EnergyGauges } from '../components/EnergyGauges'
+import { WiCarlinkEditor } from '../components/WiCarlinkControls'
 import { carPhoto, setCarPhoto, setWicarlink, wicarlink } from '../lib/settings'
 import { fileToResizedDataUrl } from '../lib/image'
 import { toast } from '../lib/toast'
 
 export function Account({ onSignOut }: { onSignOut: () => void }) {
   const s = status.value
+  const [editWc, setEditWc] = useState(false)
+
+  if (editWc) return <WiCarlinkEditor onDone={() => setEditWc(false)} />
 
   function signOut() {
     reset()
@@ -30,13 +36,7 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
 
   return (
     <div>
-      <div class="screen-head">
-        <div>
-          <h1 class="screen-title">Device</h1>
-          <div class="screen-sub">{connected.value ? 'Connected' : 'Offline'}</div>
-        </div>
-        <span class={'dot ' + (connected.value ? 'ok' : 'bad')} />
-      </div>
+      <AppHeader title="Device" sub={connected.value ? 'Connected' : 'Offline'} dot={connected.value ? 'ok' : 'bad'} />
 
       {/* car hero + energy */}
       {s ? (
@@ -83,6 +83,11 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
           </div>
           <Switch on={wicarlink.value} onChange={setWicarlink} />
         </div>
+        {wicarlink.value && (
+          <button class="btn ghost wc-edit-link" onClick={() => setEditWc(true)}>
+            Edit 51DK buttons
+          </button>
+        )}
       </div>
 
       <div class="card" style={{ marginTop: '14px' }}>
