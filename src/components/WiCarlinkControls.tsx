@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks'
+import { useEffect, useRef, useState } from 'preact/hooks'
 import type { JSX } from 'preact'
 import * as api from '../lib/api'
 import { ApiError } from '../lib/api'
@@ -15,7 +15,7 @@ import {
 } from '../lib/settings'
 import {
   IconApp,
-  IconArrow,
+  IconGrip,
   IconBack,
   IconBluetooth,
   IconBolt,
@@ -58,6 +58,12 @@ const ICONS: Record<string, (p: { size?: number }) => JSX.Element> = {
 function iconFor(key: string) {
   return ICONS[key] || IconApp
 }
+
+// order shown in the editor's icon picker
+const ICON_KEYS = [
+  'bluetooth', 'power', 'unlock', 'lock', 'bolt', 'trunk', 'wind', 'sliders',
+  'play', 'prev', 'next', 'home', 'back', 'car', 'link', 'app',
+]
 
 /**
  * The 51DK command grid — drops in where the default remote-action buttons are
@@ -149,6 +155,9 @@ export function WiCarlinkGrid() {
 /** Full-screen editor: add / remove / reorder / edit 51DK command buttons. */
 export function WiCarlinkEditor({ onDone }: { onDone: () => void }) {
   const [draft, setDraft] = useState<WcCommand[]>(() => wcCommands.value.map((c) => ({ ...c })))
+  const [dragId, setDragId] = useState<string | null>(null)
+  const rowEls = useRef<Record<string, HTMLElement | null>>({})
+  const dragging = useRef<string | null>(null)
 
   function update(id: string, patch: Partial<WcCommand>) {
     setDraft((d) => d.map((c) => (c.id === id ? { ...c, ...patch } : c)))
@@ -156,16 +165,55 @@ export function WiCarlinkEditor({ onDone }: { onDone: () => void }) {
   function remove(id: string) {
     setDraft((d) => d.filter((c) => c.id !== id))
   }
-  function move(index: number, dir: -1 | 1) {
+
+  // --- pointer-based drag reorder (touch-friendly) ---
+  function reorderTo(y: number) {
+    const id = dragging.current
+    if (id == null) return
     setDraft((d) => {
-      const next = index + dir
-      if (next < 0 || next >= d.length) return d
+      const from = d.findIndex((c) => c.id === id)
+      if (from < 0) return d
+      let target = d.length - 1
+      for (let i = 0; i < d.length; i++) {
+        const el = rowEls.current[d[i].id]
+        if (!el) continue
+        const r = el.getBoundingClientRect()
+        if (y < r.top + r.height / 2) {
+          target = i
+          break
+        }
+      }
+      if (target === from) return d
       const copy = d.slice()
-      const [item] = copy.splice(index, 1)
-      copy.splice(next, 0, item)
+      const [item] = copy.splice(from, 1)
+      copy.splice(target, 0, item)
       return copy
     })
   }
+  function onDragStart(e: JSX.TargetedPointerEvent<HTMLElement>, id: string) {
+    e.preventDefault()
+    dragging.current = id
+    setDragId(id)
+  }
+  // While dragging, listen on the window so moves off the handle still track.
+  useEffect(() => {
+    if (dragId == null) return
+    const move = (e: PointerEvent) => reorderTo(e.clientY)
+    const end = () => {
+      dragging.current = null
+      setDragId(null)
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', end)
+    window.addEventListener('pointercancel', end)
+    return () => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', end)
+      window.removeEventListener('pointercancel', end)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dragId])
+
   function add() {
     setDraft((d) => [
       ...d,
@@ -193,21 +241,17 @@ export function WiCarlinkEditor({ onDone }: { onDone: () => void }) {
       </div>
 
       <div class="card">
-        {draft.map((c, i) => (
-          <div class="wc-edit-row" key={c.id}>
-            <div class="wc-reorder">
-              <button class="wc-move" disabled={i === 0} aria-label="Move up" onClick={() => move(i, -1)}>
-                <IconArrow size={16} class="rot-up" />
-              </button>
-              <button
-                class="wc-move"
-                disabled={i === draft.length - 1}
-                aria-label="Move down"
-                onClick={() => move(i, 1)}
-              >
-                <IconArrow size={16} class="rot-down" />
-              </button>
-            </div>
+        {draft.map((c) => (
+          <div
+            class={'wc-edit-row' + (dragId === c.id ? ' dragging' : '')}
+            key={c.id}
+            ref={(el) => {
+              rowEls.current[c.id] = el
+            }}
+          >
+            <button class="wc-grip" aria-label="Drag to reorder" onPointerDown={(e) => onDragStart(e, c.id)}>
+              <IconGrip size={20} />
+            </button>
             <div class="wc-edit-fields">
               <div class="wc-row-top">
                 <input
@@ -231,6 +275,22 @@ export function WiCarlinkEditor({ onDone }: { onDone: () => void }) {
                 placeholder={c.kind === 'openApp' ? 'com.package.name' : 'am start -n …'}
                 onInput={(e) => update(c.id, { value: (e.target as HTMLInputElement).value })}
               />
+              <div class="wc-icons">
+                {ICON_KEYS.map((k) => {
+                  const Ico = iconFor(k)
+                  return (
+                    <button
+                      key={k}
+                      type="button"
+                      class={'wc-icon' + (c.icon === k ? ' on' : '')}
+                      aria-label={k}
+                      onClick={() => update(c.id, { icon: k })}
+                    >
+                      <Ico size={18} />
+                    </button>
+                  )
+                })}
+              </div>
             </div>
             <button class="wc-del" onClick={() => remove(c.id)} aria-label="Remove">
               <IconTrash size={20} />

@@ -6,6 +6,7 @@ import { useState } from 'preact/hooks'
 import { AppHeader } from '../components/AppHeader'
 import { Switch } from '../components/Switch'
 import { CarHero } from '../components/CarHero'
+import { QuickActions } from '../components/QuickActions'
 import { EnergyGauges } from '../components/EnergyGauges'
 import { WiCarlinkEditor } from '../components/WiCarlinkControls'
 import { carPhoto, setCarPhoto, setWicarlink, wicarlink } from '../lib/settings'
@@ -42,6 +43,7 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
       {s ? (
         <>
           <CarHero s={s} />
+          <QuickActions />
           <div style={{ marginTop: '14px' }}>
             <EnergyGauges s={s} />
           </div>
