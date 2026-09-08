@@ -68,6 +68,7 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
         <InfoRow label="Car URL" value={getBaseUrl()} mono />
         <InfoRow label="Device" value={s?.deviceId || getDeviceId() || '--'} mono />
         <InfoRow label="App version" value={s?.appVersion || '--'} />
+        <InfoRow label="Build" value={__COMMIT__} mono />
         <InfoRow label="Units" value={(s?.distanceUnit || 'km').toUpperCase()} />
         <InfoRow label="Locale" value={s?.locale || '--'} />
       </div>

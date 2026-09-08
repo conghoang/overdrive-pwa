@@ -11,10 +11,23 @@ declare const process: { env: Record<string, string | undefined> }
 // BASE_PATH=/ for root deploys (custom domain / user page / same-origin car).
 const base = process.env.BASE_PATH ?? '/overdrive-pwa/'
 
+// Commit hash (from CI's GITHUB_SHA / VITE_COMMIT). Appended as a ?v= query to
+// the app's asset URLs so each deploy busts caches — without renaming files.
+const commit = (process.env.VITE_COMMIT || process.env.GITHUB_SHA || 'dev').slice(0, 7)
+
 export default defineConfig({
   base,
+  define: { __COMMIT__: JSON.stringify(commit) },
   plugins: [
     preact(),
+    {
+      // Append ?v=<commit> to local <script src> / <link href> js|css in index.html.
+      name: 'asset-version-query',
+      enforce: 'post',
+      transformIndexHtml(html) {
+        return html.replace(/(\b(?:src|href)=")(\/[^"]+\.(?:js|css))"/g, `$1$2?v=${commit}"`)
+      },
+    },
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
@@ -38,7 +51,10 @@ export default defineConfig({
       workbox: {
         // Never cache API calls — only the app shell. Telemetry must always be live.
         navigateFallback: 'index.html',
-        globPatterns: ['**/*.{js,css,html,svg,woff2}']
+        globPatterns: ['**/*.{js,css,html,svg,woff2}'],
+        // Match precached assets even with the ?v=<commit> cache-buster.
+        ignoreURLParametersMatching: [/^v$/],
+        cleanupOutdatedCaches: true,
       }
     })
   ],
