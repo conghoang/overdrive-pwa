@@ -2,6 +2,8 @@ import { clearAll, getBaseUrl, getDeviceId } from '../lib/api'
 import { connected, reset, status } from '../lib/store'
 import { IconPower, IconRefresh } from '../components/icons'
 import * as store from '../lib/store'
+import { Switch } from '../components/Switch'
+import { setWicarlink, wicarlink } from '../lib/settings'
 
 export function Account({ onSignOut }: { onSignOut: () => void }) {
   const s = status.value
@@ -29,6 +31,19 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
         <InfoRow label="App version" value={s?.appVersion || '--'} />
         <InfoRow label="Units" value={(s?.distanceUnit || 'km').toUpperCase()} />
         <InfoRow label="Locale" value={s?.locale || '--'} />
+      </div>
+
+      <div class="card" style={{ marginTop: '14px' }}>
+        <div class="card-title">Integrations</div>
+        <div class="srow">
+          <div class="stack">
+            <span class="srow-label">WiCarlink kit (51DK)</span>
+            <span class="screen-sub" style={{ marginTop: '2px' }}>
+              Replace vehicle controls with 51DK commands
+            </span>
+          </div>
+          <Switch on={wicarlink.value} onChange={setWicarlink} />
+        </div>
       </div>
 
       <div class="card" style={{ marginTop: '14px' }}>

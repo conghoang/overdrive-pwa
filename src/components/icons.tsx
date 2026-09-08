@@ -71,6 +71,27 @@ export const IconPower = ({ size, class: c }: IconProps) =>
 export const IconRefresh = ({ size, class: c }: IconProps) =>
   svg(<><path d="M21 12a9 9 0 1 1-3-6.7" /><path d="M21 4v5h-5" /></>, size, c)
 
+export const IconPlay = ({ size, class: c }: IconProps) =>
+  svg(<path d="M8 5v14l11-7z" fill="currentColor" stroke="none" />, size, c)
+export const IconPrev = ({ size, class: c }: IconProps) =>
+  svg(<><path d="M18 5v14L8 12z" fill="currentColor" stroke="none" /><path d="M6 5v14" /></>, size, c)
+export const IconNext = ({ size, class: c }: IconProps) =>
+  svg(<><path d="M6 5v14l10-7z" fill="currentColor" stroke="none" /><path d="M18 5v14" /></>, size, c)
+export const IconHome = ({ size, class: c }: IconProps) =>
+  svg(<><path d="M4 11l8-7 8 7" /><path d="M6 10v9h12v-9" /></>, size, c)
+export const IconBack = ({ size, class: c }: IconProps) =>
+  svg(<><path d="M19 12H5" /><path d="M11 6l-6 6 6 6" /></>, size, c)
+export const IconApp = ({ size, class: c }: IconProps) =>
+  svg(<><rect x="4" y="4" width="7" height="7" rx="1.6" /><rect x="13" y="4" width="7" height="7" rx="1.6" /><rect x="4" y="13" width="7" height="7" rx="1.6" /><rect x="13" y="13" width="7" height="7" rx="1.6" /></>, size, c)
+export const IconLink = ({ size, class: c }: IconProps) =>
+  svg(<><path d="M9 15l6-6" /><path d="M11 6l1-1a4 4 0 0 1 6 6l-1 1" /><path d="M13 18l-1 1a4 4 0 0 1-6-6l1-1" /></>, size, c)
+export const IconCar = ({ size, class: c }: IconProps) =>
+  svg(<><path d="M5 11l1.6-4.5A2 2 0 0 1 8.5 5h7a2 2 0 0 1 1.9 1.5L19 11" /><rect x="3" y="11" width="18" height="6" rx="2" /><circle cx="7.5" cy="17.5" r="1.4" fill="currentColor" stroke="none" /><circle cx="16.5" cy="17.5" r="1.4" fill="currentColor" stroke="none" /></>, size, c)
+export const IconBluetooth = ({ size, class: c }: IconProps) =>
+  svg(<path d="M6.5 8L17.5 16L12 20.5V3.5L17.5 8L6.5 16" />, size, c)
+export const IconTrash = ({ size, class: c }: IconProps) =>
+  svg(<><path d="M4 7h16" /><path d="M9 7V5h6v2" /><path d="M6 7l1 13h10l1-13" /></>, size, c)
+
 export const IconMinus = ({ size, class: c }: IconProps) => svg(<path d="M5 12h14" />, size, c)
 export const IconPlus = ({ size, class: c }: IconProps) => svg(<><path d="M12 5v14" /><path d="M5 12h14" /></>, size, c)
 export const IconArrow = ({ size, class: c }: IconProps) => svg(<><path d="M5 12h14" /><path d="M13 6l6 6-6 6" /></>, size, c)

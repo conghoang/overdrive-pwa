@@ -14,6 +14,8 @@ import {
   IconUnlock,
   IconWind,
 } from '../components/icons'
+import { wicarlink } from '../lib/settings'
+import { WiCarlinkControls } from '../components/WiCarlinkControls'
 import '../components/controls.css'
 
 const TEMP_MIN = 16
@@ -33,6 +35,9 @@ async function run(fn: () => Promise<ControlResult>, okMsg: string) {
 }
 
 export function Controls() {
+  // WiCarlink mode replaces the default vehicle controls with 51DK commands.
+  if (wicarlink.value) return <WiCarlinkControls />
+
   const vs = vehicleState.value
   const climateActive = !!(vs?.climate?.acOn || vs?.climate?.remoteClimateActive)
 

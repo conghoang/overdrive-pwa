@@ -180,3 +180,25 @@ export const climateOff = (): Promise<ControlResult> => apiPost('/api/vehicle/cl
 export const setChargeCap = (percent: number, enabled = true): Promise<ControlResult> =>
   apiPost('/api/vehicle/charge-cap', { percent, enabled })
 export const startCharging = (): Promise<ControlResult> => apiPost('/api/vehicle/start-charging')
+
+// --- WiCarlink / 51DK: run actions on the head unit via the keymap daemon ---
+// Launch an installed app (no special permission needed).
+export const openApp = (pkg: string, label?: string): Promise<ControlResult> =>
+  apiPost('/api/keymap/fire', { kind: 'openApp', package: pkg, label: label || pkg })
+// Run a shell/adb command on the head unit. Requires OD "Advanced actions"
+// (Key Mapping → allowAdvanced); otherwise the backend replies 403.
+export const fireShell = (cmd: string): Promise<ControlResult> =>
+  apiPost('/api/keymap/fire', { kind: 'shell', cmd })
+
+interface KeymapConfig { enabled?: boolean; allowAdvanced?: boolean; bindings?: unknown[] }
+export const getKeymapConfig = (): Promise<KeymapConfig> => apiGet<KeymapConfig>('/api/keymap/config')
+
+/** Turn on OD's advanced-actions gate, preserving existing enabled + bindings. */
+export async function enableAdvancedActions(): Promise<ControlResult> {
+  const cfg = await getKeymapConfig()
+  return apiPost<ControlResult>('/api/keymap/config', {
+    enabled: cfg.enabled ?? true,
+    allowAdvanced: true,
+    bindings: cfg.bindings ?? [],
+  })
+}
