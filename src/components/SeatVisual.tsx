@@ -12,20 +12,25 @@ import { useState } from 'preact/hooks'
 const COOL = '74, 168, 255'
 const HEAT = '255, 106, 74'
 
-// Seat centres as a % of the image, measured off the artwork.
+// Seat centres as a % of the image, measured off the artwork (the seats sit at
+// x≈180/355 of 530 and y≈208 of 310).
 const SEATS = {
-  driver: { x: 29, y: 70 },
-  passenger: { x: 70, y: 70 },
+  driver: { x: 34, y: 67 },
+  passenger: { x: 67, y: 67 },
 }
 
 function glowStyle(heat: number, cool: number, pos: { x: number; y: number }) {
   const rgb = heat > 0 ? HEAT : cool > 0 ? COOL : null
   if (!rgb) return { opacity: 0 }
   const level = heat > 0 ? heat : cool
-  const a = level >= 2 ? 0.62 : 0.34
+  // Strong enough to read as illuminated upholstery, like the reference.
+  const a = level >= 2 ? 0.95 : 0.6
   return {
     opacity: 1,
-    background: `radial-gradient(ellipse 20% 30% at ${pos.x}% ${pos.y}%, rgba(${rgb}, ${a}) 0%, rgba(${rgb}, ${a * 0.5}) 45%, rgba(${rgb}, 0) 72%)`,
+    background:
+      `radial-gradient(ellipse 13% 26% at ${pos.x}% ${pos.y}%, ` +
+      `rgba(${rgb}, ${a}) 0%, rgba(${rgb}, ${a * 0.75}) 40%, ` +
+      `rgba(${rgb}, ${a * 0.3}) 70%, rgba(${rgb}, 0) 100%)`,
   }
 }
 
