@@ -88,6 +88,73 @@
   border: 4px solid var(--accent-strong);
 }
 
+/* climate card (ON toggle + temp + fan) */
+.climate-toggle {
+  min-width: 62px;
+  padding: 9px 0;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--muted);
+}
+.climate-toggle.on { color: var(--accent-bright); border-color: var(--accent-border); background: var(--accent-soft); }
+.climate-temp { font-size: 44px; font-weight: 700; letter-spacing: -0.02em; }
+.climate-temp small { font-size: 20px; color: var(--muted); font-weight: 600; }
+
+.climate-fan { display: flex; align-items: center; gap: 12px; }
+.climate-auto {
+  flex: 0 0 auto;
+  padding: 10px 16px;
+  font-size: 13px; font-weight: 700; letter-spacing: 0.06em;
+  color: var(--accent-bright);
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+}
+.fan-bar { flex: 1; display: flex; gap: 5px; }
+.fan-seg {
+  flex: 1;
+  height: 12px;
+  border-radius: 4px;
+  border: none;
+  background: #17293b;
+  padding: 0;
+}
+.fan-seg.on { background: var(--accent); }
+.fan-num { flex: 0 0 auto; font-size: 13px; color: var(--muted); font-weight: 600; }
+.fan-num b { color: var(--text); font-size: 15px; margin-left: 4px; }
+
+/* two-column seats (Driver / Passenger, cooling + heating) */
+.seats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.seat-col-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; color: var(--info); }
+.seats-grid .seat-col:nth-child(2) .seat-col-title { color: var(--accent-bright); }
+.seat-mode + .seat-mode { margin-top: 12px; }
+.seat-mode-label { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 7px; }
+.seat-mode-label.cool { color: var(--info); }
+.seat-mode-label.heat { color: #ff8a5c; }
+.seg3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 3px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 3px;
+}
+.seg3 button {
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 8px 0;
+  border-radius: 8px;
+}
+.seg3.cool button.on { color: #fff; background: var(--info); }
+.seg3.heat button.on { color: #fff; background: #e0554e; }
+
 /* switch */
 .switch {
   width: 50px;

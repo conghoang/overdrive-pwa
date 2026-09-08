@@ -102,6 +102,8 @@ export const IconGrip = ({ size, class: c }: IconProps) =>
     size,
     c,
   )
+export const IconFlame = ({ size, class: c }: IconProps) =>
+  svg(<path d="M12 3s5 3.6 5 8.5a5 5 0 0 1-10 0c0-1.9 1-3.4 2-4.4 0 .1.4 1.9 1.6 2.4C11 8.6 12 6 12 3z" />, size, c)
 export const IconFuel = ({ size, class: c }: IconProps) =>
   svg(<><rect x="4" y="3" width="10" height="18" rx="2" /><path d="M4 10h10" /><path d="M14 7l3.2 3.2a2 2 0 0 1 .6 1.4V17a1.8 1.8 0 0 0 3.2 1.2" /><path d="M18 12v-2" /></>, size, c)
 export const IconSnowSeat = ({ size, class: c }: IconProps) =>

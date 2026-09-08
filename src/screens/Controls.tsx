@@ -17,7 +17,7 @@ import {
 } from '../components/icons'
 import { wicarlink } from '../lib/settings'
 import { WiCarlinkGrid } from '../components/WiCarlinkControls'
-import { SeatClimate } from '../components/SeatClimate'
+import { Seats } from '../components/Seats'
 import { AppHeader } from '../components/AppHeader'
 import '../components/controls.css'
 
@@ -50,12 +50,12 @@ async function run(fn: () => Promise<ControlResult>, okMsg: string) {
 }
 
 // Climate direct commands are fire-and-forget; a dormant car may only wake on the
-// first send and not act on it. Send once to wake, then again to act (idempotent).
+// first send. Show feedback immediately, then re-send once in the background so a
+// sleeping car still acts — without making the UI wait.
 async function runClimate(fn: () => Promise<ControlResult>, okMsg: string) {
   try {
-    await sendOnce(fn)
-    await sleep(1800)
     toastResult(await sendOnce(fn), okMsg)
+    void sleep(600).then(() => sendOnce(fn).catch(() => {}))
   } catch (e) {
     toast(e instanceof Error ? e.message : 'Failed', 'err')
   } finally {
@@ -71,7 +71,14 @@ export function Controls() {
 
   const vs = vehicleState.value
   const climateActive = !!(vs?.climate?.acOn || vs?.climate?.remoteClimateActive)
+  const fanLevel = vs?.climate?.fanLevel
   const disabled = !connected.value
+
+  function changeTemp(delta: number) {
+    const nt = Math.min(TEMP_MAX, Math.max(TEMP_MIN, temp + delta))
+    setTemp(nt)
+    if (climateActive) run(() => api.setClimateTemp(nt), `Set ${nt}°C`)
+  }
 
   return (
     <div>
@@ -123,32 +130,51 @@ export function Controls() {
       {/* climate */}
       <div class="card" style={{ marginTop: '14px' }}>
         <div class="spread">
-          <div class="card-title" style={{ margin: 0 }}>Climate</div>
-          <span class={'pill' + (climateActive ? ' good' : '')}>{climateActive ? 'On' : 'Off'}</span>
+          <div class="card-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '7px' }}>
+            <IconWind size={15} /> Climate
+          </div>
+          <button
+            class={'climate-toggle' + (climateActive ? ' on' : '')}
+            disabled={disabled}
+            onClick={() =>
+              climateActive
+                ? runClimate(api.climateOff, 'Climate off')
+                : runClimate(() => api.climateOn(temp), `Climate on · ${temp}°C`)
+            }
+          >
+            {climateActive ? 'ON' : 'OFF'}
+          </button>
         </div>
-        <div class="stepper" style={{ justifyContent: 'center', margin: '18px 0' }}>
-          <button disabled={temp <= TEMP_MIN} onClick={() => setTemp((t) => Math.max(TEMP_MIN, t - 1))}>
+
+        <div class="stepper" style={{ justifyContent: 'space-between', margin: '20px 0 18px' }}>
+          <button disabled={disabled || temp <= TEMP_MIN} onClick={() => changeTemp(-1)}>
             <IconMinus size={22} />
           </button>
-          <div class="stepper-value mono">
+          <div class="climate-temp mono">
             {temp}
             <small>°C</small>
           </div>
-          <button disabled={temp >= TEMP_MAX} onClick={() => setTemp((t) => Math.min(TEMP_MAX, t + 1))}>
+          <button disabled={disabled || temp >= TEMP_MAX} onClick={() => changeTemp(1)}>
             <IconPlus size={22} />
           </button>
         </div>
-        <div class="grid grid-2">
-          <button
-            class="btn accent"
-            disabled={disabled}
-            onClick={() => runClimate(() => api.climateOn(temp), `Climate on · ${temp}°C`)}
-          >
-            <IconWind size={18} /> Start 15 min
+
+        <div class="climate-fan">
+          <button class="btn climate-auto" disabled={disabled} onClick={() => run(() => api.setClimateAuto(true), 'Auto mode')}>
+            AUTO
           </button>
-          <button class="btn" disabled={disabled} onClick={() => runClimate(api.climateOff, 'Climate off')}>
-            Turn off
-          </button>
+          <div class="fan-bar">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <button
+                key={i}
+                class={'fan-seg' + ((fanLevel ?? 0) > i ? ' on' : '')}
+                disabled={disabled}
+                aria-label={`Fan ${i + 1}`}
+                onClick={() => run(() => api.setFan(i + 1), `Fan ${i + 1}`)}
+              />
+            ))}
+          </div>
+          <div class="fan-num">Fan <b>{fanLevel ?? '–'}</b></div>
         </div>
       </div>
 
@@ -168,8 +194,7 @@ export function Controls() {
         </div>
       </div>
 
-      <SeatClimate mode="heat" />
-      <SeatClimate mode="cool" />
+      <Seats />
     </div>
   )
 }

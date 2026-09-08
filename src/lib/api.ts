@@ -188,6 +188,12 @@ export const ventWindows = (): Promise<ControlResult> => apiPost('/api/vehicle/w
 export const climateOn = (temp: number, remoteDurationMinutes = 15): Promise<ControlResult> =>
   apiPost('/api/vehicle/climate', { action: 'power_on', temp, remoteDurationMinutes })
 export const climateOff = (): Promise<ControlResult> => apiPost('/api/vehicle/climate', { action: 'power_off' })
+export const setClimateTemp = (temp: number, zone = 0): Promise<ControlResult> =>
+  apiPost('/api/vehicle/climate', { action: 'set_temp', zone, temp })
+export const setFan = (fan: number): Promise<ControlResult> =>
+  apiPost('/api/vehicle/climate', { action: 'set_fan', fan })
+export const setClimateAuto = (on: boolean): Promise<ControlResult> =>
+  apiPost('/api/vehicle/climate', { action: on ? 'auto_on' : 'auto_off' })
 
 export const setChargeCap = (percent: number, enabled = true): Promise<ControlResult> =>
   apiPost('/api/vehicle/charge-cap', { percent, enabled })
