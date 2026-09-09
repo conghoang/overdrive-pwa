@@ -167,6 +167,15 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
             <stop offset="0.5" stop-color="#fff" stop-opacity="0.4" />
             <stop offset="1" stop-color="#fff" stop-opacity="0" />
           </linearGradient>
+          {/* The slab's own silhouette. The charge clip below is a padded
+              half-plane, so on its own it lets the sweeping light spill above
+              and below the block; nesting the two intersects them and keeps
+              the light strictly inside the green. */}
+          <clipPath id="chgSlab">
+            <polygon points={TOP_FACE} />
+            <polygon points={FRONT_FACE} />
+            <polygon points={RIGHT_FACE} />
+          </clipPath>
           <clipPath id="chgClip">
             {/* Grows with SOC along the slab's diagonal; clips all three faces. */}
             <polygon points={chargedClip(frac)} />
@@ -192,6 +201,7 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
           <polygon class="pf-front" points={FRONT_FACE} />
           <polygon class="pf-top" points={TOP_FACE} />
         </g>
+        <g clip-path="url(#chgSlab)">
         <g class="chg-pack-full" clip-path="url(#chgClip)">
           <polygon class="pf-right" points={RIGHT_FACE} />
           <polygon class="pf-front" points={FRONT_FACE} />
@@ -199,6 +209,7 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
           {charging && (
             <polygon class="chg-sheen" points={SHEEN} fill="url(#chgSheen)" />
           )}
+        </g>
         </g>
 
         {/* cell dividers, drawn over both states so the grid never breaks */}
