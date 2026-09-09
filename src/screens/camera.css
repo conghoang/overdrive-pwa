@@ -33,8 +33,74 @@
   border-top-color: var(--accent);
   animation: spin 0.9s linear infinite;
 }
-.cam-views { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.cam-views .btn { padding: 11px 6px; font-size: 13px; }
+/* Camera picker: hotspots placed on a top-down car, so position IS the label. */
+.cam-picker {
+  position: relative;
+  width: 100%;
+  max-width: 300px;
+  margin: 2px auto 0;
+  aspect-ratio: 3 / 4;
+}
+.cam-car { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cc-body { fill: var(--surface-3); stroke: var(--border-strong); stroke-width: 2; }
+.cc-glass { fill: rgba(150, 190, 225, 0.22); }
+.cc-roof { fill: rgba(150, 190, 225, 0.10); }
+.cc-wheel { fill: var(--track-deep); }
+
+.cam-hotspot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 58px;
+  padding: 7px 8px;
+  border-radius: 12px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  box-shadow: var(--shadow-card);
+  transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.cam-hotspot:active { transform: translate(-50%, -50%) scale(0.94); }
+.cam-hotspot.on {
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
+  color: var(--accent-bright);
+}
+.cam-hotspot:disabled { opacity: 0.45; pointer-events: none; }
+
+/* mode ids: 1 front, 2 right, 3 rear, 4 left, 0 mosaic */
+.cam-hotspot.pos-1 { left: 50%; top: 7%; }
+.cam-hotspot.pos-3 { left: 50%; top: 93%; }
+.cam-hotspot.pos-4 { left: 11%; top: 50%; }
+.cam-hotspot.pos-2 { left: 89%; top: 50%; }
+.cam-hotspot.pos-all { left: 50%; top: 50%; min-width: 66px; }
+
+/* Quality: a native select, so it uses the platform's own picker on a phone. */
+.qual-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 9px 34px 9px 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 18px) 52%, calc(100% - 13px) 52%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+.qual-select:disabled { opacity: 0.5; }
 
 @media (prefers-reduced-motion: reduce) {
   .cam-spinner { animation: none; }

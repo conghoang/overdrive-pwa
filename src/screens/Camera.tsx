@@ -4,6 +4,7 @@ import { CAMERA_VIEWS } from '../lib/api'
 import { connected, status } from '../lib/store'
 import { AppHeader } from '../components/AppHeader'
 import { t } from '../lib/i18n'
+import { IconCamera } from '../components/icons'
 import { startPlayer, webCodecsSupported } from '../lib/h264'
 import type { PlayerHandle, PlayerState } from '../lib/h264'
 import './camera.css'
@@ -46,6 +47,10 @@ export function Camera() {
 
   async function pickQuality(id: string) {
     if (id === quality.current) return
+    // Never POST a preset the car did not offer. A change event that fires
+    // before the options land (or for any value not in the list) must be a
+    // no-op rather than pushing a setting onto the car unasked.
+    if (!quality.options?.some((o) => o.id === id)) return
     setQuality((q) => ({ ...q, current: id })) // optimistic: the buttons must feel instant
     try {
       await api.setStreamQuality(id)
@@ -137,38 +142,73 @@ export function Camera() {
 
       <div class="card" style={{ marginTop: '14px' }}>
         <div class="card-title">{t('cam.view')}</div>
-        <div class="cam-views">
-          {CAMERA_VIEWS.map((v) => (
+
+        {/* Camera positions as hotspots on a top-down car, the way OverDrive's
+            own live view does it — which camera you get is obvious from where
+            the button sits, with no labels to read. */}
+        <div class="cam-picker">
+          <svg class="cam-car" viewBox="0 0 200 300" aria-hidden="true">
+            <rect x="46" y="16" width="108" height="268" rx="46" class="cc-body" />
+            <path d="M68 74 Q100 60 132 74 L127 100 Q100 90 73 100 Z" class="cc-glass" />
+            <rect x="70" y="116" width="60" height="66" rx="13" class="cc-roof" />
+            <path d="M73 214 Q100 202 127 214 L132 238 Q100 226 68 238 Z" class="cc-glass" />
+            {[
+              [40, 84],
+              [148, 84],
+              [40, 200],
+              [148, 200],
+            ].map(([x, y]) => (
+              <rect key={`${x}-${y}`} x={x} y={y} width="12" height="34" rx="5" class="cc-wheel" />
+            ))}
+          </svg>
+
+          {CAMERA_VIEWS.filter((v) => v.mode !== 0).map((v) => (
             <button
               key={v.mode}
-              class={'btn' + (v.mode === view ? ' accent' : '')}
+              class={`cam-hotspot pos-${v.mode}` + (v.mode === view ? ' on' : '')}
               disabled={!connected.value || isDemo || !supported}
+              title={t(v.key)}
+              aria-label={t(v.key)}
+              aria-pressed={v.mode === view}
               onClick={() => setView(v.mode)}
             >
-              {t(v.key)}
+              <IconCamera size={17} />
+              <span>{t(v.key)}</span>
             </button>
           ))}
+
+          <button
+            class={'cam-hotspot pos-all' + (view === 0 ? ' on' : '')}
+            disabled={!connected.value || isDemo || !supported}
+            aria-pressed={view === 0}
+            onClick={() => setView(0)}
+          >
+            {t('cam.mosaic')}
+          </button>
         </div>
+
         {status.value?.gpuSurveillance && <div class="screen-sub" style={{ marginTop: '10px' }}>{t('cam.note')}</div>}
       </div>
 
       {!!quality.options?.length && (
         <div class="card" style={{ marginTop: '14px' }}>
-          <div class="card-title">{t('cam.quality')}</div>
-          <div class="cam-views">
-            {quality.options.map((o) => (
-              <button
-                key={o.id}
-                class={'btn' + (o.id === quality.current ? ' accent' : '')}
-                disabled={!connected.value || isDemo}
-                onClick={() => pickQuality(o.id)}
-              >
-                {/* Resolution + fps rather than the car's English preset names,
-                    which are long and would need translating to say less. */}
-                {o.height ? `${o.height}p` : o.id}
-                {o.fps ? <small style={{ opacity: 0.7 }}> · {o.fps}fps</small> : null}
-              </button>
-            ))}
+          <div class="spread">
+            <div class="card-title" style={{ margin: 0 }}>{t('cam.quality')}</div>
+            <select
+              class="qual-select"
+              value={quality.current ?? ''}
+              disabled={!connected.value || isDemo}
+              onChange={(e) => void pickQuality((e.target as HTMLSelectElement).value)}
+            >
+              {quality.options.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {/* Resolution and fps rather than the car's English preset
+                      names ("Ultra Low (400k)"), which are longer and say less. */}
+                  {o.height ? `${o.height}p` : o.id}
+                  {o.fps ? ` · ${o.fps}fps` : ''}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       )}
