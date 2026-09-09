@@ -59,7 +59,9 @@ and "Add to Home Screen" to install.
 DM-i with its background removed; it ships as the default car illustration. The
 supplied cut-out had a hard, stair-stepped alpha edge, so the matte is refined
 (supersampled, contracted a touch to drop the white studio fringe) and a faint
-cool halo is baked in behind the car to lift it off the dark card. You
+cool halo is baked in behind the car to lift it off the dark card. The tyres
+read almost exactly the card's own tone, so the two visible wheels get an extra
+halo of their own — masked to the silhouette, so it hugs the real tyre edge. You
 can override it per-device via Device → **Change photo** (stored locally, never
 uploaded).
 
