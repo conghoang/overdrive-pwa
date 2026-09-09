@@ -4,6 +4,7 @@ import { IconPower, IconRefresh } from '../components/icons'
 import * as store from '../lib/store'
 import { useState } from 'preact/hooks'
 import { AppHeader } from '../components/AppHeader'
+import { DEFAULT_PHOTO } from '../components/CarHero'
 import { Switch } from '../components/Switch'
 import { WiCarlinkEditor } from '../components/WiCarlinkControls'
 import { carName, carPhoto, setCarName, setCarPhoto, setShowMap, setWicarlink, showMap, wicarlink } from '../lib/settings'
@@ -47,7 +48,7 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
         <div class="card-title">{t('dev.car_photo')}</div>
         <img
           class="car-photo-preview"
-          src={carPhoto.value || `${import.meta.env.BASE_URL}car/sealion6.png`}
+          src={carPhoto.value || DEFAULT_PHOTO}
           alt="Car"
         />
         <div class="grid grid-2" style={{ marginTop: '12px' }}>

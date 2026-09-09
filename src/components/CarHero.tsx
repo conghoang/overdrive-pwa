@@ -8,7 +8,7 @@ import { CarImage } from './CarImage'
 import type { StatusResponse } from '../lib/types'
 
 const GEARS = ['P', 'R', 'N', 'D']
-const DEFAULT_PHOTO = `${import.meta.env.BASE_URL}car/sealion6.png`
+export const DEFAULT_PHOTO = `${import.meta.env.BASE_URL}car/sealion6.webp`
 
 /** Reference-style vehicle hero: model, range, car photo, P R N D, charging. */
 export function CarHero({ s }: { s: StatusResponse }) {

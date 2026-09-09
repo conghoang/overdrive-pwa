@@ -55,8 +55,11 @@ and "Add to Home Screen" to install.
 
 ## Assets
 
-`public/car/sealion6.png` is a user-supplied product image of the BYD Sealion 6
-DM-i with its background removed; it ships as the default car illustration. You
+`public/car/sealion6.webp` is a user-supplied product image of the BYD Sealion 6
+DM-i with its background removed; it ships as the default car illustration. The
+supplied cut-out had a hard, stair-stepped alpha edge, so the matte is refined
+(supersampled, contracted a touch to drop the white studio fringe) and a faint
+cool halo is baked in behind the car to lift it off the dark card. You
 can override it per-device via Device → **Change photo** (stored locally, never
 uploaded).
 
