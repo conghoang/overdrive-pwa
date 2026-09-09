@@ -23,6 +23,11 @@ import './charging.css'
  * coordinates below are read straight off the photo — no scaling math.
  */
 const IMG = { w: 520, h: 246 }
+// The near wheels run right to the bottom edge of the frame, so a viewBox that
+// stopped at the image height sliced the flat off their rims. The stage is a
+// little taller than the image; the extra strip is transparent and the image's
+// own feather already fades into the card there, so nothing shows a seam.
+const STAGE = { w: IMG.w, h: 266 }
 
 // Pack geometry, matched to where the slab sat in the original frame. The slab
 // is isometric: the back edge is higher and shifted right of the front edge.
@@ -149,7 +154,7 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
         <span>{label}</span>
       </div>
 
-      <svg class="chg-stage" viewBox={`0 0 ${IMG.w} ${IMG.h}`} role="img" aria-label={`${label}${pct != null ? ` ${pct}%` : ''}`}>
+      <svg class="chg-stage" viewBox={`0 0 ${STAGE.w} ${STAGE.h}`} role="img" aria-label={`${label}${pct != null ? ` ${pct}%` : ''}`}>
         <defs>
           <linearGradient id="chgFill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stop-color="#86d651" />
