@@ -164,10 +164,8 @@ async function demoResponse<T>(path: string): Promise<T> {
   if (path === '/api/vehicle/state') return mockVehicleState() as unknown as T
   if (path === '/api/launcher/v1/summary')
     return { charging: { active: true, kw: 7.2, etaMin: 135, targetPct: 80 } } as unknown as T
-  if (path.startsWith('/api/debug/autoservice/get-int')) {
-    const area = Number(new URLSearchParams(path.split('?')[1] || '').get('area'))
-    const v = area === 4096 ? 24680 : area === 4103 ? 18240 : 6440
-    return { area, value: v, isInvalid: false, isError: false } as unknown as T
+  if (path.startsWith('/api/trips')) {
+    return { success: true, trips: [{ odometerEndKm: 24680.4 }] } as unknown as T
   }
   if (path === '/api/vehicle/cloud-status') {
     // demo aid: set localStorage odpwa.demoNoCloud=1 to preview the no-cloud UI
@@ -209,57 +207,41 @@ export const openAllWindows = (): Promise<ControlResult> => apiPost('/api/vehicl
 export const closeAllWindows = (): Promise<ControlResult> => apiPost('/api/vehicle/window', { area: 0, command: 2 })
 
 /*
- * Odometer. OverDrive has the readings — BydVehicleData carries totalMileageKm,
- * evMileageKm and hevMileageKm, and toJson() even assembles a `mileage` block —
- * but nothing serves that over HTTP: /status, /api/vehicle/state and the
- * launcher summary all omit it, and MQTT publishes only total + EV.
+ * Odometer.
  *
- * So these come straight off the HAL through the debug bridge. Three targeted
- * get-int reads rather than /api/debug/autoservice/known, which sweeps ~50
- * signals plus every door and window to answer.
+ * Read from the TRIP LOG, which is the only HTTP surface that carries it.
+ * Everything else was tried against the car and does not work:
  *
- * This is a DEBUG route with no stability contract: if an OverDrive update
- * moves or renames it, this is what breaks, and the card falls back to dashes
- * rather than erroring.
+ *   - /status, /api/vehicle/state, launcher summary: no mileage at all.
+ *   - AutoService bridge (get-int on 4096/4103/4104): returns INVALID_VALUE on
+ *     this trim. The collector never used that transport for mileage.
+ *   - sdk-getter, which WOULD reach the BYD SDK device the collector uses:
+ *     resolves the device by reflecting on a BydDataCollector field by name,
+ *     and release builds run R8 with no keep rule for that class, so the field
+ *     is renamed. Broken on every release build, not just this one.
+ *
+ * TripDatabase records the odometer at each trip boundary and serves it, so
+ * the newest trip's end reading is the current odometer. It therefore updates
+ * when a trip CLOSES, not continuously — it can lag by one drive.
+ *
+ * The EV / HEV split has no HTTP surface at all: trips record energy consumed,
+ * not distance per drivetrain, so those stay null until OverDrive exposes the
+ * `mileage` block that BydVehicleData.toJson() already builds.
  */
-const ODO_SIGNALS = {
-  totalKm: 4096, // STATISTIC_TOTAL_MILEAGE
-  evKm: 4103, // STATISTIC_MILEAGE_EV
-  hevKm: 4104, // STATISTIC_MILEAGE_HEV
-} as const
-
-/** HAL sentinel for "no such area/cmd". */
-const HAL_INVALID = -10011
-
-async function readSignal(area: number): Promise<number | null> {
-  try {
-    const r = await apiGet<{ value?: number; isInvalid?: boolean; isError?: boolean }>(
-      `/api/debug/autoservice/get-int?area=${area}&cmd=0`,
-    )
-    if (!r || r.isInvalid || r.isError) return null
-    const v = r.value
-    if (typeof v !== 'number' || v === HAL_INVALID || v <= 0) return null
-    return v
-  } catch {
-    return null // a missing debug route must not take the poll down with it
-  }
-}
+interface TripRow { odometerEndKm?: number }
 
 export interface Odometer { totalKm: number | null; evKm: number | null; hevKm: number | null }
 
-/**
- * @param milesMode when the cluster is in miles the raw signals are miles, so
- *   they are converted to km here — everything downstream stores km and formats
- *   to the user's unit at the edge, exactly like every other distance.
- */
-export async function getOdometer(milesMode: boolean): Promise<Odometer> {
-  const [totalKm, evKm, hevKm] = await Promise.all([
-    readSignal(ODO_SIGNALS.totalKm),
-    readSignal(ODO_SIGNALS.evKm),
-    readSignal(ODO_SIGNALS.hevKm),
-  ])
-  const toKm = (v: number | null) => (v == null ? null : milesMode ? Math.round(v * 1.60934) : v)
-  return { totalKm: toKm(totalKm), evKm: toKm(evKm), hevKm: toKm(hevKm) }
+export async function getOdometer(): Promise<Odometer> {
+  try {
+    const r = await apiGet<{ trips?: TripRow[] }>('/api/trips?limit=1')
+    const km = r?.trips?.[0]?.odometerEndKm
+    // Cars that do not report the odometer leave this at 0 rather than absent.
+    const totalKm = typeof km === 'number' && km > 0 ? Math.round(km) : null
+    return { totalKm, evKm: null, hevKm: null }
+  } catch {
+    return { totalKm: null, evKm: null, hevKm: null } // never break the poll
+  }
 }
 
 /** Window areas: 1=LF 2=RF 3=LR 4=RR 5=sunroof 6=sunshade. */

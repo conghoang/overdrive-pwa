@@ -7,9 +7,9 @@ export const status = signal<StatusResponse | null>(null)
 export const vehicleState = signal<VehicleState | null>(null)
 export const connected = signal(false)
 /*
- * Odometer. Read on a slower cadence than telemetry (60s vs 5s): it only moves
- * while driving, and it comes from a debug route that reads the HAL directly,
- * so there is no reason to ask on every poll.
+ * Odometer. Read on a slower cadence than telemetry (60s vs 5s): it comes from
+ * the trip log, which only advances when a trip closes, so asking on every
+ * 5s poll would be pure waste.
  */
 export const odometer = signal<Odometer | null>(null)
 let odoAt = 0
@@ -102,7 +102,7 @@ async function tick(): Promise<void> {
       odoAt = Date.now()
       // Fire-and-forget: the odometer is nice-to-have, and a missing debug
       // route must never take the telemetry poll down with it.
-      void getOdometer(s.distanceUnit === 'mi')
+      void getOdometer()
         .then((o) => { if (active) odometer.value = o })
         .catch(() => {})
     }
