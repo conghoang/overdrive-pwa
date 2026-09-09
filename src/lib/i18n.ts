@@ -26,6 +26,7 @@ const EN: Record<string, string> = {
   'cam.right': 'Right',
   'cam.mosaic': 'All',
   'cam.view': 'Camera',
+  'cam.quality': 'Quality',
   'cam.live': 'Live',
   'cam.connecting': 'Connecting…',
   'cam.stopped': 'Stopped',
@@ -89,7 +90,7 @@ const EN: Record<string, string> = {
   'tile.network': 'Network',
   'tile.wifi': 'Wi-Fi',
   'tile.cellular': 'Cellular',
-  'tile.pm25': 'Cabin air',
+  'tile.pm25': 'PM2.5 in / out',
 
   'charging.title': 'Charging',
   'charging.power': 'Power',
@@ -238,6 +239,7 @@ const VI: Record<string, string> = {
   'cam.right': 'Phải',
   'cam.mosaic': 'Tất cả',
   'cam.view': 'Camera',
+  'cam.quality': 'Chất lượng',
   'cam.live': 'Trực tiếp',
   'cam.connecting': 'Đang kết nối…',
   'cam.stopped': 'Đã dừng',
@@ -301,7 +303,7 @@ const VI: Record<string, string> = {
   'tile.network': 'Mạng',
   'tile.wifi': 'Wi-Fi',
   'tile.cellular': 'Di động',
-  'tile.pm25': 'Không khí khoang',
+  'tile.pm25': 'PM2.5 trong / ngoài',
 
   'charging.title': 'Đang sạc',
   'charging.power': 'Công suất',

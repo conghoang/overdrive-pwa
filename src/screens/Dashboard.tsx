@@ -1,4 +1,4 @@
-import { connected, lastError, outsideTempC, pm25Inside, status, vehicleState } from '../lib/store'
+import { connected, lastError, outsideTempC, pm25Inside, pm25Outside, status, vehicleState } from '../lib/store'
 import { fmtTemp, ago } from '../lib/format'
 import { t } from '../lib/i18n'
 import { carName, showMap } from '../lib/settings'
@@ -62,6 +62,13 @@ export function Dashboard() {
   const hasCabin = typeof inside === 'number'
   const tempValue = hasCabin ? inside : outsideTempC.value
   const tempLabel = hasCabin ? t('tile.cabin_temp') : t('tile.outside_temp')
+  // Inside is the number that matters, but it only means something next to the
+  // outside reading — 5 is unremarkable until you see it against 30.
+  const pm = (v: number | null) => (v != null ? String(Math.round(v)) : '--')
+  const pm25Pair =
+    pm25Inside.value == null && pm25Outside.value == null
+      ? '--'
+      : `${pm(pm25Inside.value)} / ${pm(pm25Outside.value)}`
 
   // Only an ACTIVE charge earns the top slot. Merely plugged in, full or
   // faulted, the card keeps its usual place below the hero.
@@ -221,7 +228,7 @@ export function Dashboard() {
         <StatTile
           icon={<IconAir size={20} />}
           label={t('tile.pm25')}
-          value={pm25Inside.value != null ? String(Math.round(pm25Inside.value)) : '--'}
+          value={pm25Pair}
           unit="µg/m³"
           accent="var(--success)"
         />

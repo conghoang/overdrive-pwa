@@ -164,6 +164,17 @@ async function demoResponse<T>(path: string): Promise<T> {
   if (path === '/api/vehicle/state') return mockVehicleState() as unknown as T
   if (path === '/api/launcher/v1/summary')
     return { charging: { active: true, kw: 7.2, etaMin: 135, targetPct: 80 } } as unknown as T
+  if (path === '/api/stream/quality') {
+    return {
+      success: true,
+      current: 'MEDIUM',
+      options: [
+        { id: 'LOW', width: 640, height: 480, fps: 8 },
+        { id: 'MEDIUM', width: 800, height: 600, fps: 10 },
+        { id: 'HIGH', width: 960, height: 720, fps: 12 },
+      ],
+    } as unknown as T
+  }
   if (path === '/api/trips/config') {
     return { success: true, config: { enabled: true } } as unknown as T
   }
@@ -278,6 +289,21 @@ export const CAMERA_VIEWS = [
   { mode: 4, key: 'cam.left' },
   { mode: 0, key: 'cam.mosaic' },
 ] as const
+
+/** Presets come FROM the car — hardcoding a list here would drift from the build. */
+export interface StreamQualityOption {
+  id: string
+  name?: string
+  width?: number
+  height?: number
+  fps?: number
+  bitrateKbps?: number
+}
+export interface StreamQuality { current?: string; options?: StreamQualityOption[] }
+
+export const getStreamQuality = (): Promise<StreamQuality> => apiGet<StreamQuality>('/api/stream/quality')
+export const setStreamQuality = (id: string): Promise<ControlResult> =>
+  apiPost(`/api/stream/quality/${encodeURIComponent(id)}`)
 
 export const streamEnable = (): Promise<ControlResult> => apiPost('/api/stream/enable')
 export const streamDisable = (): Promise<ControlResult> => apiPost('/api/stream/disable')
