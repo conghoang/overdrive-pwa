@@ -55,15 +55,13 @@ and "Add to Home Screen" to install.
 
 ## Assets
 
-`public/car/sealion6.webp` is a user-supplied product image of the BYD Sealion 6
-DM-i with its background removed; it ships as the default car illustration. The
-supplied cut-out had a hard, stair-stepped alpha edge, so the matte is refined
-(supersampled, contracted a touch to drop the white studio fringe) and a faint
-cool halo is baked in behind the car to lift it off the dark card. The tyres
-read almost exactly the card's own tone, so the two visible wheels get an extra
-halo of their own — masked to the silhouette, so it hugs the real tyre edge. You
-can override it per-device via Device → **Change photo** (stored locally, never
-uploaded).
+`public/car/sealion6.webp` is a BYD Sealion 6 DM-i product render supplied by
+this repo's owner (a dealer tech-specs image), converted to WebP. It arrives
+already matted on transparency with a soft ground shadow, so it needs no
+background removal — that matters, because the car is white and an earlier
+white-key extraction lost the tyres against the dark card. It ships as the
+default car illustration. You can override it per-device via Device →
+**Change photo** (stored locally, never uploaded).
 
 `public/car/cabin.webp` is BYD's official Seal 6 DM-i interior photo, cropped to
 the front seats, toned for the dark UI and alpha-feathered on every edge so it
