@@ -19,6 +19,7 @@ import { wicarlink } from '../lib/settings'
 import { t } from '../lib/i18n'
 import { WiCarlinkGrid } from '../components/WiCarlinkControls'
 import { Seats } from '../components/Seats'
+import { ClimateBanner } from '../components/ClimateBanner'
 import { AppHeader } from '../components/AppHeader'
 import '../components/controls.css'
 
@@ -132,11 +133,7 @@ export function Controls() {
 
       {/* climate */}
       <div class="card" style={{ marginTop: '14px' }}>
-        {/* Airflow banner — full-bleed and feathered; dims while the AC is off
-            so the picture reflects whether air is actually moving. */}
-        <div class={'climate-banner' + (climateActive ? ' on' : '')}>
-          <img src={`${import.meta.env.BASE_URL}car/climate.webp`} alt="" />
-        </div>
+        <ClimateBanner active={climateActive} fanLevel={fanLevel} />
         <div class="spread">
           <div class="card-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '7px' }}>
             <IconWind size={15} /> {t('ctrl.climate')}
