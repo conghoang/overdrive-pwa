@@ -68,12 +68,16 @@ export function Dashboard() {
     <div>
       <AppHeader title={carName.value || t('tab.vehicle')} sub={connected.value ? t('common.live') : t('common.reconnecting')} dot={connected.value ? 'ok' : 'wait'} />
 
+      {/* First on the page whenever the cable is connected — that is exactly
+          when charging is what you opened the app to check. It stays first for
+          the whole plugged-in session rather than only while current flows, so
+          it doesn't jump down the page the moment the pack reaches full.
+          Renders null when unplugged, and owns its own bottom margin, so
+          nothing shifts and no empty spacer is left behind. */}
+      <ChargingCard s={s} />
+
       <CarHero s={s} />
       <QuickActions />
-
-      {/* Renders only while plugged in; returns null otherwise, so it owns its
-          own top margin rather than leaving an empty spacer behind. */}
-      <ChargingCard s={s} />
 
       {/* power / gear / speed */}
       <div class="card" style={{ marginTop: '14px' }}>
