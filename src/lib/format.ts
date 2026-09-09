@@ -7,6 +7,13 @@ export function fmtDistance(km: number | undefined | null, unit = 'km'): string 
   return String(Math.round(km))
 }
 
+/** Odometer distances are 5-6 digits, so they get thousands separators. */
+export function fmtOdo(km: number | null | undefined, unit = 'km'): string {
+  if (km == null || Number.isNaN(km)) return '--'
+  const v = unit === 'mi' ? km * 0.621371 : km
+  return Math.round(v).toLocaleString()
+}
+
 export function distanceUnitLabel(unit = 'km'): string {
   return unit === 'mi' ? 'mi' : 'km'
 }

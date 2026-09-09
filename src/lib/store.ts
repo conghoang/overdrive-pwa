@@ -1,10 +1,20 @@
 import { signal } from '@preact/signals'
-import { AuthError, getCloudStatus, getStatus, getSummary, getVehicleState } from './api'
+import { AuthError, getCloudStatus, getOdometer, getStatus, getSummary, getVehicleState } from './api'
+import type { Odometer } from './api'
 import type { StatusResponse, VehicleState } from './types'
 
 export const status = signal<StatusResponse | null>(null)
 export const vehicleState = signal<VehicleState | null>(null)
 export const connected = signal(false)
+/*
+ * Odometer. Read on a slower cadence than telemetry (60s vs 5s): it only moves
+ * while driving, and it comes from a debug route that reads the HAL directly,
+ * so there is no reason to ask on every poll.
+ */
+export const odometer = signal<Odometer | null>(null)
+let odoAt = 0
+const ODO_INTERVAL_MS = 60_000
+
 // Charging estimate (minutes to full) + target %, fetched only while charging.
 export const chargeEtaMin = signal<number | null>(null)
 export const chargeTargetPct = signal<number | null>(null)
@@ -88,6 +98,14 @@ async function tick(): Promise<void> {
       cloudFetched = true
       void fetchCloud() // once per session; don't block the poll
     }
+    if (Date.now() - odoAt > ODO_INTERVAL_MS) {
+      odoAt = Date.now()
+      // Fire-and-forget: the odometer is nice-to-have, and a missing debug
+      // route must never take the telemetry poll down with it.
+      void getOdometer(s.distanceUnit === 'mi')
+        .then((o) => { if (active) odometer.value = o })
+        .catch(() => {})
+    }
     // Control-surface detail; failure here shouldn't knock out the whole poll.
     try {
       const vs = await getVehicleState()
@@ -160,6 +178,8 @@ export function reset(): void {
   lastError.value = null
   chargeEtaMin.value = null
   chargeTargetPct.value = null
+  odometer.value = null
+  odoAt = 0
   authLost.value = false
   cloudConfigured.value = null
   cloudFetched = false

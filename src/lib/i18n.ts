@@ -48,6 +48,9 @@ const EN: Record<string, string> = {
   'setup.cancel': 'Cancel',
 
   'car.range': 'Range',
+  'car.odo': 'Odometer',
+  'car.odo_ev': 'EV',
+  'car.odo_hev': 'HEV',
   'car.charging': 'Charging',
   'car.plugged': 'Plugged in',
   'car.parked': 'Parked',
@@ -240,6 +243,9 @@ const VI: Record<string, string> = {
   'setup.cancel': 'Hủy',
 
   'car.range': 'Quãng đường',
+  'car.odo': 'Số km đã đi',
+  'car.odo_ev': 'EV',
+  'car.odo_hev': 'HEV',
   'car.charging': 'Đang sạc',
   'car.plugged': 'Đã cắm sạc',
   'car.parked': 'Đang đỗ',

@@ -164,6 +164,11 @@ async function demoResponse<T>(path: string): Promise<T> {
   if (path === '/api/vehicle/state') return mockVehicleState() as unknown as T
   if (path === '/api/launcher/v1/summary')
     return { charging: { active: true, kw: 7.2, etaMin: 135, targetPct: 80 } } as unknown as T
+  if (path.startsWith('/api/debug/autoservice/get-int')) {
+    const area = Number(new URLSearchParams(path.split('?')[1] || '').get('area'))
+    const v = area === 4096 ? 24680 : area === 4103 ? 18240 : 6440
+    return { area, value: v, isInvalid: false, isError: false } as unknown as T
+  }
   if (path === '/api/vehicle/cloud-status') {
     // demo aid: set localStorage odpwa.demoNoCloud=1 to preview the no-cloud UI
     const cfg = localStorage.getItem('odpwa.demoNoCloud') !== '1'
@@ -202,6 +207,60 @@ export const setTrunk = (action: 'open' | 'close'): Promise<ControlResult> =>
  */
 export const openAllWindows = (): Promise<ControlResult> => apiPost('/api/vehicle/window', { area: 0, command: 1 })
 export const closeAllWindows = (): Promise<ControlResult> => apiPost('/api/vehicle/window', { area: 0, command: 2 })
+
+/*
+ * Odometer. OverDrive has the readings — BydVehicleData carries totalMileageKm,
+ * evMileageKm and hevMileageKm, and toJson() even assembles a `mileage` block —
+ * but nothing serves that over HTTP: /status, /api/vehicle/state and the
+ * launcher summary all omit it, and MQTT publishes only total + EV.
+ *
+ * So these come straight off the HAL through the debug bridge. Three targeted
+ * get-int reads rather than /api/debug/autoservice/known, which sweeps ~50
+ * signals plus every door and window to answer.
+ *
+ * This is a DEBUG route with no stability contract: if an OverDrive update
+ * moves or renames it, this is what breaks, and the card falls back to dashes
+ * rather than erroring.
+ */
+const ODO_SIGNALS = {
+  totalKm: 4096, // STATISTIC_TOTAL_MILEAGE
+  evKm: 4103, // STATISTIC_MILEAGE_EV
+  hevKm: 4104, // STATISTIC_MILEAGE_HEV
+} as const
+
+/** HAL sentinel for "no such area/cmd". */
+const HAL_INVALID = -10011
+
+async function readSignal(area: number): Promise<number | null> {
+  try {
+    const r = await apiGet<{ value?: number; isInvalid?: boolean; isError?: boolean }>(
+      `/api/debug/autoservice/get-int?area=${area}&cmd=0`,
+    )
+    if (!r || r.isInvalid || r.isError) return null
+    const v = r.value
+    if (typeof v !== 'number' || v === HAL_INVALID || v <= 0) return null
+    return v
+  } catch {
+    return null // a missing debug route must not take the poll down with it
+  }
+}
+
+export interface Odometer { totalKm: number | null; evKm: number | null; hevKm: number | null }
+
+/**
+ * @param milesMode when the cluster is in miles the raw signals are miles, so
+ *   they are converted to km here — everything downstream stores km and formats
+ *   to the user's unit at the edge, exactly like every other distance.
+ */
+export async function getOdometer(milesMode: boolean): Promise<Odometer> {
+  const [totalKm, evKm, hevKm] = await Promise.all([
+    readSignal(ODO_SIGNALS.totalKm),
+    readSignal(ODO_SIGNALS.evKm),
+    readSignal(ODO_SIGNALS.hevKm),
+  ])
+  const toKm = (v: number | null) => (v == null ? null : milesMode ? Math.round(v * 1.60934) : v)
+  return { totalKm: toKm(totalKm), evKm: toKm(evKm), hevKm: toKm(hevKm) }
+}
 
 /** Window areas: 1=LF 2=RF 3=LR 4=RR 5=sunroof 6=sunshade. */
 export const setWindowPercent = (area: number, targetPercent: number): Promise<ControlResult> =>

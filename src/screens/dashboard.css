@@ -196,6 +196,32 @@
 .veh-range-num { font-size: 44px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
 .veh-range-unit { font-size: 18px; color: var(--muted); font-weight: 600; }
 .veh-range-label { color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+/* EV / HEV legs under the odometer headline */
+.odo-split {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+.odo-leg {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-soft);
+}
+.odo-leg-k {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.odo-leg-v { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.odo-leg-v small { font-size: 11px; font-weight: 500; color: var(--muted); }
+
 .car-photo { display: block; width: 100%; max-width: 380px; margin: 6px auto 4px; height: auto; filter: var(--shadow-photo); }
 .car-photo-preview { display: block; width: 100%; max-width: 300px; height: auto; margin: 0 auto; filter: var(--shadow-photo-sm); }
 .car-svg { display: block; }
