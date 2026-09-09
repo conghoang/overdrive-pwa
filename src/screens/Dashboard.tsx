@@ -1,5 +1,5 @@
-import { connected, lastError, outsideTempC, status, vehicleState } from '../lib/store'
-import { fmtNum, fmtTemp, ago } from '../lib/format'
+import { connected, lastError, outsideTempC, pm25Inside, status, vehicleState } from '../lib/store'
+import { fmtTemp, ago } from '../lib/format'
 import { t } from '../lib/i18n'
 import { carName, showMap } from '../lib/settings'
 import { MiniMap } from '../components/MiniMap'
@@ -11,6 +11,7 @@ import { EnergyGauges } from '../components/EnergyGauges'
 import { StatTile } from '../components/StatTile'
 import { Tyres } from '../components/Tyres'
 import {
+  IconAir,
   IconLock,
   IconMapOpen,
   IconPin,
@@ -61,7 +62,6 @@ export function Dashboard() {
   const hasCabin = typeof inside === 'number'
   const tempValue = hasCabin ? inside : outsideTempC.value
   const tempLabel = hasCabin ? t('tile.cabin_temp') : t('tile.outside_temp')
-  const v12 = s.battery?.voltage
 
   // Only an ACTIVE charge earns the top slot. Merely plugged in, full or
   // faulted, the card keeps its usual place below the hero.
@@ -206,7 +206,9 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* minor info tiles */}
+      {/* Minor info tiles. No 12V voltage: /status reports it as
+          {available:false, isStale:true} most of the time, so it was usually a
+          stale number or a dash — and it is not something you act on anyway. */}
       <div class="tiles" style={{ marginTop: '14px' }}>
         <StatTile
           icon={<IconPlug size={20} />}
@@ -217,17 +219,17 @@ export function Dashboard() {
         />
         <StatTile icon={<IconThermo size={20} />} label={tempLabel} value={fmtTemp(tempValue)} accent="var(--m-orange)" />
         <StatTile
+          icon={<IconAir size={20} />}
+          label={t('tile.pm25')}
+          value={pm25Inside.value != null ? String(Math.round(pm25Inside.value)) : '--'}
+          unit="µg/m³"
+          accent="var(--success)"
+        />
+        <StatTile
           icon={<IconWifi size={20} />}
           label={s.network?.type === 'wifi' ? s.network?.ssid || t('tile.wifi') : t('tile.network')}
           value={s.network?.type === 'cellular' ? t('tile.cellular') : s.network?.type === 'wifi' ? t('tile.wifi') : '--'}
           accent="var(--m-blue)"
-        />
-        <StatTile
-          icon={<IconPlug size={20} />}
-          label={t('tile.v12')}
-          value={v12 != null ? fmtNum(v12, 1) : '--'}
-          unit="V"
-          accent="var(--m-purple)"
         />
       </div>
     </div>

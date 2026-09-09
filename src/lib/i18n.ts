@@ -89,7 +89,7 @@ const EN: Record<string, string> = {
   'tile.network': 'Network',
   'tile.wifi': 'Wi-Fi',
   'tile.cellular': 'Cellular',
-  'tile.v12': '12V battery',
+  'tile.pm25': 'Cabin air',
 
   'charging.title': 'Charging',
   'charging.power': 'Power',
@@ -301,7 +301,7 @@ const VI: Record<string, string> = {
   'tile.network': 'Mạng',
   'tile.wifi': 'Wi-Fi',
   'tile.cellular': 'Di động',
-  'tile.v12': 'Pin 12V',
+  'tile.pm25': 'Không khí khoang',
 
   'charging.title': 'Đang sạc',
   'charging.power': 'Công suất',

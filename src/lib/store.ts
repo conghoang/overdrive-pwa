@@ -20,6 +20,8 @@ export const odometer = signal<Odometer | null>(null)
  * fall back to something real.
  */
 export const outsideTempC = signal<number | null>(null)
+/** Cabin particulates (µg/m³), on the same slow poll. */
+export const pm25Inside = signal<number | null>(null)
 let odoAt = 0
 const ODO_INTERVAL_MS = 60_000
 
@@ -116,8 +118,9 @@ async function tick(): Promise<void> {
       void getSummary()
         .then((sum) => {
           if (!active) return
-          const c = sum.env?.tempC
-          outsideTempC.value = typeof c === 'number' ? c : null
+          const num = (v: unknown) => (typeof v === 'number' ? v : null)
+          outsideTempC.value = num(sum.env?.tempC)
+          pm25Inside.value = num(sum.air?.pm25Inside)
         })
         .catch(() => {})
     }
@@ -195,6 +198,7 @@ export function reset(): void {
   chargeTargetPct.value = null
   odometer.value = null
   outsideTempC.value = null
+  pm25Inside.value = null
   odoAt = 0
   authLost.value = false
   cloudConfigured.value = null

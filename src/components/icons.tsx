@@ -180,6 +180,19 @@ export const IconCamera = ({ size, class: c }: IconProps) =>
     c,
   )
 
+/** Air quality: drifting particulates. */
+export const IconAir = ({ size, class: c }: IconProps) =>
+  svg(
+    <>
+      <path d="M3 9h10a2.6 2.6 0 1 0-2.6-2.6" />
+      <path d="M3 14h13a2.6 2.6 0 1 1-2.6 2.6" />
+      <circle cx="18.5" cy="8" r="1.3" fill="currentColor" stroke="none" />
+      <circle cx="7" cy="19" r="1.3" fill="currentColor" stroke="none" />
+    </>,
+    size,
+    c,
+  )
+
 export const IconMinus = ({ size, class: c }: IconProps) => svg(<path d="M5 12h14" />, size, c)
 export const IconPlus = ({ size, class: c }: IconProps) => svg(<><path d="M12 5v14" /><path d="M5 12h14" /></>, size, c)
 export const IconArrow = ({ size, class: c }: IconProps) => svg(<><path d="M5 12h14" /><path d="M13 6l6 6-6 6" /></>, size, c)
