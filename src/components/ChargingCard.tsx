@@ -94,7 +94,8 @@ const CELLS = [0.25, 0.5, 0.75]
 
 type Phase = 'charging' | 'full' | 'fault' | 'plugged'
 
-function phaseOf(s: StatusResponse): Phase | null {
+/** Exposed so the dashboard can place this card by phase without re-deriving it. */
+export function chargingPhase(s: StatusResponse): Phase | null {
   const c = s.charging
   if (!c) return null
   if (c.fault) return 'fault'
@@ -104,8 +105,8 @@ function phaseOf(s: StatusResponse): Phase | null {
   return null
 }
 
-export function ChargingCard({ s }: { s: StatusResponse }) {
-  const phase = phaseOf(s)
+export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: boolean }) {
+  const phase = chargingPhase(s)
   if (!phase) return null // not plugged in — the card has nothing to say
 
   const soc = s.soc?.percent
@@ -133,7 +134,14 @@ export function ChargingCard({ s }: { s: StatusResponse }) {
     : t('chg.plugged')
 
   return (
-    <div class={'card chg-card' + (charging ? ' charging' : '') + (phase === 'fault' ? ' fault' : '')}>
+    <div
+      class={
+        'card chg-card' +
+        (atTop ? ' at-top' : '') +
+        (charging ? ' charging' : '') +
+        (phase === 'fault' ? ' fault' : '')
+      }
+    >
       <div class="chg-status">
         <IconPlug size={16} />
         <span>{label}</span>

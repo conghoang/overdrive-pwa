@@ -5,7 +5,7 @@ import { carName, showMap } from '../lib/settings'
 import { MiniMap } from '../components/MiniMap'
 import { AppHeader } from '../components/AppHeader'
 import { CarHero } from '../components/CarHero'
-import { ChargingCard } from '../components/ChargingCard'
+import { ChargingCard, chargingPhase } from '../components/ChargingCard'
 import { QuickActions } from '../components/QuickActions'
 import { EnergyGauges } from '../components/EnergyGauges'
 import { StatTile } from '../components/StatTile'
@@ -54,6 +54,10 @@ export function Dashboard() {
   const inside = vs?.climate?.insideTempC
   const v12 = s.battery?.voltage
 
+  // Only an ACTIVE charge earns the top slot. Merely plugged in, full or
+  // faulted, the card keeps its usual place below the hero.
+  const chargingNow = chargingPhase(s) === 'charging'
+
   const powerOn = !!s.acc
   const gear = s.recordingStatus?.gear
   const rawKmh =
@@ -68,16 +72,17 @@ export function Dashboard() {
     <div>
       <AppHeader title={carName.value || t('tab.vehicle')} sub={connected.value ? t('common.live') : t('common.reconnecting')} dot={connected.value ? 'ok' : 'wait'} />
 
-      {/* First on the page whenever the cable is connected — that is exactly
-          when charging is what you opened the app to check. It stays first for
-          the whole plugged-in session rather than only while current flows, so
-          it doesn't jump down the page the moment the pack reaches full.
-          Renders null when unplugged, and owns its own bottom margin, so
-          nothing shifts and no empty spacer is left behind. */}
-      <ChargingCard s={s} />
+      {/* While current is actually flowing this leads the page — it is what you
+          opened the app to check. In every other plugged-in state it sits in
+          its usual place below the hero. Renders null when unplugged, and
+          carries its margin on whichever side it needs, so no empty spacer is
+          left behind either way. */}
+      {chargingNow && <ChargingCard s={s} atTop />}
 
       <CarHero s={s} />
       <QuickActions />
+
+      {!chargingNow && <ChargingCard s={s} />}
 
       {/* power / gear / speed */}
       <div class="card" style={{ marginTop: '14px' }}>

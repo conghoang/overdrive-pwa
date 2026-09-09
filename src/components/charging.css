@@ -1,9 +1,14 @@
 /* Charging card — cluster-style wireframe car with an isometric battery pack. */
 
-/* Sits at the top of the dashboard, so the gap goes BELOW it. */
+/* Default slot is mid-stack, so the gap goes above it. Leading the page while
+   charging, it flips to a gap below instead. */
 .chg-card {
-  margin-bottom: 14px;
+  margin-top: 14px;
   padding-bottom: 14px;
+}
+.chg-card.at-top {
+  margin-top: 0;
+  margin-bottom: 14px;
 }
 
 .chg-status {
