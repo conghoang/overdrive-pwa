@@ -78,11 +78,13 @@ const SHEEN = [
   .map((pt) => pt.join(','))
   .join(' ')
 
-// Near-side wheels, read off the image. They sit almost black against a dark
-// ground once the frame is toned, so the app rims them to bring them back.
+// Near-side wheels, measured off the image on a 10-unit grid rather than
+// eyeballed — the first pass sat ~16 units high, so the rims floated above the
+// discs. They sit almost black against a dark ground once the frame is toned,
+// so the app rims them to bring them back.
 const WHEELS = [
-  { cx: 95, cy: 188, r: 40 },
-  { cx: 395, cy: 190, r: 40 },
+  { cx: 97, cy: 204, r: 40 },
+  { cx: 390, cy: 205, r: 42 },
 ]
 
 /** The SOC figure sits above the slab, overlapping its top face. */
