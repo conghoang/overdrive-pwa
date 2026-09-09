@@ -128,12 +128,11 @@
 
 /* cabin photo with a live glow over each seat */
 .cabin {
+  /* Full-bleed banner: pull out past the card's 18px padding so the feathered
+     image reaches the card edges and dissolves into them. */
   position: relative;
-  width: 100%;
-  max-width: 340px;
-  margin: 2px auto 16px;
-  border-radius: var(--radius-md);
-  overflow: hidden;
+  margin: -18px -18px 14px;
+  width: calc(100% + 36px);
   isolation: isolate;
 }
 .cabin-img { display: block; width: 100%; height: auto; }

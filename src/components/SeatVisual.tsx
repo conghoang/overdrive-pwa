@@ -1,22 +1,23 @@
 import { useState } from 'preact/hooks'
 
 /**
- * Cabin photo with a live glow over each front seat: blue for ventilation,
- * warm red for heating, brighter at High. The bundled image is desaturated so
- * the ONLY colour on the seats is the real state — otherwise it would appear
- * to be cooling even with everything off.
+ * BYD's official Seal 6 DM-i interior, cropped to the front seats, toned for the
+ * dark UI and alpha-feathered on every edge so it dissolves into the card rather
+ * than sitting in a hard-edged box.
  *
- * Falls back to a drawn seat pair if the image can't load.
+ * A live glow sits over each seat: blue for ventilation, warm orange for
+ * heating, brighter at High. Falls back to a drawn seat pair if the image can't
+ * load.
  */
 
 const COOL = '74, 168, 255'
-const HEAT = '255, 106, 74'
+const HEAT = '255, 138, 61'
 
-// Seat centres as a % of the image, measured off the artwork (the seats sit at
-// x≈180/355 of 530 and y≈208 of 310).
+// Seat centres as a % of the image, measured off the crop. LHD car: the driver
+// sits on the left.
 const SEATS = {
-  driver: { x: 34, y: 67 },
-  passenger: { x: 67, y: 67 },
+  driver: { x: 32, y: 72 },
+  passenger: { x: 69, y: 72 },
 }
 
 function glowStyle(heat: number, cool: number, pos: { x: number; y: number }) {
@@ -28,7 +29,7 @@ function glowStyle(heat: number, cool: number, pos: { x: number; y: number }) {
   return {
     opacity: 1,
     background:
-      `radial-gradient(ellipse 13% 26% at ${pos.x}% ${pos.y}%, ` +
+      `radial-gradient(ellipse 15% 42% at ${pos.x}% ${pos.y}%, ` +
       `rgba(${rgb}, ${a}) 0%, rgba(${rgb}, ${a * 0.75}) 40%, ` +
       `rgba(${rgb}, ${a * 0.3}) 70%, rgba(${rgb}, 0) 100%)`,
   }

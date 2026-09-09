@@ -60,9 +60,10 @@ DM-i with its background removed; it ships as the default car illustration. You
 can override it per-device via Device → **Change photo** (stored locally, never
 uploaded).
 
-`public/car/cabin.webp` is a user-supplied interior image, desaturated so the
-seat glow shown over it comes only from live vehicle state. The app renders the
-heat/cool glow itself; the image carries no colour of its own.
+`public/car/cabin.webp` is BYD's official Seal 6 DM-i interior photo, cropped to
+the front seats, toned for the dark UI and alpha-feathered on every edge so it
+blends into the card. The heat/cool glow over the seats is rendered by the app
+from live vehicle state — the image itself carries none.
 
 Both are bundled at the request of this repo's owner. **Replace either file if
 you don't hold the rights to distribute it** — the app falls back to a drawn
