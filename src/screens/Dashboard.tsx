@@ -1,4 +1,4 @@
-import { connected, lastError, status, vehicleState } from '../lib/store'
+import { connected, lastError, outsideTempC, status, vehicleState } from '../lib/store'
 import { fmtNum, fmtTemp, ago } from '../lib/format'
 import { t } from '../lib/i18n'
 import { carName, showMap } from '../lib/settings'
@@ -51,7 +51,16 @@ export function Dashboard() {
   const winOpen = windowsOpenCount(vs?.windows)
   const doorsLocked = vs?.doors?.overall
   const climateOn = !!(vs?.climate?.acOn || vs?.climate?.remoteClimateActive)
+  /*
+   * Cabin temperature is only sent while the sensor is actually answering — on a
+   * parked car OverDrive omits it rather than serving a stale reading, so the
+   * tile used to sit at "--" indefinitely. Fall back to outside air, relabelled,
+   * so the tile always says something true about what it is showing.
+   */
   const inside = vs?.climate?.insideTempC
+  const hasCabin = typeof inside === 'number'
+  const tempValue = hasCabin ? inside : outsideTempC.value
+  const tempLabel = hasCabin ? t('tile.cabin_temp') : t('tile.outside_temp')
   const v12 = s.battery?.voltage
 
   // Only an ACTIVE charge earns the top slot. Merely plugged in, full or
@@ -206,7 +215,7 @@ export function Dashboard() {
           unit="%"
           accent="var(--m-teal)"
         />
-        <StatTile icon={<IconThermo size={20} />} label={t('tile.cabin_temp')} value={fmtTemp(inside)} accent="var(--m-orange)" />
+        <StatTile icon={<IconThermo size={20} />} label={tempLabel} value={fmtTemp(tempValue)} accent="var(--m-orange)" />
         <StatTile
           icon={<IconWifi size={20} />}
           label={s.network?.type === 'wifi' ? s.network?.ssid || t('tile.wifi') : t('tile.network')}

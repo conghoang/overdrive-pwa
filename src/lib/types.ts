@@ -133,6 +133,8 @@ export interface VehicleState {
 }
 
 export interface LauncherSummary {
+  /** Ambient, NOT cabin: weather cache, falling back to the car's external sensor. */
+  env?: { tempC?: number | null }
   charging?: {
     active?: boolean
     kw?: number

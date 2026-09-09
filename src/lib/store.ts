@@ -12,6 +12,14 @@ export const connected = signal(false)
  * 5s poll would be pure waste.
  */
 export const odometer = signal<Odometer | null>(null)
+/**
+ * Outside air temperature. Cabin temperature is what the dashboard would prefer,
+ * but OverDrive only sends climate.insideTempC while the sensor is answering
+ * (hasFreshCabinTemperature) — on a parked car it is usually absent, which left
+ * the tile showing "--" forever. This rides the same slow poll so the tile can
+ * fall back to something real.
+ */
+export const outsideTempC = signal<number | null>(null)
 let odoAt = 0
 const ODO_INTERVAL_MS = 60_000
 
@@ -105,6 +113,13 @@ async function tick(): Promise<void> {
       void getOdometer()
         .then((o) => { if (active) odometer.value = o })
         .catch(() => {})
+      void getSummary()
+        .then((sum) => {
+          if (!active) return
+          const c = sum.env?.tempC
+          outsideTempC.value = typeof c === 'number' ? c : null
+        })
+        .catch(() => {})
     }
     // Control-surface detail; failure here shouldn't knock out the whole poll.
     try {
@@ -179,6 +194,7 @@ export function reset(): void {
   chargeEtaMin.value = null
   chargeTargetPct.value = null
   odometer.value = null
+  outsideTempC.value = null
   odoAt = 0
   authLost.value = false
   cloudConfigured.value = null
