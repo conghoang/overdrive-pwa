@@ -5,6 +5,7 @@ import { carName, showMap } from '../lib/settings'
 import { MiniMap } from '../components/MiniMap'
 import { AppHeader } from '../components/AppHeader'
 import { CarHero } from '../components/CarHero'
+import { ChargingCard } from '../components/ChargingCard'
 import { QuickActions } from '../components/QuickActions'
 import { EnergyGauges } from '../components/EnergyGauges'
 import { StatTile } from '../components/StatTile'
@@ -69,6 +70,10 @@ export function Dashboard() {
 
       <CarHero s={s} />
       <QuickActions />
+
+      {/* Renders only while plugged in; returns null otherwise, so it owns its
+          own top margin rather than leaving an empty spacer behind. */}
+      <ChargingCard s={s} />
 
       {/* power / gear / speed */}
       <div class="card" style={{ marginTop: '14px' }}>

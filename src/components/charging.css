@@ -1,0 +1,112 @@
+/* Charging card — cluster-style wireframe car with an isometric battery pack. */
+
+.chg-card {
+  margin-top: 14px;
+  padding-bottom: 14px;
+}
+
+.chg-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text-secondary);
+}
+.chg-card.charging .chg-status { color: #7ee06a; }
+.chg-card.fault .chg-status { color: var(--danger); }
+
+/* The plug icon pulses only while current is actually flowing. */
+.chg-card.charging .chg-status svg {
+  animation: chg-pulse 1.9s ease-in-out infinite;
+}
+@keyframes chg-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.chg-stage {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 4px 0 2px;
+}
+
+.chg-wire { stroke: rgba(214, 234, 248, 0.55); }
+.chg-card.charging .chg-wire { stroke: rgba(224, 244, 255, 0.72); }
+
+.chg-tyre { fill: #10161d; stroke: rgba(255, 255, 255, 0.14); stroke-width: 1.5; }
+.chg-hub { fill: #2b333d; }
+
+/* Uncharged remainder of the pack. */
+.chg-pack-empty polygon {
+  fill: rgba(126, 224, 106, 0.09);
+  stroke: rgba(126, 224, 106, 0.3);
+  stroke-width: 1.2;
+}
+
+.chg-cells {
+  stroke: rgba(4, 18, 10, 0.35);
+  stroke-width: 1.1;
+  fill: none;
+}
+
+.chg-pct {
+  fill: #fff;
+  font-size: 44px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  paint-order: stroke;
+  stroke: rgba(3, 14, 8, 0.45);
+  stroke-width: 5px;
+  stroke-linejoin: round;
+}
+.chg-pct-unit { font-size: 18px; font-weight: 600; }
+
+/* Charge sweeping through the pack — clipped to the charged portion, so it
+   reads as current flowing into what's already stored. */
+.chg-sheen { animation: chg-sweep 2.6s ease-in-out infinite; }
+@keyframes chg-sweep {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(230px); }
+}
+
+.chg-stats {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-soft);
+}
+.chg-stat { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.chg-stat.right { align-items: flex-end; text-align: right; }
+.chg-stat-head {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.chg-stat-value {
+  font-size: 21px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.chg-stat-value small { font-size: 12px; font-weight: 500; color: var(--muted); }
+.chg-dash { color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  .chg-sheen,
+  .chg-card.charging .chg-status svg {
+    animation: none;
+  }
+  .chg-sheen { opacity: 0; }
+}
