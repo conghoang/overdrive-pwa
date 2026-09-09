@@ -143,6 +143,39 @@ h1, h2, h3, p { margin: 0; }
 .spin { animation: spin 0.9s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ---------- wide screens ----------
+ * The layout is mobile-first and caps at 560px, which on a tablet or desktop
+ * leaves a narrow ribbon in a sea of background. Rather than stretching the
+ * cards — a 1000px-wide card holding a small tyre diagram just looks empty —
+ * the column width is held and a SECOND column is added, so cards keep the
+ * proportions they were designed at.
+ */
+@media (min-width: 1000px) {
+  .app-main { max-width: 1150px; }
+
+  .screen {
+    column-count: 2;
+    column-gap: 18px;
+  }
+  /* Cards must not be split down the middle by the column break. */
+  .screen > * {
+    break-inside: avoid;
+    /* Vertical rhythm here comes from margin-bottom only. The screens set
+       margin-top inline, which would otherwise push the first card of the
+       second column down out of alignment — and inline styles need the
+       !important to lose. */
+    margin-top: 0 !important;
+    margin-bottom: 18px;
+  }
+  /* The header belongs to the page, not to a column. */
+  .screen > .screen-head {
+    column-span: all;
+    margin-bottom: 18px;
+  }
+  /* The tab bar is a floating pill; give it room to match the wider content. */
+  .tabbar-inner { max-width: 560px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }

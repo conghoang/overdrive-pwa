@@ -40,7 +40,7 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
   }
 
   return (
-    <div>
+    <div class="screen">
       <AppHeader title={t('tab.device')} sub={connected.value ? t('common.connected') : t('common.offline')} dot={connected.value ? 'ok' : 'bad'} />
 
       {/* car photo (setting) */}

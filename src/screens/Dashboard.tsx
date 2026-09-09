@@ -36,7 +36,7 @@ export function Dashboard() {
 
   if (!s) {
     return (
-      <div>
+      <div class="screen">
         <AppHeader title={carName.value || t('tab.vehicle')} sub={connected.value ? t('common.live') : t('common.reconnecting')} dot={connected.value ? 'ok' : 'wait'} />
         <div class="card">
           <div class="center-note">
@@ -69,7 +69,7 @@ export function Dashboard() {
       : Math.max(0, Math.round(unit === 'mi' ? rawKmh * 0.621371 : rawKmh))
 
   return (
-    <div>
+    <div class="screen">
       <AppHeader title={carName.value || t('tab.vehicle')} sub={connected.value ? t('common.live') : t('common.reconnecting')} dot={connected.value ? 'ok' : 'wait'} />
 
       {/* While current is actually flowing this leads the page — it is what you

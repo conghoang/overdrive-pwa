@@ -85,7 +85,7 @@ export function Controls() {
   }
 
   return (
-    <div>
+    <div class="screen">
       <AppHeader title={t('tab.controls')} sub={disabled ? t('common.reconnecting') : t('common.ready')} dot={disabled ? 'wait' : 'ok'} />
 
       {/* remote actions — 51DK commands in WiCarlink mode; otherwise the BYD
