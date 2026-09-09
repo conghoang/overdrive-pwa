@@ -73,7 +73,7 @@
 }
 .minimap .leaflet-container { background: var(--map-bg); font-family: var(--font); }
 .minimap .leaflet-control-zoom a {
-  background: rgba(12, 23, 36, 0.9);
+  background: var(--map-ctl-bg);
   color: var(--text);
   border: 1px solid var(--border-strong);
   width: 28px; height: 28px; line-height: 26px; font-size: 16px;
@@ -95,7 +95,7 @@
   display: flex; align-items: center; justify-content: center;
   border-radius: 9px;
   border: 1px solid var(--border-strong);
-  background: rgba(12, 23, 36, 0.9);
+  background: var(--map-ctl-bg);
   color: var(--accent-bright);
 }
 .minimap-recenter:active { transform: scale(0.92); }

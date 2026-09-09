@@ -16,7 +16,7 @@
   grid-auto-flow: column;
   grid-auto-columns: 1fr;
   align-items: center;
-  background: rgba(9, 17, 27, 0.82);
+  background: var(--tabbar-bg);
   backdrop-filter: blur(18px) saturate(140%);
   -webkit-backdrop-filter: blur(18px) saturate(140%);
   border: 1px solid var(--border-soft);
@@ -39,4 +39,4 @@
 }
 .tab:active { transform: scale(0.92); }
 .tab.active { color: var(--accent-bright); }
-.tab.active svg { filter: drop-shadow(0 0 10px rgba(53, 223, 193, 0.4)); }
+.tab.active svg { filter: drop-shadow(0 0 10px var(--tab-glow)); }

@@ -68,6 +68,13 @@
   --track: #16283a;
   --track-deep: #1b2b3d;
 
+  /* floating chrome: bottom tab bar, map buttons */
+  --tabbar-bg: rgba(9, 17, 27, 0.82);
+  --tab-glow: rgba(53, 223, 193, 0.4);
+  --map-ctl-bg: rgba(12, 23, 36, 0.9);
+  /* seat heat label — needs to hold on the page background, not just on dark */
+  --heat: #ff8a5c;
+
   /* map canvas behind tiles */
   --map-bg: #10161d;
   --map-attr-bg: rgba(0, 0, 0, 0.4);
@@ -153,6 +160,11 @@
 
   --track: #d7e0ea;
   --track-deep: #cbd7e4;
+
+  --tabbar-bg: rgba(255, 255, 255, 0.84);
+  --tab-glow: rgba(15, 156, 139, 0.3);
+  --map-ctl-bg: rgba(255, 255, 255, 0.92);
+  --heat: #d1521f;
 
   --map-bg: #e8edf3;
   --map-attr-bg: rgba(255, 255, 255, 0.72);
