@@ -65,7 +65,10 @@ the front seats, toned for the dark UI and alpha-feathered on every edge so it
 blends into the card. The heat/cool glow over the seats is rendered by the app
 from live vehicle state — the image itself carries none.
 
-Both are bundled at the request of this repo's owner. **Replace either file if
+`public/car/climate.webp` is the airflow/air-purification interior image used as
+the Climate card banner, processed the same way; it dims while the AC is off.
+
+These are bundled at the request of this repo's owner. **Replace either file if
 you don't hold the rights to distribute it** — the app falls back to a drawn
 illustration when an image is missing.
 
