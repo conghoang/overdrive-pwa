@@ -190,9 +190,7 @@
 
 /* car hero (reference-style) */
 .car-hero-card { padding: 18px 16px 16px; }
-.veh-head { display: flex; align-items: center; justify-content: space-between; }
-.veh-title { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; color: var(--text-secondary); }
-.veh-range { display: flex; align-items: baseline; gap: 8px; margin-top: 12px; }
+.veh-range { display: flex; align-items: baseline; gap: 8px; }
 .veh-range-num { font-size: 44px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
 .veh-range-unit { font-size: 18px; color: var(--muted); font-weight: 600; }
 .veh-range-label { color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }

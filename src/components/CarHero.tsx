@@ -3,7 +3,7 @@ import { carPhoto } from '../lib/settings'
 import { chargeEtaMin, chargeTargetPct } from '../lib/store'
 import { distanceUnitLabel, fmtDistance, fmtEta, fmtNum } from '../lib/format'
 import { t } from '../lib/i18n'
-import { IconBolt, IconCar } from './icons'
+import { IconBolt } from './icons'
 import { CarImage } from './CarImage'
 import type { StatusResponse } from '../lib/types'
 
@@ -22,10 +22,6 @@ export function CarHero({ s }: { s: StatusResponse }) {
 
   return (
     <div class="card car-hero-card">
-      <div class="veh-head">
-        <span class="veh-title"><IconCar size={20} /> Sealion 6 DMi</span>
-      </div>
-
       <div class="veh-range">
         <span class="veh-range-num mono">{fmtDistance(range, unit)}</span>
         <span class="veh-range-unit">{distanceUnitLabel(unit)}</span>
@@ -33,7 +29,7 @@ export function CarHero({ s }: { s: StatusResponse }) {
       <div class="veh-range-label">{t('car.range')}</div>
 
       {imgOk ? (
-        <img class="car-photo" src={photo} alt="Sealion 6 DMi" onError={() => setImgOk(false)} />
+        <img class="car-photo" src={photo} alt="" onError={() => setImgOk(false)} />
       ) : (
         <div class="car-photo"><CarImage color="#c7ccd1" /></div>
       )}
