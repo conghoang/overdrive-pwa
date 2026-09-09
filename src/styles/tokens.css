@@ -10,6 +10,19 @@
  * media query, because the user can override the system preference in Settings.
  */
 :root {
+  /*
+   * Canonical dark values. The dark theme below just points at these — but they
+   * stay addressable in BOTH themes, because the charging card deliberately
+   * stays dark on a light page and needs the real palette, not a copy of it.
+   */
+  --d-surface-1: rgba(12, 23, 36, 0.96);
+  --d-surface-2: rgba(16, 31, 48, 0.92);
+  --d-border-soft: rgba(168, 198, 220, 0.11);
+  --d-border-strong: rgba(168, 198, 220, 0.22);
+  --d-text: #f5f9fc;
+  --d-text-secondary: #b2c1ce;
+  --d-muted: #8497a8;
+
   /* backgrounds */
   --app-bg: #071019;
   --app-bg-deep: #040a11;
@@ -17,8 +30,8 @@
   --app-wash: rgba(45, 212, 191, 0.06);
 
   /* layered surfaces (stack by depth) */
-  --surface-1: rgba(12, 23, 36, 0.96);
-  --surface-2: rgba(16, 31, 48, 0.92);
+  --surface-1: var(--d-surface-1);
+  --surface-2: var(--d-surface-2);
   --surface-3: rgba(23, 42, 62, 0.82);
   --surface-soft: rgba(255, 255, 255, 0.045);
   --surface-hover: rgba(255, 255, 255, 0.075);
@@ -31,9 +44,9 @@
   --accent-border: rgba(45, 212, 191, 0.32);
 
   /* text */
-  --text: #f5f9fc;
-  --text-secondary: #b2c1ce;
-  --muted: #8497a8;
+  --text: var(--d-text);
+  --text-secondary: var(--d-text-secondary);
+  --muted: var(--d-muted);
 
   /* semantic */
   --danger: #ff7c84;
@@ -48,8 +61,8 @@
   --m-orange: #f6a23c;
 
   /* borders */
-  --border-soft: rgba(168, 198, 220, 0.11);
-  --border-strong: rgba(168, 198, 220, 0.22);
+  --border-soft: var(--d-border-soft);
+  --border-strong: var(--d-border-strong);
 
   /* filled-track backdrops: gauges, energy bars, sliders */
   --track: #16283a;
@@ -152,8 +165,6 @@
   --seat-head: #b3c3d4;
   --wheel-normal: #5f7386;
   --wheel-muted: #a9b7c4;
-  /* the frame stays dark on a light card, so it gets a panel of its own */
-  --chg-stage-bg: #0c1724;
 
   --shadow-card: 0 10px 28px rgba(16, 42, 66, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.7);
   --shadow-float: 0 20px 54px rgba(16, 42, 66, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.8);

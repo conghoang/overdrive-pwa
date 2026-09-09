@@ -33,16 +33,32 @@
   50% { opacity: 0.35; }
 }
 
-/* On a light card the frame keeps its own dark ground, so it sits on an inset
-   panel. The image feathers to transparency, and the panel is the same near-
-   black as the image's ground, so the blend is seamless either way. */
+/*
+ * The whole card stays dark in light mode, not just the image.
+ *
+ * The cluster frame is a photograph with its own near-black ground; anything
+ * else in the card sitting on white left it looking like a dark hole punched
+ * in a white panel. Reusing the palette's own --d-* values rather than copying
+ * literals means this cannot drift if the dark theme is retuned.
+ */
+:root[data-theme='light'] .chg-card {
+  --surface-1: var(--d-surface-1);
+  --surface-2: var(--d-surface-2);
+  --border-soft: var(--d-border-soft);
+  --border-strong: var(--d-border-strong);
+  --text: var(--d-text);
+  --text-secondary: var(--d-text-secondary);
+  --muted: var(--d-muted);
+  /* Outer shadow suits the LIGHT page it is cast onto; the inset highlight is
+     the dark one, since it lands on a dark surface. */
+  --shadow-card: 0 12px 30px rgba(16, 42, 66, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
 .chg-stage {
   display: block;
   width: 100%;
   height: auto;
-  margin: 2px 0 6px;
-  border-radius: 14px;
-  background: var(--chg-stage-bg);
+  margin: 2px 0 0;
 }
 
 /* Wheels: a soft halo and a faint rim — enough to separate them from the dark
