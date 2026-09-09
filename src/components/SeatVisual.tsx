@@ -16,8 +16,8 @@ const HEAT = '255, 138, 61'
 // Seat centres as a % of the image, measured off the crop. LHD car: the driver
 // sits on the left.
 const SEATS = {
-  driver: { x: 32, y: 72 },
-  passenger: { x: 69, y: 72 },
+  driver: { x: 31, y: 78 },
+  passenger: { x: 70, y: 78 },
 }
 
 function glowStyle(heat: number, cool: number, pos: { x: number; y: number }) {
@@ -29,7 +29,7 @@ function glowStyle(heat: number, cool: number, pos: { x: number; y: number }) {
   return {
     opacity: 1,
     background:
-      `radial-gradient(ellipse 15% 42% at ${pos.x}% ${pos.y}%, ` +
+      `radial-gradient(ellipse 15% 26% at ${pos.x}% ${pos.y}%, ` +
       `rgba(${rgb}, ${a}) 0%, rgba(${rgb}, ${a * 0.75}) 40%, ` +
       `rgba(${rgb}, ${a * 0.3}) 70%, rgba(${rgb}, 0) 100%)`,
   }
