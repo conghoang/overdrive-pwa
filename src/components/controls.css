@@ -101,7 +101,9 @@
 .climate-banner img { display: block; width: 100%; height: auto; }
 
 /* drifting leaf-bubbles — speed comes from the fan level */
-.cb-flow { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+/* size container so the bubbles' cqw/cqh travel resolves against the
+   banner, not against their own tiny boxes */
+.cb-flow { position: absolute; inset: 0; overflow: hidden; pointer-events: none; container-type: size; }
 .cb-bubble {
   position: absolute;
   display: flex;
