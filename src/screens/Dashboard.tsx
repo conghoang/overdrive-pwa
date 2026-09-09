@@ -136,28 +136,50 @@ export function Dashboard() {
       {/* location */}
       {s.gps?.hasLocation && s.gps?.lat != null && s.gps?.lng != null && (
         <div class="card" style={{ marginTop: '14px' }}>
-          <div class="card-title">{t('loc.title')}</div>
-          {showMap.value && <MiniMap lat={s.gps.lat} lng={s.gps.lng} />}
-          <div class="row" style={{ gap: '11px' }}>
-            <IconPin size={20} />
-            <div class="stack">
-              <span class="loc-coords mono">
-                {s.gps.lat.toFixed(5)}, {s.gps.lng.toFixed(5)}
-              </span>
-              <span class="screen-sub">
-                {s.gps.isMoving ? t('loc.moving') : t('loc.parked')}
-                {s.gps.lastUpdate ? ` · ${ago(s.gps.lastUpdate)}` : ''}
-              </span>
-            </div>
+          <div class="spread" style={{ marginBottom: showMap.value ? '10px' : 0 }}>
+            <div class="card-title" style={{ margin: 0 }}>{t('loc.title')}</div>
+            {/* In map mode the map says where it is, so the row below is dropped
+                and Open-in-Maps becomes a compact icon button. */}
+            {showMap.value && (
+              <a
+                class="loc-ext"
+                href={`https://www.google.com/maps/search/?api=1&query=${s.gps.lat},${s.gps.lng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={t('loc.open_maps')}
+                aria-label={t('loc.open_maps')}
+              >
+                <IconArrow size={18} />
+              </a>
+            )}
           </div>
-          <a
-            class="loc-link"
-            href={`https://www.google.com/maps/search/?api=1&query=${s.gps.lat},${s.gps.lng}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {t('loc.open_maps')} <IconArrow size={16} />
-          </a>
+
+          {showMap.value ? (
+            <MiniMap lat={s.gps.lat} lng={s.gps.lng} />
+          ) : (
+            <>
+              <div class="row" style={{ gap: '11px' }}>
+                <IconPin size={20} />
+                <div class="stack">
+                  <span class="loc-coords mono">
+                    {s.gps.lat.toFixed(5)}, {s.gps.lng.toFixed(5)}
+                  </span>
+                  <span class="screen-sub">
+                    {s.gps.isMoving ? t('loc.moving') : t('loc.parked')}
+                    {s.gps.lastUpdate ? ` · ${ago(s.gps.lastUpdate)}` : ''}
+                  </span>
+                </div>
+              </div>
+              <a
+                class="loc-link"
+                href={`https://www.google.com/maps/search/?api=1&query=${s.gps.lat},${s.gps.lng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {t('loc.open_maps')} <IconArrow size={16} />
+              </a>
+            </>
+          )}
         </div>
       )}
 

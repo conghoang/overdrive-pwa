@@ -54,7 +54,7 @@
 .srow-left svg { color: var(--muted); }
 .srow-label { font-size: 14px; font-weight: 500; color: var(--text); }
 
-/* mini map */
+/* mini map (Leaflet, lazy-loaded) */
 .minimap {
   position: relative;
   width: 100%;
@@ -64,60 +64,52 @@
   margin-bottom: 14px;
   border: 1px solid var(--border-soft);
 }
-.minimap-tiles {
-  position: absolute;
-  inset: 0;
-  /* OSM ships light tiles; invert + hue-rotate is the standard way to get a
-     dark basemap without a keyed provider. */
-  filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.92) saturate(0.7);
+.minimap-host { position: absolute; inset: 0; background: #10161d; }
+/* Darken ONLY the tiles — markers, controls and attribution keep their colours. */
+.minimap .osm-dark {
+  filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9) saturate(0.45);
 }
-.minimap-tile {
-  position: absolute;
-  width: 256px;
-  height: 256px;
-  transform: translate(-50%, -50%);
-  image-rendering: auto;
+.minimap .leaflet-container { background: #10161d; font-family: var(--font); }
+.minimap .leaflet-control-zoom a {
+  background: rgba(12, 23, 36, 0.9);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  width: 28px; height: 28px; line-height: 26px; font-size: 16px;
 }
-.minimap-pin {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 18px;
-  height: 18px;
-}
-.minimap-dot {
-  position: absolute;
-  inset: 4px;
-  border-radius: 50%;
-  background: var(--accent-bright);
-  border: 2px solid #04121a;
-  box-shadow: 0 0 10px rgba(53, 223, 193, 0.8);
-}
-.minimap-pulse {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: rgba(53, 223, 193, 0.35);
-  animation: mm-pulse 2.2s ease-out infinite;
-}
-@keyframes mm-pulse {
-  0% { transform: scale(0.6); opacity: 0.9; }
-  100% { transform: scale(2.4); opacity: 0; }
-}
-.minimap-credit {
-  position: absolute;
-  right: 6px;
-  bottom: 4px;
+.minimap .leaflet-control-zoom a:hover { background: var(--surface-3); }
+.minimap .leaflet-control-attribution {
+  background: rgba(0, 0, 0, 0.4);
+  color: rgba(255, 255, 255, 0.5);
   font-size: 9px;
-  color: rgba(255, 255, 255, 0.45);
-  background: rgba(0, 0, 0, 0.35);
   padding: 1px 5px;
-  border-radius: 4px;
 }
+.minimap .leaflet-control-attribution a { color: rgba(255, 255, 255, 0.7); }
+.minimap-recenter {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  z-index: 500;
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 9px;
+  border: 1px solid var(--border-strong);
+  background: rgba(12, 23, 36, 0.9);
+  color: var(--accent-bright);
+}
+.minimap-recenter:active { transform: scale(0.92); }
 
 /* location */
 .loc-coords { font-size: 14px; color: var(--text-secondary); }
+.loc-ext {
+  width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 10px;
+  border: 1px solid var(--accent-border);
+  background: var(--accent-soft);
+  color: var(--accent-bright);
+}
+.loc-ext:active { transform: scale(0.92); }
+.minimap { margin-bottom: 0; }
 .loc-link { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; margin-top: 12px; }
 
 /* skeleton / empty */

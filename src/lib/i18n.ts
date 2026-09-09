@@ -92,6 +92,7 @@ const EN: Record<string, string> = {
   'loc.parked': 'Parked',
   'loc.moving': 'Moving',
   'loc.open_maps': 'Open in Maps',
+  'loc.recenter': 'Centre on car',
 
   'ctrl.lock': 'Lock',
   'ctrl.unlock': 'Unlock',
@@ -267,6 +268,7 @@ const VI: Record<string, string> = {
   'loc.parked': 'Đang đỗ',
   'loc.moving': 'Đang di chuyển',
   'loc.open_maps': 'Mở trong Maps',
+  'loc.recenter': 'Về vị trí xe',
 
   'ctrl.lock': 'Khóa',
   'ctrl.unlock': 'Mở khóa',
