@@ -119,6 +119,11 @@ export function ChargingCard({ s }: { s: StatusResponse }) {
   // pack has no "time to full".
   const eta = charging ? chargeEtaMin.value : null
   const target = charging ? chargeTargetPct.value : null
+  // At 100% both readouts are meaningless — nothing is flowing and there is no
+  // time remaining — so the whole row goes rather than showing a pair of
+  // dashes. The car can still report charging:true at 100%, so this keys off
+  // the SOC as well as the phase.
+  const complete = phase === 'full' || pct === 100
 
 
   const label =
@@ -208,26 +213,28 @@ export function ChargingCard({ s }: { s: StatusResponse }) {
         </text>
       </svg>
 
-      <div class="chg-stats">
-        <div class="chg-stat">
-          <div class="chg-stat-head">
-            <IconBolt size={13} /> {t('chg.power')}
+      {!complete && (
+        <div class="chg-stats">
+          <div class="chg-stat">
+            <div class="chg-stat-head">
+              <IconBolt size={13} /> {t('chg.power')}
+            </div>
+            <div class="chg-stat-value mono">
+              {power != null ? fmtNum(power, 1) : '--'}
+              <small> kW</small>
+            </div>
           </div>
-          <div class="chg-stat-value mono">
-            {power != null ? fmtNum(power, 1) : '--'}
-            <small> kW</small>
+          <div class="chg-stat right">
+            <div class="chg-stat-head">
+              {t('chg.eta')}
+              {target != null && target > 0 && target < 100 ? ` · ${target}%` : ''}
+            </div>
+            <div class="chg-stat-value mono">
+              {eta != null && eta > 0 ? fmtEta(eta) : <span class="chg-dash">--</span>}
+            </div>
           </div>
         </div>
-        <div class="chg-stat right">
-          <div class="chg-stat-head">
-            {t('chg.eta')}
-            {target != null && target > 0 && target < 100 ? ` · ${target}%` : ''}
-          </div>
-          <div class="chg-stat-value mono">
-            {eta != null && eta > 0 ? fmtEta(eta) : <span class="chg-dash">--</span>}
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   )
 }
