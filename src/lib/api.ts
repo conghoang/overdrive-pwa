@@ -202,14 +202,42 @@ export const setTrunk = (action: 'open' | 'close'): Promise<ControlResult> =>
  */
 export const openAllWindows = (): Promise<ControlResult> => apiPost('/api/vehicle/window', { area: 0, command: 1 })
 export const closeAllWindows = (): Promise<ControlResult> => apiPost('/api/vehicle/window', { area: 0, command: 2 })
-export const ventWindows = (): Promise<ControlResult> => apiPost('/api/vehicle/window', { action: 'vent' })
 
 /** Window areas: 1=LF 2=RF 3=LR 4=RR 5=sunroof 6=sunshade. */
 export const setWindowPercent = (area: number, targetPercent: number): Promise<ControlResult> =>
   apiPost('/api/vehicle/window', { area, targetPercent })
-/** 1=open, 2=close, 3=stop — stop halts a window mid-travel. */
-export const stopWindow = (area: number): Promise<ControlResult> =>
-  apiPost('/api/vehicle/window', { area, command: 3 })
+
+/** How far open a "vent" crack is, in percent — roughly BYD's own crack. */
+const VENT_PERCENT = 15
+const SIDE_WINDOWS = [1, 2, 3, 4]
+
+/**
+ * Vent = crack all four side windows.
+ *
+ * BYD's own OPENWINDOW command is CLOUD_ONLY, so the obvious `{action:"vent"}`
+ * call fails outright on a car with no BYD Cloud account. Positioning each
+ * window instead (`area` + `targetPercent`) routes SDK_ONLY on the head unit,
+ * which needs no cloud at all — and since OverDrive runs ON the head unit, if
+ * we can reach the API the local path is available by definition.
+ *
+ * Cloud vent stays as the fallback for a car whose SDK rejects positioning.
+ */
+export async function ventWindows(): Promise<ControlResult> {
+  const results = await Promise.all(
+    SIDE_WINDOWS.map((area) =>
+      setWindowPercent(area, VENT_PERCENT).catch((e: unknown): ControlResult => ({
+        success: false,
+        error: e instanceof Error ? e.message : String(e),
+      })),
+    ),
+  )
+  const ok = results.filter((r) => r.success !== false && !r.error)
+  if (ok.length === SIDE_WINDOWS.length) return { success: true }
+  // Partial success is still a real vent — report it rather than failing over
+  // and driving the windows twice.
+  if (ok.length > 0) return { success: true, message: `${ok.length}/${SIDE_WINDOWS.length}` }
+  return apiPost('/api/vehicle/window', { action: 'vent' })
+}
 
 export const climateOn = (temp: number, remoteDurationMinutes = 15): Promise<ControlResult> =>
   apiPost('/api/vehicle/climate', { action: 'power_on', temp, remoteDurationMinutes })

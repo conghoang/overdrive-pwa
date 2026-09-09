@@ -107,10 +107,6 @@ const EN: Record<string, string> = {
   'ctrl.vent': 'Vent',
   'ctrl.open_all': 'Open all',
   'ctrl.close_all': 'Close all',
-  'win.lf': 'Front L',
-  'win.rf': 'Front R',
-  'win.lr': 'Rear L',
-  'win.rr': 'Rear R',
 
   'seat.driver': 'Driver',
   'seat.passenger': 'Passenger',
@@ -287,10 +283,6 @@ const VI: Record<string, string> = {
   'ctrl.vent': 'Hé cửa',
   'ctrl.open_all': 'Mở hết',
   'ctrl.close_all': 'Đóng hết',
-  'win.lf': 'Trước T',
-  'win.rf': 'Trước P',
-  'win.lr': 'Sau T',
-  'win.rr': 'Sau P',
 
   'seat.driver': 'Ghế lái',
   'seat.passenger': 'Ghế phụ',

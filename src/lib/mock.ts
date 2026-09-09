@@ -36,7 +36,7 @@ export function mockVehicleState(): VehicleState {
   return {
     success: true,
     doors: { overall: 1, rf: 1, lf: 1, rr: 1, lr: 1, trunk: 1, hood: 1 },
-    windows: { lf: 50, rf: 0, lr: 25, rr: 100, sunroof: 0 },
+    windows: { lf: 0, rf: 0, lr: 0, rr: 0, sunroof: 0 },
     battery: { soc, rangeKm: soc * 5.2 },
     climate: { acOn: true, insideTempC: 24, windMode: 1, fanLevel: 2, remoteClimateActive: true },
     seats: { heat: [1, 0], cool: [0, 2], ventilatedSupported: true },
