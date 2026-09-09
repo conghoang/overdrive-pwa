@@ -1,5 +1,14 @@
 import { getBaseUrl } from '../lib/api'
 import { t } from '../lib/i18n'
+import { setTheme, theme } from '../lib/theme'
+import { IconMoon, IconSun, IconThemeAuto } from './icons'
+
+/** System -> Light -> Dark -> System. One button, and the glyph states which. */
+const THEME_CYCLE = {
+  system: { next: 'light', Icon: IconThemeAuto, label: 'dev.theme_system' },
+  light: { next: 'dark', Icon: IconSun, label: 'dev.theme_light' },
+  dark: { next: 'system', Icon: IconMoon, label: 'dev.theme_dark' },
+} as const
 
 const OD_LOGO = `${import.meta.env.BASE_URL}icons/od.webp`
 
@@ -23,6 +32,7 @@ export function AppHeader({
         <div class="screen-sub">{sub}</div>
       </div>
       <div class="head-actions">
+        <ThemeButton />
         {isReal && (
           <a
             class="od-btn"
@@ -38,5 +48,20 @@ export function AppHeader({
         <span class={'dot ' + dot} />
       </div>
     </div>
+  )
+}
+
+function ThemeButton() {
+  const cur = THEME_CYCLE[theme.value]
+  const Icon = cur.Icon
+  return (
+    <button
+      class="head-btn"
+      title={`${t('dev.theme')}: ${t(cur.label)}`}
+      aria-label={`${t('dev.theme')}: ${t(cur.label)}`}
+      onClick={() => setTheme(cur.next)}
+    >
+      <Icon size={21} />
+    </button>
   )
 }

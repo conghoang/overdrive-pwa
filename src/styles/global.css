@@ -63,6 +63,7 @@ h1, h2, h3, p { margin: 0; }
 .screen-sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
 
 .head-actions { display: flex; align-items: center; gap: 12px; }
+.head-btn,
 .od-btn {
   width: 40px;
   height: 40px;
@@ -74,7 +75,9 @@ h1, h2, h3, p { margin: 0; }
   border: 1px solid var(--border-strong);
   transition: transform 0.08s ease, border-color 0.15s ease;
 }
+.head-btn:active,
 .od-btn:active { transform: scale(0.92); }
+.head-btn { color: var(--text-secondary); }
 .od-btn img { display: block; border-radius: 7px; }
 
 /* ---------- cards ---------- */

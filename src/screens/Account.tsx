@@ -11,7 +11,6 @@ import { carName, carPhoto, setCarName, setCarPhoto, setShowMap, setWicarlink, s
 import { fileToResizedDataUrl } from '../lib/image'
 import { toast } from '../lib/toast'
 import { lang, setLang, t } from '../lib/i18n'
-import { setTheme, theme } from '../lib/theme'
 import { hapticsEnabled, hapticsSupported, setHapticsEnabled, tapFeedback } from '../lib/haptics'
 import { setSoundEnabled, soundEnabled, soundSupported, tapSound, unlockAudio } from '../lib/sound'
 
@@ -84,24 +83,6 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
             <span class="screen-sub" style={{ marginTop: '2px' }}>{t('dev.map_desc')}</span>
           </div>
           <Switch on={showMap.value} onChange={setShowMap} />
-        </div>
-      </div>
-
-      {/* appearance */}
-      <div class="card" style={{ marginTop: '14px' }}>
-        <div class="spread">
-          <div class="card-title" style={{ margin: 0 }}>{t('dev.theme')}</div>
-          <div class="seg">
-            <button class={theme.value === 'system' ? 'on' : ''} onClick={() => setTheme('system')}>
-              {t('dev.theme_system')}
-            </button>
-            <button class={theme.value === 'light' ? 'on' : ''} onClick={() => setTheme('light')}>
-              {t('dev.theme_light')}
-            </button>
-            <button class={theme.value === 'dark' ? 'on' : ''} onClick={() => setTheme('dark')}>
-              {t('dev.theme_dark')}
-            </button>
-          </div>
         </div>
       </div>
 

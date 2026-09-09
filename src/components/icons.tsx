@@ -148,6 +148,28 @@ export const IconSnowSeat = ({ size, class: c }: IconProps) =>
 export const IconTrash = ({ size, class: c }: IconProps) =>
   svg(<><path d="M4 7h16" /><path d="M9 7V5h6v2" /><path d="M6 7l1 13h10l1-13" /></>, size, c)
 
+export const IconSun = ({ size, class: c }: IconProps) =>
+  svg(
+    <>
+      <circle cx="12" cy="12" r="4.2" />
+      <path d="M12 2.6v2.2M12 19.2v2.2M21.4 12h-2.2M4.8 12H2.6M18.6 5.4l-1.6 1.6M7 17l-1.6 1.6M18.6 18.6 17 17M7 7 5.4 5.4" />
+    </>,
+    size,
+    c,
+  )
+export const IconMoon = ({ size, class: c }: IconProps) =>
+  svg(<path d="M20 14.2A8.2 8.2 0 0 1 9.8 4a8.4 8.4 0 1 0 10.2 10.2z" />, size, c)
+/** System: one disc, half filled — reads as "follows whatever the phone does". */
+export const IconThemeAuto = ({ size, class: c }: IconProps) =>
+  svg(
+    <>
+      <circle cx="12" cy="12" r="8.4" />
+      <path d="M12 3.6a8.4 8.4 0 0 1 0 16.8z" fill="currentColor" stroke="none" />
+    </>,
+    size,
+    c,
+  )
+
 export const IconMinus = ({ size, class: c }: IconProps) => svg(<path d="M5 12h14" />, size, c)
 export const IconPlus = ({ size, class: c }: IconProps) => svg(<><path d="M12 5v14" /><path d="M5 12h14" /></>, size, c)
 export const IconArrow = ({ size, class: c }: IconProps) => svg(<><path d="M5 12h14" /><path d="M13 6l6 6-6 6" /></>, size, c)
