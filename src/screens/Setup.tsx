@@ -70,7 +70,7 @@ export function Setup({ onDone }: { onDone: () => void }) {
 
   return (
     <div class="setup">
-      <img class="setup-logo" src={`${import.meta.env.BASE_URL}icons/icon.svg`} alt="" />
+      <img class="setup-logo" src={`${import.meta.env.BASE_URL}icons/logo-tile.webp`} alt="" />
       <h1>{t('setup.title')}</h1>
       <p class="lede">{t('setup.lede')}</p>
 

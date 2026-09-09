@@ -7,9 +7,12 @@
   max-width: 460px;
   margin: 0 auto;
 }
+/* The club logo is a wide mark, not a square glyph — size it by width and let
+   the height follow, on the same white tile the installed app icon uses so the
+   setup screen shows what lands on the home screen. */
 .setup-logo {
-  width: 64px;
-  height: 64px;
+  width: 186px;
+  height: auto;
   margin-bottom: 22px;
 }
 .setup h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
