@@ -1,6 +1,8 @@
 import { connected, lastError, status, vehicleState } from '../lib/store'
 import { fmtNum, fmtTemp, ago } from '../lib/format'
 import { t } from '../lib/i18n'
+import { carName, showMap } from '../lib/settings'
+import { MiniMap } from '../components/MiniMap'
 import { AppHeader } from '../components/AppHeader'
 import { CarHero } from '../components/CarHero'
 import { QuickActions } from '../components/QuickActions'
@@ -34,7 +36,7 @@ export function Dashboard() {
   if (!s) {
     return (
       <div>
-        <AppHeader title={t('tab.vehicle')} sub={connected.value ? t('common.live') : t('common.reconnecting')} dot={connected.value ? 'ok' : 'wait'} />
+        <AppHeader title={carName.value || t('tab.vehicle')} sub={connected.value ? t('common.live') : t('common.reconnecting')} dot={connected.value ? 'ok' : 'wait'} />
         <div class="card">
           <div class="center-note">
             {connected.value ? t('common.loading_vehicle') : lastError.value || t('common.connecting_car')}
@@ -63,7 +65,7 @@ export function Dashboard() {
 
   return (
     <div>
-      <AppHeader title={t('tab.vehicle')} sub={connected.value ? t('common.live') : t('common.reconnecting')} dot={connected.value ? 'ok' : 'wait'} />
+      <AppHeader title={carName.value || t('tab.vehicle')} sub={connected.value ? t('common.live') : t('common.reconnecting')} dot={connected.value ? 'ok' : 'wait'} />
 
       <CarHero s={s} />
       <QuickActions />
@@ -135,6 +137,7 @@ export function Dashboard() {
       {s.gps?.hasLocation && s.gps?.lat != null && s.gps?.lng != null && (
         <div class="card" style={{ marginTop: '14px' }}>
           <div class="card-title">{t('loc.title')}</div>
+          {showMap.value && <MiniMap lat={s.gps.lat} lng={s.gps.lng} />}
           <div class="row" style={{ gap: '11px' }}>
             <IconPin size={20} />
             <div class="stack">

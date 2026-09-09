@@ -7,6 +7,25 @@ const K_CMDS = 'odpwa.wicarlink.cmds'
 
 export const wicarlink = signal<boolean>(localStorage.getItem(K_WICARLINK) === '1')
 
+// User-chosen name for the car, shown as the Vehicle tab's title. Empty = use
+// the default localised "Vehicle".
+const K_CARNAME = 'odpwa.carName'
+export const carName = signal<string>(localStorage.getItem(K_CARNAME) || '')
+export function setCarName(name: string): void {
+  const v = name.trim().slice(0, 28)
+  carName.value = v
+  if (v) localStorage.setItem(K_CARNAME, v)
+  else localStorage.removeItem(K_CARNAME)
+}
+
+// Opt-in mini map on the Vehicle tab (off by default: it fetches map tiles).
+const K_MAP = 'odpwa.map'
+export const showMap = signal<boolean>(localStorage.getItem(K_MAP) === '1')
+export function setShowMap(on: boolean): void {
+  showMap.value = on
+  localStorage.setItem(K_MAP, on ? '1' : '0')
+}
+
 // Optional user-supplied car photo (data URL), overriding the bundled default.
 const K_CARPHOTO = 'odpwa.carPhoto'
 export const carPhoto = signal<string | null>(localStorage.getItem(K_CARPHOTO))

@@ -6,7 +6,7 @@ import { useState } from 'preact/hooks'
 import { AppHeader } from '../components/AppHeader'
 import { Switch } from '../components/Switch'
 import { WiCarlinkEditor } from '../components/WiCarlinkControls'
-import { carPhoto, setCarPhoto, setWicarlink, wicarlink } from '../lib/settings'
+import { carName, carPhoto, setCarName, setCarPhoto, setShowMap, setWicarlink, showMap, wicarlink } from '../lib/settings'
 import { fileToResizedDataUrl } from '../lib/image'
 import { toast } from '../lib/toast'
 import { lang, setLang, t } from '../lib/i18n'
@@ -58,6 +58,30 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
           <button class="btn" disabled={!carPhoto.value} onClick={() => setCarPhoto(null)}>
             {t('dev.use_default')}
           </button>
+        </div>
+      </div>
+
+      {/* vehicle name */}
+      <div class="card" style={{ marginTop: '14px' }}>
+        <div class="card-title">{t('dev.car_name')}</div>
+        <input
+          class="wc-input"
+          maxLength={28}
+          placeholder={t('dev.car_name_ph')}
+          value={carName.value}
+          onInput={(e) => setCarName((e.target as HTMLInputElement).value)}
+        />
+        <div class="screen-sub" style={{ marginTop: '8px' }}>{t('dev.car_name_desc')}</div>
+      </div>
+
+      {/* map */}
+      <div class="card" style={{ marginTop: '14px' }}>
+        <div class="srow" style={{ paddingTop: 0, paddingBottom: 0 }}>
+          <div class="stack">
+            <span class="srow-label">{t('dev.map')}</span>
+            <span class="screen-sub" style={{ marginTop: '2px' }}>{t('dev.map_desc')}</span>
+          </div>
+          <Switch on={showMap.value} onChange={setShowMap} />
         </div>
       </div>
 
