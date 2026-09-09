@@ -17,7 +17,7 @@ export function CircularGauge({
   return (
     <div class="gauge">
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#1b2b3d" stroke-width={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--track-deep)" stroke-width={stroke} />
         <circle
           cx={size / 2}
           cy={size / 2}

@@ -79,9 +79,9 @@ function SeatFallback({
     const c = heat > 0 ? '#ff6a4a' : cool > 0 ? '#4aa8ff' : null
     return (
       <g transform={`translate(${x} 0)`}>
-        <rect x="18" y="20" width="64" height="76" rx="22" fill="#243141" stroke={c || 'rgba(190,215,240,0.25)'} stroke-width="1.4" />
-        <rect x="14" y="94" width="72" height="34" rx="16" fill="#1b2733" stroke={c || 'rgba(190,215,240,0.2)'} stroke-width="1.2" />
-        <rect x="34" y="4" width="32" height="16" rx="7" fill="#2a3948" />
+        <rect x="18" y="20" width="64" height="76" rx="22" fill="var(--seat-fill)" stroke={c || 'rgba(190,215,240,0.25)'} stroke-width="1.4" />
+        <rect x="14" y="94" width="72" height="34" rx="16" fill="var(--seat-fill-deep)" stroke={c || 'rgba(190,215,240,0.2)'} stroke-width="1.2" />
+        <rect x="34" y="4" width="32" height="16" rx="7" fill="var(--seat-head)" />
         {c && <rect x="18" y="20" width="64" height="76" rx="22" fill={c} opacity="0.22" filter={`url(#fb-${id})`} />}
       </g>
     )

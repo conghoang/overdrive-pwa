@@ -60,16 +60,18 @@
   width: 100%;
   border-radius: var(--radius-md);
   overflow: hidden;
-  background: #10161d;
+  background: var(--map-bg);
   margin-bottom: 14px;
   border: 1px solid var(--border-soft);
 }
-.minimap-host { position: absolute; inset: 0; background: #10161d; }
+.minimap-host { position: absolute; inset: 0; background: var(--map-bg); }
 /* Darken ONLY the tiles — markers, controls and attribution keep their colours. */
+/* OSM tiles are drawn for light backgrounds. The dark theme inverts them; the
+   light theme must leave them alone, so the filter comes from a token. */
 .minimap .osm-dark {
-  filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9) saturate(0.45);
+  filter: var(--map-tile-filter);
 }
-.minimap .leaflet-container { background: #10161d; font-family: var(--font); }
+.minimap .leaflet-container { background: var(--map-bg); font-family: var(--font); }
 .minimap .leaflet-control-zoom a {
   background: rgba(12, 23, 36, 0.9);
   color: var(--text);
@@ -78,12 +80,12 @@
 }
 .minimap .leaflet-control-zoom a:hover { background: var(--surface-3); }
 .minimap .leaflet-control-attribution {
-  background: rgba(0, 0, 0, 0.4);
-  color: rgba(255, 255, 255, 0.5);
+  background: var(--map-attr-bg);
+  color: var(--map-attr-fg);
   font-size: 9px;
   padding: 1px 5px;
 }
-.minimap .leaflet-control-attribution a { color: rgba(255, 255, 255, 0.7); }
+.minimap .leaflet-control-attribution a { color: var(--map-attr-link); }
 .minimap-recenter {
   position: absolute;
   right: 8px;
@@ -135,7 +137,7 @@
 .energy-head .lab { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text-secondary); }
 .energy-head .val { font-size: 13px; color: var(--muted); font-weight: 600; }
 .energy-head .val b { color: var(--text); }
-.energy-bar { height: 10px; border-radius: 999px; background: #16283a; overflow: hidden; }
+.energy-bar { height: 10px; border-radius: 999px; background: var(--track); overflow: hidden; }
 .energy-fill { height: 100%; border-radius: 999px; transition: width 0.5s ease; }
 
 /* tyres — top-view diagram with a reading at each wheel */
@@ -194,8 +196,8 @@
 .veh-range-num { font-size: 44px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
 .veh-range-unit { font-size: 18px; color: var(--muted); font-weight: 600; }
 .veh-range-label { color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
-.car-photo { display: block; width: 100%; max-width: 380px; margin: 6px auto 4px; height: auto; filter: drop-shadow(0 16px 22px rgba(0,0,0,0.45)); }
-.car-photo-preview { display: block; width: 100%; max-width: 300px; height: auto; margin: 0 auto; filter: drop-shadow(0 10px 16px rgba(0,0,0,0.4)); }
+.car-photo { display: block; width: 100%; max-width: 380px; margin: 6px auto 4px; height: auto; filter: var(--shadow-photo); }
+.car-photo-preview { display: block; width: 100%; max-width: 300px; height: auto; margin: 0 auto; filter: var(--shadow-photo-sm); }
 .car-svg { display: block; }
 
 .prnd {

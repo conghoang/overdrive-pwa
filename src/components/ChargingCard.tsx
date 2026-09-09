@@ -2,6 +2,7 @@ import { chargeEtaMin, chargeTargetPct } from '../lib/store'
 import { fmtEta, fmtNum } from '../lib/format'
 import { t } from '../lib/i18n'
 import { IconBolt, IconPlug } from './icons'
+import { resolvedTheme } from '../lib/theme'
 import type { StatusResponse } from '../lib/types'
 import './charging.css'
 
@@ -18,6 +19,10 @@ import './charging.css'
  * The car is an image, not a drawing: `public/car/side-wire.webp` is the
  * wireframe from the cluster's own charge screen, with its baked-in battery
  * slab and "41%" erased so this app can draw them live instead.
+ *
+ * Two versions. The frame is a bright outline on near-black, which is a dark
+ * rectangle on a white card, so light mode gets an inverted build — a dark
+ * outline on near-white — rather than the same file recoloured in CSS.
  *
  * The SVG coordinate space IS the image's pixel space (520x246), so the pack
  * coordinates below are read straight off the photo — no scaling math.
@@ -185,7 +190,13 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
           </filter>
         </defs>
 
-        <image href={`${import.meta.env.BASE_URL}car/side-wire.webp`} x="0" y="0" width={IMG.w} height={IMG.h} />
+        <image
+          href={`${import.meta.env.BASE_URL}car/side-wire${resolvedTheme.value === 'light' ? '-light' : ''}.webp`}
+          x="0"
+          y="0"
+          width={IMG.w}
+          height={IMG.h}
+        />
 
         {/* rim the near wheels so they read against the toned-down frame */}
         {WHEELS.map((w) => (

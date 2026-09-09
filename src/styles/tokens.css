@@ -1,12 +1,20 @@
 /*
  * OverDrive PWA design tokens.
- * Deep-navy dark theme with a teal/mint accent, layered translucent surfaces,
- * generous rounding, and soft depth shadows with a subtle top-edge highlight.
+ *
+ * Two themes. `:root` carries the dark one (deep navy, teal accent) and is the
+ * default, so anything that misses a light override still renders. The light
+ * theme redefines ONLY tokens — no component ever styles itself per theme, so
+ * a new component is theme-correct for free as long as it uses these.
+ *
+ * The theme is chosen by `data-theme` on <html> (see lib/theme.ts), not by a
+ * media query, because the user can override the system preference in Settings.
  */
 :root {
   /* backgrounds */
   --app-bg: #071019;
   --app-bg-deep: #040a11;
+  /* wash behind the whole page */
+  --app-wash: rgba(45, 212, 191, 0.06);
 
   /* layered surfaces (stack by depth) */
   --surface-1: rgba(12, 23, 36, 0.96);
@@ -43,6 +51,33 @@
   --border-soft: rgba(168, 198, 220, 0.11);
   --border-strong: rgba(168, 198, 220, 0.22);
 
+  /* filled-track backdrops: gauges, energy bars, sliders */
+  --track: #16283a;
+  --track-deep: #1b2b3d;
+
+  /* map canvas behind tiles */
+  --map-bg: #10161d;
+  --map-attr-bg: rgba(0, 0, 0, 0.4);
+  --map-attr-fg: rgba(255, 255, 255, 0.5);
+  --map-attr-link: rgba(255, 255, 255, 0.7);
+  /* Tiles are OpenStreetMap's, drawn for light backgrounds; the dark theme
+     inverts them. Light mode must NOT, hence a token rather than a fixed rule. */
+  --map-tile-filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9) saturate(0.45);
+
+  /* drawn vehicle parts (seat diagram, tyre diagram) */
+  --seat-fill: #243141;
+  --seat-fill-deep: #1b2733;
+  --seat-head: #2a3948;
+  --wheel-normal: #9fb2c4;
+  --wheel-muted: #5a6673;
+  /* charging-card wheel rims, over the cluster frame */
+  --chg-wheel-glow: rgba(148, 200, 236, 0.22);
+  --chg-wheel-rim: rgba(206, 232, 252, 0.42);
+  /* SOC figure: it crosses both the frame and the green slab, so it needs a
+     fill that holds on both */
+  --chg-num-fill: #fff;
+  --chg-num-stroke: rgba(4, 12, 20, 0.3);
+
   /* radii */
   --radius-sm: 12px;
   --radius-md: 16px;
@@ -52,6 +87,8 @@
   /* shadows */
   --shadow-card: 0 18px 54px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.045);
   --shadow-float: 0 28px 90px rgba(0, 0, 0, 0.52), inset 0 1px 0 rgba(255, 255, 255, 0.055);
+  --shadow-photo: drop-shadow(0 16px 22px rgba(0, 0, 0, 0.45));
+  --shadow-photo-sm: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.4));
 
   /* layout */
   --tabbar-h: 68px;
@@ -60,4 +97,71 @@
 
   --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/*
+ * Light theme. Not an inversion — the accent and every semantic colour is
+ * re-picked to hold contrast on a light ground, where the dark theme's bright
+ * mint and coral would be close to illegible.
+ */
+:root[data-theme='light'] {
+  --app-bg: #eef2f7;
+  --app-bg-deep: #e3e9f1;
+  --app-wash: rgba(13, 148, 136, 0.05);
+
+  --surface-1: rgba(255, 255, 255, 0.97);
+  --surface-2: rgba(255, 255, 255, 0.86);
+  --surface-3: rgba(232, 238, 245, 0.9);
+  --surface-soft: rgba(16, 42, 66, 0.05);
+  --surface-hover: rgba(16, 42, 66, 0.09);
+
+  --accent: #0f9c8b;
+  --accent-bright: #0c8375;
+  --accent-strong: #0b7a6e;
+  --accent-soft: rgba(15, 156, 139, 0.12);
+  --accent-border: rgba(15, 156, 139, 0.34);
+
+  --text: #0e1d29;
+  --text-secondary: #3d4f5d;
+  --muted: #64798a;
+
+  --danger: #d33b47;
+  --success: #1f8a52;
+  --warning: #b4740f;
+  --info: #2f63cc;
+
+  --m-teal: #0f9c8b;
+  --m-blue: #2f63cc;
+  --m-purple: #7c3fc4;
+  --m-orange: #c06a0c;
+
+  --border-soft: rgba(16, 42, 66, 0.12);
+  --border-strong: rgba(16, 42, 66, 0.2);
+
+  --track: #d7e0ea;
+  --track-deep: #cbd7e4;
+
+  --map-bg: #e8edf3;
+  --map-attr-bg: rgba(255, 255, 255, 0.72);
+  --map-attr-fg: rgba(16, 42, 66, 0.62);
+  --map-attr-link: rgba(16, 42, 66, 0.82);
+  --map-tile-filter: none;
+
+  --seat-fill: #ccd8e4;
+  --seat-fill-deep: #bccadb;
+  --seat-head: #b3c3d4;
+  --wheel-normal: #5f7386;
+  --wheel-muted: #a9b7c4;
+  /* the light frame is INVERTED, so its wheels are pale discs — they need a
+     dark ring, not the dark theme's pale one */
+  --chg-wheel-glow: rgba(40, 74, 104, 0.16);
+  --chg-wheel-rim: rgba(30, 60, 88, 0.5);
+  /* white would vanish where the number overlaps the near-white frame */
+  --chg-num-fill: #0e1d29;
+  --chg-num-stroke: rgba(255, 255, 255, 0.55);
+
+  --shadow-card: 0 10px 28px rgba(16, 42, 66, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --shadow-float: 0 20px 54px rgba(16, 42, 66, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  --shadow-photo: drop-shadow(0 14px 20px rgba(16, 42, 66, 0.22));
+  --shadow-photo-sm: drop-shadow(0 9px 14px rgba(16, 42, 66, 0.2));
 }

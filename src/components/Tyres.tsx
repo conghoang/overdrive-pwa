@@ -11,8 +11,8 @@ const FRONT: Corner[] = ['fl', 'fr']
 const WHEEL_COLOR: Record<TyreSeverity, string> = {
   alert: 'var(--danger)',
   warn: 'var(--warning)',
-  muted: '#5a6673',
-  normal: '#9fb2c4',
+  muted: 'var(--wheel-muted)',
+  normal: 'var(--wheel-normal)',
 }
 
 export function Tyres({ tyres, unit }: { tyres: TyresState | undefined; unit: string }) {

@@ -42,8 +42,8 @@
 
 /* Wheels: a soft halo and a faint rim — enough to separate them from the dark
    ground without turning them into bullseyes. */
-.chg-wheel-glow { fill: none; stroke: rgba(148, 200, 236, 0.22); stroke-width: 5; }
-.chg-wheel-rim { fill: none; stroke: rgba(206, 232, 252, 0.42); stroke-width: 1.2; }
+.chg-wheel-glow { fill: none; stroke: var(--chg-wheel-glow); stroke-width: 5; }
+.chg-wheel-rim { fill: none; stroke: var(--chg-wheel-rim); stroke-width: 1.2; }
 
 /* Pack faces. Sampled from the cluster, where the extruded edges are LIGHTER
    than the top face, not darker — the slab is lit like a glowing plate rather
@@ -71,12 +71,12 @@
    the original carries no outline at all. */
 .chg-num,
 .chg-unit {
-  fill: #fff;
+  fill: var(--chg-num-fill);
   font-weight: 500;
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
   paint-order: stroke;
-  stroke: rgba(4, 12, 20, 0.3);
+  stroke: var(--chg-num-stroke);
   stroke-width: 3px;
   stroke-linejoin: round;
 }
