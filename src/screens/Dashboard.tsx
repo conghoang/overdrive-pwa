@@ -118,15 +118,6 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div style={{ marginTop: '14px' }}>
-        <EnergyGauges s={s} />
-      </div>
-
-      {/* tyre pressure */}
-      <div style={{ marginTop: '14px' }}>
-        <Tyres tyres={vs?.tyres} unit={s.pressureUnit || 'kpa'} />
-      </div>
-
       {/* status */}
       <div class="card" style={{ marginTop: '14px' }}>
         <div class="card-title">{t('status.title')}</div>
@@ -161,6 +152,15 @@ export function Dashboard() {
           </div>
           <span class={'pill' + (climateOn ? ' good' : '')}>{climateOn ? t('common.on') : t('common.off')}</span>
         </div>
+      </div>
+
+      <div style={{ marginTop: '14px' }}>
+        <EnergyGauges s={s} />
+      </div>
+
+      {/* tyre pressure */}
+      <div style={{ marginTop: '14px' }}>
+        <Tyres tyres={vs?.tyres} unit={s.pressureUnit || 'kpa'} />
       </div>
 
       {/* location */}
