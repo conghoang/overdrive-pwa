@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks'
 import { carPhoto } from '../lib/settings'
 import { chargeEtaMin, chargeTargetPct, odometer } from '../lib/store'
-import { distanceUnitLabel, fmtEta, fmtNum, fmtOdo } from '../lib/format'
+import { distanceUnitLabel, fmtDistance, fmtEta, fmtNum, fmtOdo } from '../lib/format'
 import { t } from '../lib/i18n'
 import { IconBolt } from './icons'
 import { CarImage } from './CarImage'
@@ -13,8 +13,13 @@ export const DEFAULT_PHOTO = `${import.meta.env.BASE_URL}car/sealion6.webp`
 /**
  * Vehicle hero: odometer, car photo, P R N D, charging.
  *
- * Shows the ODOMETER rather than estimated range — range is already the whole
- * point of the energy card below, and repeating it here wasted the headline.
+ * Prefers the ODOMETER over estimated range — range already leads the energy
+ * card below, so repeating it here wasted the headline.
+ *
+ * Falls back to range when the car cannot report an odometer, which today is
+ * every release build: the reading is only reachable through the BYD SDK
+ * device, and no HTTP endpoint serves it (see api.getOdometer). Better a
+ * duplicated range than a headline reading "--".
  */
 export function CarHero({ s }: { s: StatusResponse }) {
   const [imgOk, setImgOk] = useState(true)
@@ -24,14 +29,18 @@ export function CarHero({ s }: { s: StatusResponse }) {
   const power = s.charging?.chargingPowerKW ?? s.charging?.powerKw
   const photo = carPhoto.value || DEFAULT_PHOTO
   const odo = odometer.value
+  const hasOdo = odo?.totalKm != null
+  const range = s.range?.totalRangeKm ?? s.range?.elecRangeKm
 
   return (
     <div class="card car-hero-card">
       <div class="veh-range">
-        <span class="veh-range-num mono">{fmtOdo(odo?.totalKm, unit)}</span>
+        <span class="veh-range-num mono">
+          {hasOdo ? fmtOdo(odo!.totalKm, unit) : fmtDistance(range, unit)}
+        </span>
         <span class="veh-range-unit">{distanceUnitLabel(unit)}</span>
       </div>
-      <div class="veh-range-label">{t('car.odo')}</div>
+      <div class="veh-range-label">{hasOdo ? t('car.odo') : t('car.range')}</div>
 
       {/* EV / HEV split of that total. A BEV or a trim without the split leaves
           hevKm unavailable, so each leg is rendered only when the car reports
