@@ -21,11 +21,23 @@ export default defineConfig({
   plugins: [
     preact(),
     {
-      // Append ?v=<commit> to local <script src> / <link href> js|css in index.html.
+      /*
+       * Append ?v=<commit> to local <link href> CSS in index.html.
+       *
+       * CSS ONLY — deliberately not the entry <script>. That script is an ES
+       * module, and a query string makes it a DIFFERENT module specifier to the
+       * browser: the entry loads `index-abc.js?v=<commit>` while a lazily
+       * imported chunk resolves the same file as plain `index-abc.js`. The
+       * browser then evaluates it twice, so a code-split screen gets its own
+       * second copy of Preact and every hook in it throws on null state.
+       *
+       * Cache-busting for JS is already handled: Vite content-hashes the
+       * filename, which is stronger than a query the module graph disagrees on.
+       */
       name: 'asset-version-query',
       enforce: 'post',
       transformIndexHtml(html) {
-        return html.replace(/(\b(?:src|href)=")(\/[^"]+\.(?:js|css))"/g, `$1$2?v=${commit}"`)
+        return html.replace(/(\bhref=")(\/[^"]+\.css)"/g, `$1$2?v=${commit}"`)
       },
     },
     {

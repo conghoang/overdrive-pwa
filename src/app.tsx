@@ -1,5 +1,4 @@
 import { signal } from '@preact/signals'
-import { useRef } from 'preact/hooks'
 import type { JSX } from 'preact'
 import { isConfigured } from './lib/api'
 import * as store from './lib/store'
@@ -7,12 +6,33 @@ import { Setup } from './screens/Setup'
 import { Dashboard } from './screens/Dashboard'
 import { Controls } from './screens/Controls'
 import { Account } from './screens/Account'
+import { useEffect, useRef, useState } from 'preact/hooks'
+
+/**
+ * Camera tab, loaded on first open only: the screen pulls in the H.264 /
+ * WebCodecs player, which nobody who never opens it should have to download.
+ *
+ * Plain dynamic import rather than preact/compat's lazy + Suspense — that pair
+ * threw "Cannot read properties of null (reading '__H')" here and rendered an
+ * empty screen. Vite code-splits on the import() either way, so the only thing
+ * lost is the Suspense boundary, which this replaces with a state flag.
+ */
+function CameraTab() {
+  const [Comp, setComp] = useState<null | (() => JSX.Element)>(null)
+  useEffect(() => {
+    let live = true
+    void import('./screens/Camera').then((m) => { if (live) setComp(() => m.Camera) })
+    return () => { live = false }
+  }, [])
+  if (!Comp) return <div class="card"><div class="center-note">…</div></div>
+  return <Comp />
+}
 import { TabBar } from './components/TabBar'
 import { Toaster } from './components/Toaster'
 
-export type Tab = 'dashboard' | 'controls' | 'account'
+export type Tab = 'dashboard' | 'controls' | 'camera' | 'account'
 
-const TAB_ORDER: Tab[] = ['dashboard', 'controls', 'account']
+const TAB_ORDER: Tab[] = ['dashboard', 'controls', 'camera', 'account']
 
 const tab = signal<Tab>('dashboard')
 const configured = signal(isConfigured())
@@ -78,6 +98,7 @@ export function App() {
         <div class="screen-anim" key={tab.value}>
           {tab.value === 'dashboard' && <Dashboard />}
           {tab.value === 'controls' && <Controls />}
+          {tab.value === 'camera' && <CameraTab />}
           {tab.value === 'account' && <Account onSignOut={() => (configured.value = false)} />}
         </div>
       </main>

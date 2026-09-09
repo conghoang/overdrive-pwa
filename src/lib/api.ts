@@ -263,6 +263,38 @@ export async function getOdometer(): Promise<Odometer> {
   }
 }
 
+/*
+ * Live camera. The stream is enabled on the head unit, a view is selected, and
+ * frames arrive on a WebSocket — see lib/h264.ts for the decode side.
+ *
+ * The socket carries the JWT as ?token=: the browser WebSocket API cannot set
+ * an Authorization header, and cookies are stripped cross-site through a
+ * tunnel, so the query param is the only channel OD accepts.
+ */
+export const CAMERA_VIEWS = [
+  { mode: 1, key: 'cam.front' },
+  { mode: 2, key: 'cam.right' },
+  { mode: 3, key: 'cam.rear' },
+  { mode: 4, key: 'cam.left' },
+  { mode: 0, key: 'cam.mosaic' },
+] as const
+
+export const streamEnable = (): Promise<ControlResult> => apiPost('/api/stream/enable')
+export const streamDisable = (): Promise<ControlResult> => apiPost('/api/stream/disable')
+export const streamView = (mode: number): Promise<ControlResult> => apiPost(`/api/stream/view/${mode}`)
+
+/** ws(s):// URL for the frame socket, derived from the configured base. */
+export function streamSocketUrl(): string {
+  const base = getBaseUrl()
+  const jwt = getJwt()
+  if (!base || !jwt) return ''
+  const u = new URL(base)
+  u.protocol = u.protocol === 'https:' ? 'wss:' : 'ws:'
+  u.pathname = '/ws'
+  u.search = `?token=${encodeURIComponent(jwt)}`
+  return u.toString()
+}
+
 /** Window areas: 1=LF 2=RF 3=LR 4=RR 5=sunroof 6=sunshade. */
 export const setWindowPercent = (area: number, targetPercent: number): Promise<ControlResult> =>
   apiPost('/api/vehicle/window', { area, targetPercent })

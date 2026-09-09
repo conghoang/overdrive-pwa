@@ -170,6 +170,16 @@ export const IconThemeAuto = ({ size, class: c }: IconProps) =>
     c,
   )
 
+export const IconCamera = ({ size, class: c }: IconProps) =>
+  svg(
+    <>
+      <path d="M4 8h3l1.4-2h7.2L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" />
+      <circle cx="12" cy="13.5" r="3.6" />
+    </>,
+    size,
+    c,
+  )
+
 export const IconMinus = ({ size, class: c }: IconProps) => svg(<path d="M5 12h14" />, size, c)
 export const IconPlus = ({ size, class: c }: IconProps) => svg(<><path d="M12 5v14" /><path d="M5 12h14" /></>, size, c)
 export const IconArrow = ({ size, class: c }: IconProps) => svg(<><path d="M5 12h14" /><path d="M13 6l6 6-6 6" /></>, size, c)
