@@ -164,6 +164,9 @@ async function demoResponse<T>(path: string): Promise<T> {
   if (path === '/api/vehicle/state') return mockVehicleState() as unknown as T
   if (path === '/api/launcher/v1/summary')
     return { charging: { active: true, kw: 7.2, etaMin: 135, targetPct: 80 } } as unknown as T
+  if (path === '/api/trips/config') {
+    return { success: true, config: { enabled: true } } as unknown as T
+  }
   if (path.startsWith('/api/trips')) {
     return { success: true, trips: [{ odometerEndKm: 24680.4 }] } as unknown as T
   }
@@ -229,18 +232,34 @@ export const closeAllWindows = (): Promise<ControlResult> => apiPost('/api/vehic
  * `mileage` block that BydVehicleData.toJson() already builds.
  */
 interface TripRow { odometerEndKm?: number }
+interface TripConfig { config?: { enabled?: boolean } }
 
 export interface Odometer { totalKm: number | null; evKm: number | null; hevKm: number | null }
 
+const NO_ODO: Odometer = { totalKm: null, evKm: null, hevKm: null }
+
 export async function getOdometer(): Promise<Odometer> {
   try {
-    const r = await apiGet<{ trips?: TripRow[] }>('/api/trips?limit=1')
-    const km = r?.trips?.[0]?.odometerEndKm
+    // Both in one round trip; either failing alone must not lose the other.
+    const [cfg, log] = await Promise.all([
+      apiGet<TripConfig>('/api/trips/config').catch(() => null),
+      apiGet<{ trips?: TripRow[] }>('/api/trips?limit=1').catch(() => null),
+    ])
+
+    // With trip recording OFF the newest row can be arbitrarily old, so its end
+    // reading is NOT the current odometer — it is whatever it was when logging
+    // stopped. Showing that as "odometer" would be quietly wrong in a way the
+    // user cannot see, so drop it and let the hero fall back to range.
+    // Only an explicit false suppresses it: an unreachable or older build that
+    // omits the flag should keep working.
+    if (cfg?.config?.enabled === false) return NO_ODO
+
+    const km = log?.trips?.[0]?.odometerEndKm
     // Cars that do not report the odometer leave this at 0 rather than absent.
     const totalKm = typeof km === 'number' && km > 0 ? Math.round(km) : null
     return { totalKm, evKm: null, hevKm: null }
   } catch {
-    return { totalKm: null, evKm: null, hevKm: null } // never break the poll
+    return NO_ODO // never break the poll
   }
 }
 

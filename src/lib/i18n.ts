@@ -47,7 +47,7 @@ const EN: Record<string, string> = {
   'setup.scan_failed': 'Could not read a URL from that code',
   'setup.cancel': 'Cancel',
 
-  'car.range': 'Range',
+  'car.range': 'Est. range',
   'car.odo': 'Odometer',
   'car.odo_ev': 'EV',
   'car.odo_hev': 'HEV',
@@ -65,7 +65,7 @@ const EN: Record<string, string> = {
   'energy.title': 'Energy',
   'energy.battery': 'Battery',
   'energy.fuel': 'Fuel',
-  'energy.range': 'range',
+  'energy.range': 'est. range',
 
   'tile.battery_health': 'Battery health',
   'tile.cabin_temp': 'Cabin temp',
@@ -242,7 +242,7 @@ const VI: Record<string, string> = {
   'setup.scan_failed': 'Không đọc được địa chỉ từ mã này',
   'setup.cancel': 'Hủy',
 
-  'car.range': 'Quãng đường',
+  'car.range': 'Quãng đường ước tính',
   'car.odo': 'Số km đã đi',
   'car.odo_ev': 'EV',
   'car.odo_hev': 'HEV',
@@ -260,7 +260,7 @@ const VI: Record<string, string> = {
   'energy.title': 'Năng lượng',
   'energy.battery': 'Pin',
   'energy.fuel': 'Xăng',
-  'energy.range': 'quãng đường',
+  'energy.range': 'quãng đường ước tính',
 
   'tile.battery_health': 'Sức khỏe pin',
   'tile.cabin_temp': 'Nhiệt độ khoang',
