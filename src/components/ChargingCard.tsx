@@ -38,6 +38,54 @@ const TOP_FACE = `${PACK.x0 + PACK.dx},${PACK.backY} ${PACK.x1},${PACK.backY} ${
 const FRONT_FACE = `${PACK.x0},${PACK.frontY} ${PACK.x1 - PACK.dx},${PACK.frontY} ${PACK.x1 - PACK.dx},${PACK.frontY + PACK.depth} ${PACK.x0},${PACK.frontY + PACK.depth}`
 const RIGHT_FACE = `${PACK.x1 - PACK.dx},${PACK.frontY} ${PACK.x1},${PACK.backY} ${PACK.x1},${PACK.backY + PACK.depth} ${PACK.x1 - PACK.dx},${PACK.frontY + PACK.depth}`
 
+/**
+ * The slab is a parallelogram, so the charge boundary has to run PARALLEL to
+ * its side edges — a vertical cut would read as a rectangle laid over an
+ * isometric box. SKEW is how far x moves per unit of y along those edges.
+ */
+const SKEW = PACK.dx / (PACK.frontY - PACK.backY)
+/** How far the leading edge travels from empty to full. */
+const SPAN = PACK.x1 - PACK.x0 - PACK.dx
+const PAD = 26
+
+/** Clip covering everything charged so far, cut on the slab's own diagonal. */
+function chargedClip(f: number): string {
+  const lead = PACK.x0 + SPAN * f // leading edge, measured at the front edge
+  const top = PACK.backY - PAD
+  const bot = PACK.frontY + PACK.depth + PAD
+  return [
+    [PACK.x0 - PAD, top],
+    [lead + PACK.dx + SKEW * PAD, top],
+    [lead, PACK.frontY],
+    [lead, bot],
+    [PACK.x0 - PAD, bot],
+  ]
+    .map((pt) => pt.join(','))
+    .join(' ')
+}
+
+/** Sweeping highlight, skewed to sit square on the slab like everything else. */
+const SHEEN_W = 62
+const SHEEN = [
+  [PACK.x0 - SHEEN_W + PACK.dx, PACK.backY - 6],
+  [PACK.x0 + PACK.dx, PACK.backY - 6],
+  [PACK.x0, PACK.frontY + PACK.depth + 6],
+  [PACK.x0 - SHEEN_W, PACK.frontY + PACK.depth + 6],
+]
+  .map((pt) => pt.join(','))
+  .join(' ')
+
+// Near-side wheels, read off the image. They sit almost black against a dark
+// ground once the frame is toned, so the app rims them to bring them back.
+const WHEELS = [
+  { cx: 95, cy: 188, r: 40 },
+  { cx: 395, cy: 190, r: 40 },
+]
+
+/** The SOC figure sits above the slab, overlapping its top face. */
+const PACK_CX = (PACK.x0 + PACK.x1) / 2
+const PCT_BASELINE = 152
+
 /** Cell divider lines across the top face, as fractions along its length. */
 const CELLS = [0.25, 0.5, 0.75]
 
@@ -61,13 +109,14 @@ export function ChargingCard({ s }: { s: StatusResponse }) {
   const pct = typeof soc === 'number' ? Math.max(0, Math.min(100, Math.round(soc))) : null
   const power = s.charging?.chargingPowerKW ?? s.charging?.powerKw
   const charging = phase === 'charging'
+  const frac = (pct ?? 0) / 100
+  const digits = pct != null ? String(pct) : '--'
   // The summary keeps reporting an estimate for as long as the cable is in, but
   // it only means anything while current is actually flowing — a full or faulted
   // pack has no "time to full".
   const eta = charging ? chargeEtaMin.value : null
   const target = charging ? chargeTargetPct.value : null
 
-  const fillW = ((pct ?? 0) / 100) * (PACK.x1 - PACK.x0)
 
   const label =
     phase === 'charging' ? t('chg.charging')
@@ -85,7 +134,7 @@ export function ChargingCard({ s }: { s: StatusResponse }) {
       <svg class="chg-stage" viewBox={`0 0 ${IMG.w} ${IMG.h}`} role="img" aria-label={`${label}${pct != null ? ` ${pct}%` : ''}`}>
         <defs>
           <linearGradient id="chgFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#7ee06a" />
+            <stop offset="0" stop-color="#86d651" />
             <stop offset="1" stop-color="#34b83c" />
           </linearGradient>
           {/* sweeping highlight — only ever visible over the charged portion,
@@ -96,12 +145,23 @@ export function ChargingCard({ s }: { s: StatusResponse }) {
             <stop offset="1" stop-color="#fff" stop-opacity="0" />
           </linearGradient>
           <clipPath id="chgClip">
-            {/* Grows left-to-right with SOC; clips all three pack faces at once. */}
-            <rect x={PACK.x0} y={PACK.backY - 8} width={fillW} height="80" />
+            {/* Grows with SOC along the slab's diagonal; clips all three faces. */}
+            <polygon points={chargedClip(frac)} />
           </clipPath>
+          <filter id="chgGlow" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="3.4" />
+          </filter>
         </defs>
 
         <image href={`${import.meta.env.BASE_URL}car/side-wire.webp`} x="0" y="0" width={IMG.w} height={IMG.h} />
+
+        {/* rim the near wheels so they read against the toned-down frame */}
+        {WHEELS.map((w) => (
+          <g key={w.cx}>
+            <circle cx={w.cx} cy={w.cy} r={w.r} class="chg-wheel-glow" filter="url(#chgGlow)" />
+            <circle cx={w.cx} cy={w.cy} r={w.r} class="chg-wheel-rim" />
+          </g>
+        ))}
 
         {/* battery pack — empty shell, then the charged portion clipped over it */}
         <g class="chg-pack-empty">
@@ -114,7 +174,7 @@ export function ChargingCard({ s }: { s: StatusResponse }) {
           <polygon points={FRONT_FACE} fill="#2a8f30" />
           <polygon points={TOP_FACE} fill="url(#chgFill)" />
           {charging && (
-            <rect class="chg-sheen" x={PACK.x0 - 60} y={PACK.backY - 6} width="60" height="70" fill="url(#chgSheen)" />
+            <polygon class="chg-sheen" points={SHEEN} fill="url(#chgSheen)" />
           )}
         </g>
 
@@ -133,9 +193,15 @@ export function ChargingCard({ s }: { s: StatusResponse }) {
           />
         </g>
 
-        <text class="chg-pct" x={(PACK.x0 + PACK.x1) / 2} y="163" text-anchor="middle">
-          {pct != null ? pct : '--'}
-          <tspan class="chg-pct-unit" dx="3">%</tspan>
+        {/* Matches the cluster: the DIGITS are centred on the pack and the "%"
+            hangs off to their right, rather than the whole string being
+            centred (which would push the number left of centre). Sits above
+            the slab, overlapping its top face, exactly as the original does. */}
+        <text class="chg-num" x={PACK_CX} y={PCT_BASELINE} text-anchor="middle">
+          {digits}
+        </text>
+        <text class="chg-unit" x={PACK_CX + digits.length * 14 + 5} y={PCT_BASELINE} text-anchor="start">
+          %
         </text>
       </svg>
 

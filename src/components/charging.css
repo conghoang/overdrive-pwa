@@ -34,10 +34,16 @@
   margin: 2px 0 0;
 }
 
-/* Uncharged remainder of the pack. */
+/* Wheels: a soft halo and a faint rim — enough to separate them from the dark
+   ground without turning them into bullseyes. */
+.chg-wheel-glow { fill: none; stroke: rgba(148, 200, 236, 0.22); stroke-width: 5; }
+.chg-wheel-rim { fill: none; stroke: rgba(206, 232, 252, 0.42); stroke-width: 1.2; }
+
+/* Uncharged remainder of the pack. In the cluster this stays a clearly visible
+   muted green, not a black void — it reads as the rest of the battery. */
 .chg-pack-empty polygon {
-  fill: rgba(126, 224, 106, 0.09);
-  stroke: rgba(126, 224, 106, 0.3);
+  fill: #3a5952;
+  stroke: rgba(168, 226, 208, 0.34);
   stroke-width: 1.2;
 }
 
@@ -47,24 +53,29 @@
   fill: none;
 }
 
-.chg-pct {
+/* SOC figure — light geometric weight like the cluster's, not a heavy UI bold.
+   Only a whisper of dark halo: the number sits mostly over the dark body, and
+   the original carries no outline at all. */
+.chg-num,
+.chg-unit {
   fill: #fff;
-  font-size: 52px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
   paint-order: stroke;
-  stroke: rgba(3, 14, 8, 0.45);
-  stroke-width: 5px;
+  stroke: rgba(4, 12, 20, 0.3);
+  stroke-width: 3px;
   stroke-linejoin: round;
 }
-.chg-pct-unit { font-size: 21px; font-weight: 600; }
+.chg-num { font-size: 52px; }
+.chg-unit { font-size: 26px; font-weight: 500; }
 
 /* Charge sweeping through the pack — clipped to the charged portion, so it
    reads as current flowing into what's already stored. */
 .chg-sheen { animation: chg-sweep 2.6s ease-in-out infinite; }
 @keyframes chg-sweep {
   0%   { transform: translateX(0); }
-  100% { transform: translateX(270px); }
+  100% { transform: translateX(276px); }
 }
 
 .chg-stats {
