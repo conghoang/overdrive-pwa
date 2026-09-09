@@ -63,12 +63,12 @@
 .cam-picker {
   position: relative;
   flex: 0 0 auto;
-  width: 152px;
-  height: 182px;
+  width: 182px;
+  height: 216px;
 }
 /* The car is inset so the ring of hotspots sits AROUND it while staying inside
    the picker box — otherwise the top and bottom buttons hang over the card. */
-.cam-car { position: absolute; inset: 28px 36px; width: auto; height: auto; }
+.cam-car { position: absolute; inset: 30px 42px; width: auto; height: auto; }
 .cc-body { fill: var(--surface-3); stroke: var(--border-strong); stroke-width: 3; }
 .cc-glass { fill: rgba(150, 190, 225, 0.22); }
 .cc-roof { fill: rgba(150, 190, 225, 0.10); }
@@ -79,8 +79,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   padding: 0;
   border-radius: 50%;
   border: 1px solid var(--border-strong);
@@ -116,27 +116,40 @@
 }
 .cam-current { font-size: 17px; font-weight: 700; margin-top: 2px; }
 
-/* Native select, so a phone opens its own picker rather than a wall of buttons. */
+/* Native select, so a phone opens its own picker rather than a wall of buttons.
+   Sized to its content — filling the column made a small control look like the
+   main event next to the camera picker. */
 .qual-select {
   appearance: none;
   -webkit-appearance: none;
-  width: 100%;
+  width: auto;
+  max-width: 100%;
   margin-top: 4px;
   background: var(--surface-2);
   color: var(--text);
   border: 1px solid var(--border-strong);
-  border-radius: 12px;
-  padding: 9px 32px 9px 12px;
+  border-radius: 10px;
+  padding: 7px 28px 7px 11px;
   font: inherit;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
     linear-gradient(135deg, currentColor 50%, transparent 50%);
-  background-position: calc(100% - 17px) 52%, calc(100% - 12px) 52%;
+  background-position: calc(100% - 15px) 53%, calc(100% - 10px) 53%;
   background-size: 5px 5px, 5px 5px;
   background-repeat: no-repeat;
 }
 .qual-select:disabled { opacity: 0.5; }
+
+/* On narrow phones the picker was squeezing the select until "600p · 10fps"
+   lost its unit. Give the width back to the select — a readable preset matters
+   more than the last 26px of car. */
+@media (max-width: 380px) {
+  .cam-controls { gap: 12px; padding: 14px 12px; }
+  .cam-picker { width: 156px; height: 186px; }
+  .cam-car { inset: 26px 36px; }
+  .cam-hotspot { width: 34px; height: 34px; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .cam-spinner { animation: none; }
