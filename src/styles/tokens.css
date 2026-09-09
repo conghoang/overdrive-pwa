@@ -70,11 +70,11 @@
   --seat-head: #2a3948;
   --wheel-normal: #9fb2c4;
   --wheel-muted: #5a6673;
-  /* charging-card wheel rims, over the cluster frame */
+  /* Charging frame. These sit ON the frame, which is near-black in BOTH
+     themes, so they do not flip — only the panel behind it does. */
+  --chg-stage-bg: transparent;
   --chg-wheel-glow: rgba(148, 200, 236, 0.22);
   --chg-wheel-rim: rgba(206, 232, 252, 0.42);
-  /* SOC figure: it crosses both the frame and the green slab, so it needs a
-     fill that holds on both */
   --chg-num-fill: #fff;
   --chg-num-stroke: rgba(4, 12, 20, 0.3);
 
@@ -152,13 +152,8 @@
   --seat-head: #b3c3d4;
   --wheel-normal: #5f7386;
   --wheel-muted: #a9b7c4;
-  /* the light frame is INVERTED, so its wheels are pale discs — they need a
-     dark ring, not the dark theme's pale one */
-  --chg-wheel-glow: rgba(40, 74, 104, 0.16);
-  --chg-wheel-rim: rgba(30, 60, 88, 0.5);
-  /* white would vanish where the number overlaps the near-white frame */
-  --chg-num-fill: #0e1d29;
-  --chg-num-stroke: rgba(255, 255, 255, 0.55);
+  /* the frame stays dark on a light card, so it gets a panel of its own */
+  --chg-stage-bg: #0c1724;
 
   --shadow-card: 0 10px 28px rgba(16, 42, 66, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.7);
   --shadow-float: 0 20px 54px rgba(16, 42, 66, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.8);

@@ -33,11 +33,16 @@
   50% { opacity: 0.35; }
 }
 
+/* On a light card the frame keeps its own dark ground, so it sits on an inset
+   panel. The image feathers to transparency, and the panel is the same near-
+   black as the image's ground, so the blend is seamless either way. */
 .chg-stage {
   display: block;
   width: 100%;
   height: auto;
-  margin: 2px 0 0;
+  margin: 2px 0 6px;
+  border-radius: 14px;
+  background: var(--chg-stage-bg);
 }
 
 /* Wheels: a soft halo and a faint rim — enough to separate them from the dark

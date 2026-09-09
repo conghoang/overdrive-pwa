@@ -2,7 +2,6 @@ import { chargeEtaMin, chargeTargetPct } from '../lib/store'
 import { fmtEta, fmtNum } from '../lib/format'
 import { t } from '../lib/i18n'
 import { IconBolt, IconPlug } from './icons'
-import { resolvedTheme } from '../lib/theme'
 import type { StatusResponse } from '../lib/types'
 import './charging.css'
 
@@ -20,9 +19,12 @@ import './charging.css'
  * wireframe from the cluster's own charge screen, with its baked-in battery
  * slab and "41%" erased so this app can draw them live instead.
  *
- * Two versions. The frame is a bright outline on near-black, which is a dark
- * rectangle on a white card, so light mode gets an inverted build — a dark
- * outline on near-white — rather than the same file recoloured in CSS.
+ * The frame keeps its own near-black ground in BOTH themes. Inverting it for
+ * light mode was tried and looked like a bad photocopy: it is a photograph of
+ * a screen, so inverting surfaces every blotch and turns the dark wheels into
+ * pale ghosts. Instead the stage gets a dark inset panel on light backgrounds
+ * — the image's feathered edges blend into it exactly as they do on the dark
+ * card, and the artwork is seen as it was designed.
  *
  * The SVG coordinate space IS the image's pixel space (520x246), so the pack
  * coordinates below are read straight off the photo — no scaling math.
@@ -190,13 +192,7 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
           </filter>
         </defs>
 
-        <image
-          href={`${import.meta.env.BASE_URL}car/side-wire${resolvedTheme.value === 'light' ? '-light' : ''}.webp`}
-          x="0"
-          y="0"
-          width={IMG.w}
-          height={IMG.h}
-        />
+        <image href={`${import.meta.env.BASE_URL}car/side-wire.webp`} x="0" y="0" width={IMG.w} height={IMG.h} />
 
         {/* rim the near wheels so they read against the toned-down frame */}
         {WHEELS.map((w) => (
