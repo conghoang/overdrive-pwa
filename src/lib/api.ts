@@ -190,10 +190,26 @@ export const findCar = (): Promise<ControlResult> => apiPost('/api/vehicle/find-
 export const setTrunk = (action: 'open' | 'close'): Promise<ControlResult> =>
   apiPost('/api/vehicle/trunk', { action })
 
-// windows: area 0 with command 1 (open) / 2 (close), or action:"vent"
+/*
+ * Windows. Routing differs per command on the head unit, which decides whether
+ * BYD Cloud is needed at all:
+ *   area 0 + command 1 (open all)   → SDK_ONLY   — local, no cloud
+ *   area 0 + command 2 (close all)  → SDK_FIRST  — local, cloud only as fallback
+ *   area 1-6 + targetPercent        → SDK_ONLY   — local, no cloud
+ *   action "vent"                   → CLOUD_ONLY — BYD's OPENWINDOW crack; needs cloud
+ * So only vent is gated on cloud; everything else works on a car with no BYD
+ * Cloud account at all.
+ */
 export const openAllWindows = (): Promise<ControlResult> => apiPost('/api/vehicle/window', { area: 0, command: 1 })
 export const closeAllWindows = (): Promise<ControlResult> => apiPost('/api/vehicle/window', { area: 0, command: 2 })
 export const ventWindows = (): Promise<ControlResult> => apiPost('/api/vehicle/window', { action: 'vent' })
+
+/** Window areas: 1=LF 2=RF 3=LR 4=RR 5=sunroof 6=sunshade. */
+export const setWindowPercent = (area: number, targetPercent: number): Promise<ControlResult> =>
+  apiPost('/api/vehicle/window', { area, targetPercent })
+/** 1=open, 2=close, 3=stop — stop halts a window mid-travel. */
+export const stopWindow = (area: number): Promise<ControlResult> =>
+  apiPost('/api/vehicle/window', { area, command: 3 })
 
 export const climateOn = (temp: number, remoteDurationMinutes = 15): Promise<ControlResult> =>
   apiPost('/api/vehicle/climate', { action: 'power_on', temp, remoteDurationMinutes })

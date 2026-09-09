@@ -26,6 +26,24 @@ import '../components/controls.css'
 const TEMP_MIN = 16
 const TEMP_MAX = 30
 
+// Window areas as the head unit numbers them. Sunroof (5) and sunshade (6) are
+// omitted: area 0 doesn't cover them and this car reports them as unavailable.
+const WINDOWS = [
+  { key: 'lf', area: 1, label: 'win.lf' },
+  { key: 'rf', area: 2, label: 'win.rf' },
+  { key: 'lr', area: 3, label: 'win.lr' },
+  { key: 'rr', area: 4, label: 'win.rr' },
+] as const
+
+// Same stops OD's own window rows offer.
+const PRESETS = [
+  { value: 0, glyph: '0' },
+  { value: 25, glyph: '¼' },
+  { value: 50, glyph: '½' },
+  { value: 75, glyph: '¾' },
+  { value: 100, glyph: '1' },
+]
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 // Bumped on every climate command so a stale wake-resend can cancel itself.
@@ -183,13 +201,41 @@ export function Controls() {
         </div>
       </div>
 
-      {/* windows */}
+      {/* windows — per-window positioning is SDK-only on the head unit, so it
+          works with no BYD Cloud account. Only "vent" is a cloud command. */}
       <div class="card" style={{ marginTop: '14px' }}>
         <div class="card-title">{t('ctrl.windows')}</div>
-        <div class="grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
-          <button class="btn" disabled={disabled} onClick={() => run(api.ventWindows, t('ctrl.vent'))}>
-            {t('ctrl.vent')}
-          </button>
+
+        <div class="win-list">
+          {WINDOWS.map((w) => {
+            const pct = vs?.windows?.[w.key]
+            const known = typeof pct === 'number' && pct >= 0
+            return (
+              <div class="win-row" key={w.key}>
+                <span class="win-label">{t(w.label)}</span>
+                <div class="win-track" title={known ? `${pct}%` : undefined}>
+                  <div class="win-fill" style={{ width: `${known ? pct : 0}%` }} />
+                </div>
+                <span class="win-pct mono">{known ? `${pct}%` : '–'}</span>
+                <div class="win-presets">
+                  {PRESETS.map((p) => (
+                    <button
+                      key={p.value}
+                      class={'win-preset' + (known && pct === p.value ? ' on' : '')}
+                      disabled={disabled}
+                      aria-label={`${t(w.label)} ${p.value}%`}
+                      onClick={() => run(() => api.setWindowPercent(w.area, p.value), `${t(w.label)} ${p.value}%`)}
+                    >
+                      {p.glyph}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        <div class="grid" style={{ gridTemplateColumns: '1fr 1fr', marginTop: '12px' }}>
           <button class="btn" disabled={disabled} onClick={() => run(api.openAllWindows, t('ctrl.open_all'))}>
             {t('ctrl.open_all')}
           </button>
@@ -197,6 +243,19 @@ export function Controls() {
             {t('ctrl.close_all')}
           </button>
         </div>
+
+        {/* Vent is BYD's OPENWINDOW crack — cloud-only, unlike everything above.
+            Hide it rather than let it fail opaquely on a car with no cloud. */}
+        {cloudConfigured.value !== false && (
+          <button
+            class="btn"
+            style={{ width: '100%', marginTop: '8px' }}
+            disabled={disabled}
+            onClick={() => run(api.ventWindows, t('ctrl.vent'))}
+          >
+            {t('ctrl.vent')}
+          </button>
+        )}
       </div>
 
       <Seats />
