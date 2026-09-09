@@ -1,5 +1,22 @@
 /* Live camera view */
-.cam-card { padding: 12px; }
+/* Let the video take the height the controls do not need, instead of leaving
+   a third of the screen empty under them. Column layout only on narrow
+   screens; the wide layout flows these cards into columns, where a stretching
+   card would fight it. */
+.cam-screen {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - var(--safe-top) - var(--tabbar-h) - var(--safe-bottom) - 46px);
+}
+.cam-screen > .cam-card { flex: 1 1 auto; min-height: 0; display: flex; }
+.cam-screen > .cam-card > .cam-stage { flex: 1 1 auto; min-height: 0; aspect-ratio: auto; }
+@media (min-width: 1000px) {
+  .cam-screen { display: block; min-height: 0; }
+  .cam-screen > .cam-card { display: block; }
+  .cam-screen > .cam-card > .cam-stage { aspect-ratio: 4 / 3; }
+}
+
+.cam-card { padding: 10px; }
 .cam-stage {
   position: relative;
   width: 100%;
@@ -33,41 +50,48 @@
   border-top-color: var(--accent);
   animation: spin 0.9s linear infinite;
 }
-/* Camera picker: hotspots placed on a top-down car, so position IS the label. */
+/* Controls: picker and quality on one row, kept short enough that the video
+   above stays visible. */
+.cam-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 12px;
+  padding: 14px 16px;
+}
+
 .cam-picker {
   position: relative;
-  width: 100%;
-  max-width: 300px;
-  margin: 2px auto 0;
-  aspect-ratio: 3 / 4;
+  flex: 0 0 auto;
+  width: 152px;
+  height: 182px;
 }
-.cam-car { position: absolute; inset: 0; width: 100%; height: 100%; }
-.cc-body { fill: var(--surface-3); stroke: var(--border-strong); stroke-width: 2; }
+/* The car is inset so the ring of hotspots sits AROUND it while staying inside
+   the picker box — otherwise the top and bottom buttons hang over the card. */
+.cam-car { position: absolute; inset: 28px 36px; width: auto; height: auto; }
+.cc-body { fill: var(--surface-3); stroke: var(--border-strong); stroke-width: 3; }
 .cc-glass { fill: rgba(150, 190, 225, 0.22); }
 .cc-roof { fill: rgba(150, 190, 225, 0.10); }
 .cc-wheel { fill: var(--track-deep); }
 
 .cam-hotspot {
   position: absolute;
-  transform: translate(-50%, -50%);
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2px;
-  min-width: 58px;
-  padding: 7px 8px;
-  border-radius: 12px;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 50%;
   border: 1px solid var(--border-strong);
   background: var(--surface-1);
   color: var(--text-secondary);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
   box-shadow: var(--shadow-card);
   transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
-.cam-hotspot:active { transform: translate(-50%, -50%) scale(0.94); }
+/* No transform here: each position below pins a different axis, so a shared
+   translate would fight them. */
+.cam-hotspot:active { opacity: 0.65; }
 .cam-hotspot.on {
   background: var(--accent-soft);
   border-color: var(--accent-border);
@@ -76,27 +100,39 @@
 .cam-hotspot:disabled { opacity: 0.45; pointer-events: none; }
 
 /* mode ids: 1 front, 2 right, 3 rear, 4 left, 0 mosaic */
-.cam-hotspot.pos-1 { left: 50%; top: 7%; }
-.cam-hotspot.pos-3 { left: 50%; top: 93%; }
-.cam-hotspot.pos-4 { left: 11%; top: 50%; }
-.cam-hotspot.pos-2 { left: 89%; top: 50%; }
-.cam-hotspot.pos-all { left: 50%; top: 50%; min-width: 66px; }
+.cam-hotspot.pos-1 { top: 0; left: 50%; transform: translateX(-50%); }
+.cam-hotspot.pos-3 { bottom: 0; left: 50%; transform: translateX(-50%); }
+.cam-hotspot.pos-4 { left: 0; top: 50%; transform: translateY(-50%); }
+.cam-hotspot.pos-2 { right: 0; top: 50%; transform: translateY(-50%); }
+.cam-hotspot.pos-all { left: 50%; top: 50%; transform: translate(-50%, -50%); }
 
-/* Quality: a native select, so it uses the platform's own picker on a phone. */
+.cam-side { flex: 1 1 auto; min-width: 0; }
+.cam-current-k {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.cam-current { font-size: 17px; font-weight: 700; margin-top: 2px; }
+
+/* Native select, so a phone opens its own picker rather than a wall of buttons. */
 .qual-select {
   appearance: none;
   -webkit-appearance: none;
+  width: 100%;
+  margin-top: 4px;
   background: var(--surface-2);
   color: var(--text);
   border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  padding: 9px 34px 9px 14px;
+  border-radius: 12px;
+  padding: 9px 32px 9px 12px;
   font: inherit;
   font-size: 13px;
   font-weight: 600;
   background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
     linear-gradient(135deg, currentColor 50%, transparent 50%);
-  background-position: calc(100% - 18px) 52%, calc(100% - 13px) 52%;
+  background-position: calc(100% - 17px) 52%, calc(100% - 12px) 52%;
   background-size: 5px 5px, 5px 5px;
   background-repeat: no-repeat;
 }

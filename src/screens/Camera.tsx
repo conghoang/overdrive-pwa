@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
 import * as api from '../lib/api'
 import { CAMERA_VIEWS } from '../lib/api'
-import { connected, status } from '../lib/store'
+import { connected } from '../lib/store'
 import { AppHeader } from '../components/AppHeader'
 import { t } from '../lib/i18n'
-import { IconCamera } from '../components/icons'
+import { IconApp, IconCamera } from '../components/icons'
 import { startPlayer, webCodecsSupported } from '../lib/h264'
 import type { PlayerHandle, PlayerState } from '../lib/h264'
 import './camera.css'
@@ -113,7 +113,7 @@ export function Camera() {
     : t('cam.stopped')
 
   return (
-    <div class="screen">
+    <div class="screen cam-screen">
       <AppHeader
         title={t('tab.camera')}
         sub={connected.value ? label : t('common.reconnecting')}
@@ -140,12 +140,11 @@ export function Camera() {
         </div>
       </div>
 
-      <div class="card" style={{ marginTop: '14px' }}>
-        <div class="card-title">{t('cam.view')}</div>
-
-        {/* Camera positions as hotspots on a top-down car, the way OverDrive's
-            own live view does it — which camera you get is obvious from where
-            the button sits, with no labels to read. */}
+      {/* One compact control strip: camera picker and quality side by side, so
+          the video and the controls fit on screen together. Anything taller
+          meant scrolling up to watch and down to switch, which is the wrong
+          trade for a live view. */}
+      <div class="card cam-controls">
         <div class="cam-picker">
           <svg class="cam-car" viewBox="0 0 200 300" aria-hidden="true">
             <rect x="46" y="16" width="108" height="268" rx="46" class="cc-body" />
@@ -162,6 +161,9 @@ export function Camera() {
             ))}
           </svg>
 
+          {/* Icon-only: at this size a text label would not fit, and position
+              already says which camera it is. The name is spelled out beside
+              the diagram and in the accessible name. */}
           {CAMERA_VIEWS.filter((v) => v.mode !== 0).map((v) => (
             <button
               key={v.mode}
@@ -172,46 +174,46 @@ export function Camera() {
               aria-pressed={v.mode === view}
               onClick={() => setView(v.mode)}
             >
-              <IconCamera size={17} />
-              <span>{t(v.key)}</span>
+              <IconCamera size={15} />
             </button>
           ))}
 
           <button
             class={'cam-hotspot pos-all' + (view === 0 ? ' on' : '')}
             disabled={!connected.value || isDemo || !supported}
+            title={t('cam.mosaic')}
+            aria-label={t('cam.mosaic')}
             aria-pressed={view === 0}
             onClick={() => setView(0)}
           >
-            {t('cam.mosaic')}
+            <IconApp size={15} />
           </button>
         </div>
 
-        {status.value?.gpuSurveillance && <div class="screen-sub" style={{ marginTop: '10px' }}>{t('cam.note')}</div>}
-      </div>
+        <div class="cam-side">
+          <div class="cam-current-k">{t('cam.view')}</div>
+          <div class="cam-current">{t(CAMERA_VIEWS.find((v) => v.mode === view)?.key ?? 'cam.front')}</div>
 
-      {!!quality.options?.length && (
-        <div class="card" style={{ marginTop: '14px' }}>
-          <div class="spread">
-            <div class="card-title" style={{ margin: 0 }}>{t('cam.quality')}</div>
-            <select
-              class="qual-select"
-              value={quality.current ?? ''}
-              disabled={!connected.value || isDemo}
-              onChange={(e) => void pickQuality((e.target as HTMLSelectElement).value)}
-            >
-              {quality.options.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {/* Resolution and fps rather than the car's English preset
-                      names ("Ultra Low (400k)"), which are longer and say less. */}
-                  {o.height ? `${o.height}p` : o.id}
-                  {o.fps ? ` · ${o.fps}fps` : ''}
-                </option>
-              ))}
-            </select>
-          </div>
+          {!!quality.options?.length && (
+            <>
+              <div class="cam-current-k" style={{ marginTop: '12px' }}>{t('cam.quality')}</div>
+              <select
+                class="qual-select"
+                value={quality.current ?? ''}
+                disabled={!connected.value || isDemo}
+                onChange={(e) => void pickQuality((e.target as HTMLSelectElement).value)}
+              >
+                {quality.options.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.height ? `${o.height}p` : o.id}
+                    {o.fps ? ` · ${o.fps}fps` : ''}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
         </div>
-      )}
+      </div>
     </div>
   )
 }
