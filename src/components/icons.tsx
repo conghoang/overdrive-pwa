@@ -89,6 +89,22 @@ export const IconCar = ({ size, class: c }: IconProps) =>
   svg(<><path d="M5 11l1.6-4.5A2 2 0 0 1 8.5 5h7a2 2 0 0 1 1.9 1.5L19 11" /><rect x="3" y="11" width="18" height="6" rx="2" /><circle cx="7.5" cy="17.5" r="1.4" fill="currentColor" stroke="none" /><circle cx="16.5" cy="17.5" r="1.4" fill="currentColor" stroke="none" /></>, size, c)
 export const IconBluetooth = ({ size, class: c }: IconProps) =>
   svg(<path d="M6.5 8L17.5 16L12 20.5V3.5L17.5 8L6.5 16" />, size, c)
+/**
+ * Google Maps pin, drawn in Google's marker colours — the destination of the
+ * "Open in Maps" link. Fixed colours (not currentColor) so it stays recognisable
+ * on any background.
+ */
+export const IconMapOpen = ({ size = 24, class: c }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" class={c}>
+    <path
+      d="M12 2.2c-3.9 0-7 3.1-7 7 0 5.1 6.2 12 6.5 12.3a.7.7 0 0 0 1 0c.3-.3 6.5-7.2 6.5-12.3 0-3.9-3.1-7-7-7z"
+      fill="#EA4335"
+    />
+    <path d="M12 2.2c-2.2 0-4.2 1-5.5 2.6l7.7 6.5a7 7 0 0 0 4.8-2.1c0-3.9-3.1-7-7-7z" fill="#FBBC04" opacity="0.85" />
+    <circle cx="12" cy="9.2" r="2.7" fill="#fff" />
+  </svg>
+)
+
 export const IconQr = ({ size, class: c }: IconProps) =>
   svg(
     <>

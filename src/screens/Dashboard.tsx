@@ -10,8 +10,8 @@ import { EnergyGauges } from '../components/EnergyGauges'
 import { StatTile } from '../components/StatTile'
 import { Tyres } from '../components/Tyres'
 import {
-  IconArrow,
   IconLock,
+  IconMapOpen,
   IconPin,
   IconPlug,
   IconThermo,
@@ -149,7 +149,7 @@ export function Dashboard() {
                 title={t('loc.open_maps')}
                 aria-label={t('loc.open_maps')}
               >
-                <IconArrow size={18} />
+                <IconMapOpen size={19} />
               </a>
             )}
           </div>
@@ -176,7 +176,7 @@ export function Dashboard() {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                {t('loc.open_maps')} <IconArrow size={16} />
+                <IconMapOpen size={17} /> {t('loc.open_maps')}
               </a>
             </>
           )}
