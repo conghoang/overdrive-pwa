@@ -26,13 +26,16 @@ const IMG = { w: 520, h: 246 }
 
 // Pack geometry, matched to where the slab sat in the original frame. The slab
 // is isometric: the back edge is higher and shifted right of the front edge.
+// Measured off the cluster frame: a shallow skew and a thin extrusion, which
+// is what makes the cluster's slab read as a flat plate rather than a chunky
+// box. Halving dx (34 -> 20) does most of that work.
 const PACK = {
-  x0: 150, // front-left
-  x1: 352, // back-right
-  backY: 126,
-  frontY: 168,
-  dx: 34, // horizontal skew from front edge to back edge
-  depth: 14, // extruded thickness
+  x0: 152, // front-left
+  x1: 347, // back-right
+  backY: 128,
+  frontY: 176,
+  dx: 20, // horizontal skew from front edge to back edge
+  depth: 10, // extruded thickness
 }
 const TOP_FACE = `${PACK.x0 + PACK.dx},${PACK.backY} ${PACK.x1},${PACK.backY} ${PACK.x1 - PACK.dx},${PACK.frontY} ${PACK.x0},${PACK.frontY}`
 const FRONT_FACE = `${PACK.x0},${PACK.frontY} ${PACK.x1 - PACK.dx},${PACK.frontY} ${PACK.x1 - PACK.dx},${PACK.frontY + PACK.depth} ${PACK.x0},${PACK.frontY + PACK.depth}`
@@ -165,14 +168,14 @@ export function ChargingCard({ s }: { s: StatusResponse }) {
 
         {/* battery pack — empty shell, then the charged portion clipped over it */}
         <g class="chg-pack-empty">
-          <polygon points={RIGHT_FACE} />
-          <polygon points={FRONT_FACE} />
-          <polygon points={TOP_FACE} />
+          <polygon class="pf-right" points={RIGHT_FACE} />
+          <polygon class="pf-front" points={FRONT_FACE} />
+          <polygon class="pf-top" points={TOP_FACE} />
         </g>
-        <g clip-path="url(#chgClip)">
-          <polygon points={RIGHT_FACE} fill="#2e9e34" />
-          <polygon points={FRONT_FACE} fill="#2a8f30" />
-          <polygon points={TOP_FACE} fill="url(#chgFill)" />
+        <g class="chg-pack-full" clip-path="url(#chgClip)">
+          <polygon class="pf-right" points={RIGHT_FACE} />
+          <polygon class="pf-front" points={FRONT_FACE} />
+          <polygon class="pf-top" points={TOP_FACE} fill="url(#chgFill)" />
           {charging && (
             <polygon class="chg-sheen" points={SHEEN} fill="url(#chgSheen)" />
           )}

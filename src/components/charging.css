@@ -39,13 +39,20 @@
 .chg-wheel-glow { fill: none; stroke: rgba(148, 200, 236, 0.22); stroke-width: 5; }
 .chg-wheel-rim { fill: none; stroke: rgba(206, 232, 252, 0.42); stroke-width: 1.2; }
 
-/* Uncharged remainder of the pack. In the cluster this stays a clearly visible
-   muted green, not a black void — it reads as the rest of the battery. */
-.chg-pack-empty polygon {
-  fill: #3a5952;
-  stroke: rgba(168, 226, 208, 0.34);
-  stroke-width: 1.2;
+/* Pack faces. Sampled from the cluster, where the extruded edges are LIGHTER
+   than the top face, not darker — the slab is lit like a glowing plate rather
+   than shaded like a solid box. The uncharged remainder stays a clearly
+   visible muted green so it reads as the rest of the battery, not a void. */
+.chg-pack-empty polygon,
+.chg-pack-full polygon {
+  stroke: rgba(178, 232, 214, 0.3);
+  stroke-width: 1.1;
 }
+.chg-pack-empty .pf-top { fill: #3a5952; }
+.chg-pack-empty .pf-front { fill: #33514a; }
+.chg-pack-empty .pf-right { fill: #47645e; }
+.chg-pack-full .pf-front { fill: #55916a; }
+.chg-pack-full .pf-right { fill: #5ea56c; }
 
 .chg-cells {
   stroke: rgba(4, 18, 10, 0.35);
