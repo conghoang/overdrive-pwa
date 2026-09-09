@@ -14,35 +14,29 @@ import './charging.css'
  * time-to-full from the launcher summary (only polled while plugged in).
  */
 
-// Pack geometry in SVG user units. The slab is an isometric parallelogram:
-// going from the back edge to the front edge shifts left and down.
+/*
+ * The car is an image, not a drawing: `public/car/side-wire.webp` is the
+ * wireframe from the cluster's own charge screen, with its baked-in battery
+ * slab and "41%" erased so this app can draw them live instead.
+ *
+ * The SVG coordinate space IS the image's pixel space (520x246), so the pack
+ * coordinates below are read straight off the photo — no scaling math.
+ */
+const IMG = { w: 520, h: 246 }
+
+// Pack geometry, matched to where the slab sat in the original frame. The slab
+// is isometric: the back edge is higher and shifted right of the front edge.
 const PACK = {
-  x0: 126, // left extent (front-face left edge)
-  x1: 294, // right extent (back-face right edge)
-  backY: 103,
-  frontY: 132,
-  dx: 24, // horizontal skew from front edge to back edge
-  depth: 10, // extruded thickness
+  x0: 150, // front-left
+  x1: 352, // back-right
+  backY: 126,
+  frontY: 168,
+  dx: 34, // horizontal skew from front edge to back edge
+  depth: 14, // extruded thickness
 }
-// Wheels sit outboard of the pack, so they're drawn over it — which also hides
-// where the slab runs past the axles, exactly as the cluster screen does.
-const WHEELS = [112, 304]
-const WHEEL_R = 32
-const WHEEL_Y = 136
 const TOP_FACE = `${PACK.x0 + PACK.dx},${PACK.backY} ${PACK.x1},${PACK.backY} ${PACK.x1 - PACK.dx},${PACK.frontY} ${PACK.x0},${PACK.frontY}`
 const FRONT_FACE = `${PACK.x0},${PACK.frontY} ${PACK.x1 - PACK.dx},${PACK.frontY} ${PACK.x1 - PACK.dx},${PACK.frontY + PACK.depth} ${PACK.x0},${PACK.frontY + PACK.depth}`
 const RIGHT_FACE = `${PACK.x1 - PACK.dx},${PACK.frontY} ${PACK.x1},${PACK.backY} ${PACK.x1},${PACK.backY + PACK.depth} ${PACK.x1 - PACK.dx},${PACK.frontY + PACK.depth}`
-
-// Long-roof SUV silhouette, authored to be STROKED rather than filled so the
-// pack reads as sitting inside the car. Picked by rendering candidates side by
-// side; the wheel arches are cut into the sill and then covered by the wheels.
-const BODY =
-  'M20 118 C20 102 24 92 34 84 C46 74 56 60 70 52 C82 45 98 41 120 40 ' +
-  'L266 40 C290 41 306 50 318 64 C326 74 334 82 348 86 L372 94 ' +
-  'C386 99 392 108 392 120 L392 136 L336 136 A32 32 0 0 0 272 136 ' +
-  'L144 136 A32 32 0 0 0 80 136 L28 136 C22 136 20 130 20 118 Z'
-const GREENHOUSE = 'M86 84 C96 62 112 50 134 49 L254 48 C274 49 290 60 300 82 Z'
-const B_PILLAR = 'M186 48 L186 83'
 
 /** Cell divider lines across the top face, as fractions along its length. */
 const CELLS = [0.25, 0.5, 0.75]
@@ -88,7 +82,7 @@ export function ChargingCard({ s }: { s: StatusResponse }) {
         <span>{label}</span>
       </div>
 
-      <svg class="chg-stage" viewBox="0 0 400 200" role="img" aria-label={`${label}${pct != null ? ` ${pct}%` : ''}`}>
+      <svg class="chg-stage" viewBox={`0 0 ${IMG.w} ${IMG.h}`} role="img" aria-label={`${label}${pct != null ? ` ${pct}%` : ''}`}>
         <defs>
           <linearGradient id="chgFill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stop-color="#7ee06a" />
@@ -103,16 +97,11 @@ export function ChargingCard({ s }: { s: StatusResponse }) {
           </linearGradient>
           <clipPath id="chgClip">
             {/* Grows left-to-right with SOC; clips all three pack faces at once. */}
-            <rect x={PACK.x0} y="90" width={fillW} height="70" />
+            <rect x={PACK.x0} y={PACK.backY - 8} width={fillW} height="80" />
           </clipPath>
         </defs>
 
-        {/* wireframe car */}
-        <g class="chg-wire" fill="none" stroke-linejoin="round" stroke-linecap="round">
-          <path d={BODY} stroke-width="2.4" />
-          <path d={GREENHOUSE} stroke-width="1.5" opacity="0.62" />
-          <path d={B_PILLAR} stroke-width="1.5" opacity="0.62" />
-        </g>
+        <image href={`${import.meta.env.BASE_URL}car/side-wire.webp`} x="0" y="0" width={IMG.w} height={IMG.h} />
 
         {/* battery pack — empty shell, then the charged portion clipped over it */}
         <g class="chg-pack-empty">
@@ -125,7 +114,7 @@ export function ChargingCard({ s }: { s: StatusResponse }) {
           <polygon points={FRONT_FACE} fill="#2a8f30" />
           <polygon points={TOP_FACE} fill="url(#chgFill)" />
           {charging && (
-            <rect class="chg-sheen" x={PACK.x0 - 54} y={PACK.backY - 2} width="54" height="48" fill="url(#chgSheen)" />
+            <rect class="chg-sheen" x={PACK.x0 - 60} y={PACK.backY - 6} width="60" height="70" fill="url(#chgSheen)" />
           )}
         </g>
 
@@ -144,14 +133,7 @@ export function ChargingCard({ s }: { s: StatusResponse }) {
           />
         </g>
 
-        {WHEELS.map((cx) => (
-          <g key={cx}>
-            <circle cx={cx} cy={WHEEL_Y} r={WHEEL_R} class="chg-tyre" />
-            <circle cx={cx} cy={WHEEL_Y} r="13" class="chg-hub" />
-          </g>
-        ))}
-
-        <text class="chg-pct" x={(PACK.x0 + PACK.x1) / 2} y="134" text-anchor="middle">
+        <text class="chg-pct" x={(PACK.x0 + PACK.x1) / 2} y="163" text-anchor="middle">
           {pct != null ? pct : '--'}
           <tspan class="chg-pct-unit" dx="3">%</tspan>
         </text>

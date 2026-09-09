@@ -68,6 +68,14 @@ from live vehicle state — the image itself carries none.
 `public/car/climate.webp` is the airflow/air-purification interior image used as
 the Climate card banner, processed the same way; it dims while the AC is off.
 
+`public/car/side-wire.webp` is the wireframe car from a BYD instrument-cluster
+charge screen, supplied by this repo's owner as a photo of that screen. It is
+cropped to the car (no watermark), the baked-in battery slab and "41%" are
+erased so the app can draw those live from real state, and it is toned and
+alpha-feathered to blend into the card. **The underlying cluster artwork is
+BYD's, and the source photo is a third party's — replace this file if you don't
+hold the rights to distribute it.**
+
 These are bundled at the request of this repo's owner. **Replace either file if
 you don't hold the rights to distribute it** — the app falls back to a drawn
 illustration when an image is missing.

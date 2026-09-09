@@ -31,14 +31,8 @@
   display: block;
   width: 100%;
   height: auto;
-  margin: 4px 0 2px;
+  margin: 2px 0 0;
 }
-
-.chg-wire { stroke: rgba(214, 234, 248, 0.55); }
-.chg-card.charging .chg-wire { stroke: rgba(224, 244, 255, 0.72); }
-
-.chg-tyre { fill: #10161d; stroke: rgba(255, 255, 255, 0.14); stroke-width: 1.5; }
-.chg-hub { fill: #2b333d; }
 
 /* Uncharged remainder of the pack. */
 .chg-pack-empty polygon {
@@ -55,7 +49,7 @@
 
 .chg-pct {
   fill: #fff;
-  font-size: 44px;
+  font-size: 52px;
   font-weight: 700;
   letter-spacing: -0.02em;
   paint-order: stroke;
@@ -63,14 +57,14 @@
   stroke-width: 5px;
   stroke-linejoin: round;
 }
-.chg-pct-unit { font-size: 18px; font-weight: 600; }
+.chg-pct-unit { font-size: 21px; font-weight: 600; }
 
 /* Charge sweeping through the pack — clipped to the charged portion, so it
    reads as current flowing into what's already stored. */
 .chg-sheen { animation: chg-sweep 2.6s ease-in-out infinite; }
 @keyframes chg-sweep {
   0%   { transform: translateX(0); }
-  100% { transform: translateX(230px); }
+  100% { transform: translateX(270px); }
 }
 
 .chg-stats {
