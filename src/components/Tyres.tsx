@@ -1,42 +1,49 @@
 import { fmtPressure, pressureUnitLabel } from '../lib/format'
 import { t } from '../lib/i18n'
-import type { TyreCorner, TyresState } from '../lib/types'
+import { tyreReasonKey, tyreSeverity } from '../lib/tyres'
+import type { TyreSeverity } from '../lib/tyres'
+import type { TyresState } from '../lib/types'
 
-function abnormal(t: TyreCorner | undefined): boolean {
-  if (!t) return false
-  return (t.pressureState ?? 0) !== 0 || (t.airLeakState ?? 0) !== 0
+type Corner = 'fl' | 'fr' | 'rl' | 'rr'
+const FRONT: Corner[] = ['fl', 'fr']
+
+/** Wheel colours per severity — red for alert, orange for warn, as OD does. */
+const WHEEL_COLOR: Record<TyreSeverity, string> = {
+  alert: 'var(--danger)',
+  warn: 'var(--warning)',
+  muted: '#5a6673',
+  normal: '#9fb2c4',
 }
 
 export function Tyres({ tyres, unit }: { tyres: TyresState | undefined; unit: string }) {
   const available = !!tyres?.available
+  const limits = tyres?.limits
 
-  function read(key: 'fl' | 'fr' | 'rl' | 'rr') {
-    const t = tyres?.[key]
+  const sev = (key: Corner): TyreSeverity =>
+    tyreSeverity(tyres?.[key], FRONT.includes(key), limits)
+
+  function read(key: Corner) {
+    const s = sev(key)
+    const reason = s === 'normal' ? null : tyreReasonKey(tyres?.[key], FRONT.includes(key), limits)
     return (
-      <div class={'tyre-read ' + key + (abnormal(t) ? ' warn' : '')}>
-        <span class="p mono">{fmtPressure(t, unit)}</span>
+      <div class={`tyre-read ${key} ${s}`}>
+        <span class="p mono">{fmtPressure(tyres?.[key], unit)}</span>
         <span class="u">{pressureUnitLabel(unit)}</span>
+        {reason && <span class="tyre-reason">{t(reason)}</span>}
       </div>
     )
   }
 
   // Each wheel is drawn in its own state colour, so the diagram reads at a glance
   // even before you look at the numbers.
-  function wheel(key: 'fl' | 'fr' | 'rl' | 'rr', x: number, y: number) {
-    const warn = abnormal(tyres?.[key])
+  function wheel(key: Corner, x: number, y: number) {
+    const s = sev(key)
+    const flag = s === 'alert' || s === 'warn'
+    const c = WHEEL_COLOR[s]
     return (
       <g>
-        {warn && <rect x={x - 2.5} y={y - 2.5} width={14} height={31} rx={6} fill="var(--warning)" opacity="0.22" />}
-        <rect
-          x={x}
-          y={y}
-          width={9}
-          height={26}
-          rx={4}
-          fill={warn ? 'var(--warning)' : '#9fb2c4'}
-          stroke={warn ? 'var(--warning)' : '#c3d2df'}
-          stroke-width="0.8"
-        />
+        {flag && <rect x={x - 2.5} y={y - 2.5} width={14} height={31} rx={6} fill={c} opacity="0.22" />}
+        <rect x={x} y={y} width={9} height={26} rx={4} fill={c} stroke={c} stroke-width="0.8" />
       </g>
     )
   }

@@ -156,6 +156,19 @@
 .tyre-read .p { font-size: 27px; font-weight: 700; line-height: 1; }
 .tyre-read .u { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 3px; }
 .tyre-read.warn .p { color: var(--warning); }
+.tyre-read.alert .p { color: var(--danger); }
+.tyre-read.muted .p { color: var(--muted); }
+/* Names why a corner is coloured, so an orange number is never unexplained. */
+.tyre-reason {
+  margin-top: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.tyre-read.warn .tyre-reason { color: var(--warning); }
+.tyre-read.alert .tyre-reason { color: var(--danger); }
+.tyre-read.muted .tyre-reason { color: var(--muted); }
 
 /* doors */
 .door-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 16px; margin-top: 16px; }

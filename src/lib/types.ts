@@ -99,12 +99,21 @@ export interface TyreCorner {
   signalState?: number
   available?: boolean
 }
+/** User-configured kPa limits, sent alongside the readings by /api/vehicle/state. */
+export interface TyreLimits {
+  frontLow?: number
+  frontHigh?: number
+  rearLow?: number
+  rearHigh?: number
+  criticalLow?: number
+}
 export interface TyresState {
   available?: boolean
   fl?: TyreCorner
   fr?: TyreCorner
   rl?: TyreCorner
   rr?: TyreCorner
+  limits?: TyreLimits
 }
 
 export interface VehicleState {
