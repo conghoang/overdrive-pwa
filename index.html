@@ -2,10 +2,18 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <!-- No maximum-scale/user-scalable: Firefox Android ignores them (and its zoom
-         handling then mis-scales the page), iOS 10+ ignores them too, and blocking
-         pinch-zoom is an accessibility failure. -->
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- user-scalable=no is requested by this repo's owner for an app-like feel.
+         Worth knowing what it does and does not do: Firefox Android ignores it
+         (and its own zoom handling previously mis-scaled the page, which is why
+         html{font-size:16px} and text-size-adjust:100% are pinned in global.css
+         — do not remove those), iOS 10+ ignores it too, and where it IS honoured
+         it blocks pinch-zoom for anyone who needs to magnify. The reliable half
+         of this is touch-action: manipulation on controls, which kills
+         double-tap-to-zoom everywhere without taking pinch away. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
     <meta name="theme-color" content="#071019" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

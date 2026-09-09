@@ -30,6 +30,11 @@ body {
 
 #app { min-height: 100dvh; }
 
+/* Removes double-tap-to-zoom and the 300ms tap delay on controls. Scoped to
+   interactive elements on purpose: a blanket rule would also strip pinch-zoom
+   from the Leaflet map, which needs it. */
+button, a, select, label, .tab, .tile { touch-action: manipulation; }
+
 button { font-family: inherit; color: inherit; cursor: pointer; }
 a { color: var(--accent-bright); text-decoration: none; }
 
