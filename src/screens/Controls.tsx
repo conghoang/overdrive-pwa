@@ -8,6 +8,7 @@ import { ActionButton } from '../components/HoldButton'
 import { IconBolt, IconLock, IconTrunk, IconUnlock, IconWind } from '../components/icons'
 import { IconBell, IconMinus, IconPlus } from '../components/icons-extra'
 import { wicarlink } from '../lib/settings'
+import { trunkAction } from '../lib/trunk'
 import { t } from '../lib/i18n'
 import { WiCarlinkGrid } from '../components/WiCarlinkControls'
 import { Seats } from '../components/Seats'
@@ -141,6 +142,7 @@ export function Controls() {
     carSetpoint >= TEMP_MIN &&
     carSetpoint <= TEMP_MAX
   const disabled = !connected.value
+  const trunk = trunkAction(vs)
 
   useEffect(() => {
     if (!setpointUsable) return // absent while the car is off — keep the last known
@@ -288,11 +290,11 @@ export function Controls() {
             onFire={() => run(api.findCar, t('ctrl.find'))}
           />
           <ActionButton
-            label={t('ctrl.trunk')}
+            label={t(trunk.labelKey)}
             hold
             icon={<IconTrunk size={22} />}
             disabled={disabled}
-            onFire={() => run(() => api.setTrunk('open'), t('ctrl.trunk'))}
+            onFire={() => run(() => api.setTrunk(trunk.action), t(trunk.labelKey))}
           />
         </div>
       )}

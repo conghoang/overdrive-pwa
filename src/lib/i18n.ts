@@ -146,6 +146,8 @@ const EN: Record<string, string> = {
   'ctrl.flash': 'Flash',
   'ctrl.find': 'Find car',
   'ctrl.trunk': 'Trunk',
+  'ctrl.trunk_open': 'Open trunk',
+  'ctrl.trunk_close': 'Close trunk',
   'ctrl.start': 'Start',
   'ctrl.hold': 'hold',
   'ctrl.climate': 'Climate',

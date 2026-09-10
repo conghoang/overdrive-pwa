@@ -6,6 +6,8 @@ import { authLost, cloudConfigured, connected, refresh } from '../lib/store'
 import { toast, toastResult } from '../lib/toast'
 import { t } from '../lib/i18n'
 import { wicarlink } from '../lib/settings'
+import { vehicleState } from '../lib/store'
+import { trunkAction } from '../lib/trunk'
 import { useHold } from './HoldButton'
 import { IconBolt, IconLock, IconTrunk, IconUnlock } from './icons'
 
@@ -104,6 +106,7 @@ export function QuickActions() {
    * card you use is worse than a button that reports it could not run.
    */
   const wc51 = wicarlink.value || cloudConfigured.value === false
+  const trunk = trunkAction(vehicleState.value)
   return (
     <div class="quick-row">
       <QuickBtn
@@ -136,10 +139,14 @@ export function QuickActions() {
       )}
       <QuickBtn
         icon={<IconTrunk size={22} />}
-        label={t('ctrl.trunk')}
+        label={wc51 ? t('ctrl.trunk') : t(trunk.labelKey)}
         disabled={disabled}
         hold={!wc51}
-        onFire={() => (wc51 ? fire('trunk', t('ctrl.trunk')) : run(() => api.setTrunk('open'), t('ctrl.trunk')))}
+        onFire={() =>
+          wc51
+            ? fire('trunk', t('ctrl.trunk'))
+            : run(() => api.setTrunk(trunk.action), t(trunk.labelKey))
+        }
       />
     </div>
   )
