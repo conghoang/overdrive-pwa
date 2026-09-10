@@ -3,7 +3,12 @@
    namespace for the dashboard's charging card, and reusing .chg-stats made this
    card inherit that one's flex row, laying the whole thing out sideways. */
 
-.cs-card { padding: 16px 16px 0; }
+/* .card.cs-card, not .cs-card: global.css's .card carries the same specificity
+   and loads later, so a lone .cs-card lost the padding fight and kept .card's
+   18px bottom. That band under the footer is what made the old tinted strip
+   float instead of sitting flush against the card's edge. The footer supplies
+   its own bottom spacing. */
+.card.cs-card { padding: 16px 16px 0; }
 
 /* header ------------------------------------------------------------------ */
 .cs-head { display: flex; align-items: center; gap: 12px; }
@@ -188,8 +193,10 @@
 }
 .cs-labels span { flex: 1; text-align: center; }
 
-/* last charge -------------------------------------------------------------
-   Full-bleed footer strip, so it reads as a separate row of the card. */
+/* last charge / last trip -------------------------------------------------
+   Separated by a full-bleed rule rather than a filled panel: the tinted strip
+   read as a second card stuck to the bottom of this one. The negative margins
+   stay so the rule spans the card's full width. */
 .cs-last {
   display: flex;
   align-items: center;
@@ -198,8 +205,6 @@
   margin: 14px -16px 0;
   padding: 12px 16px;
   border-top: 1px solid var(--border-soft);
-  background: var(--surface-2);
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
 }
 .cs-last-k { font-size: 12px; font-weight: 600; color: var(--muted); }
 .cs-soc { display: inline-flex; align-items: center; gap: 6px; font-size: 17px; font-weight: 700; }
