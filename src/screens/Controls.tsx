@@ -175,49 +175,6 @@ export function Controls() {
     <div class="screen">
       <AppHeader title={t('tab.controls')} sub={disabled ? t('common.reconnecting') : t('common.ready')} dot={disabled ? 'wait' : 'ok'} />
 
-      {/* remote actions — 51DK commands in WiCarlink mode; otherwise the BYD
-          Cloud buttons, hidden entirely when BYD Cloud isn't configured. */}
-      {wc ? (
-        <WiCarlinkGrid />
-      ) : cloudConfigured.value === false ? null : (
-        <div class="grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
-          <ActionButton
-            label={t('ctrl.lock')}
-            tone="accent"
-            icon={<IconLock size={26} />}
-            disabled={disabled}
-            onFire={() => run(api.lock, t('ctrl.lock'))}
-          />
-          <ActionButton
-            label={t('ctrl.unlock')}
-            tone="danger"
-            hold
-            icon={<IconUnlock size={26} />}
-            disabled={disabled}
-            onFire={() => run(api.unlock, t('ctrl.unlock'))}
-          />
-          <ActionButton
-            label={t('ctrl.flash')}
-            icon={<IconBolt size={26} />}
-            disabled={disabled}
-            onFire={() => run(api.flash, t('ctrl.flash'))}
-          />
-          <ActionButton
-            label={t('ctrl.find')}
-            icon={<IconBell size={26} />}
-            disabled={disabled}
-            onFire={() => run(api.findCar, t('ctrl.find'))}
-          />
-          <ActionButton
-            label={t('ctrl.trunk')}
-            hold
-            icon={<IconTrunk size={26} />}
-            disabled={disabled}
-            onFire={() => run(() => api.setTrunk('open'), t('ctrl.trunk'))}
-          />
-        </div>
-      )}
-
       {/* climate */}
       <div class="card" style={{ marginTop: '14px' }}>
         <ClimateBanner active={climateActive} fanLevel={fanLevel} />
@@ -302,6 +259,51 @@ export function Controls() {
       </div>
 
       <Seats />
+
+      {/* Remote actions last, not first: climate is what this screen is opened
+          for, and a five-tile block above it pushed the temperature and fan off
+          a phone screen. 51DK commands in WiCarlink mode; otherwise the BYD
+          Cloud buttons, hidden entirely when BYD Cloud isn't configured. */}
+      {wc ? (
+        <WiCarlinkGrid />
+      ) : cloudConfigured.value === false ? null : (
+        <div class="grid action-grid">
+          <ActionButton
+            label={t('ctrl.lock')}
+            tone="accent"
+            icon={<IconLock size={22} />}
+            disabled={disabled}
+            onFire={() => run(api.lock, t('ctrl.lock'))}
+          />
+          <ActionButton
+            label={t('ctrl.unlock')}
+            tone="danger"
+            hold
+            icon={<IconUnlock size={22} />}
+            disabled={disabled}
+            onFire={() => run(api.unlock, t('ctrl.unlock'))}
+          />
+          <ActionButton
+            label={t('ctrl.flash')}
+            icon={<IconBolt size={22} />}
+            disabled={disabled}
+            onFire={() => run(api.flash, t('ctrl.flash'))}
+          />
+          <ActionButton
+            label={t('ctrl.find')}
+            icon={<IconBell size={22} />}
+            disabled={disabled}
+            onFire={() => run(api.findCar, t('ctrl.find'))}
+          />
+          <ActionButton
+            label={t('ctrl.trunk')}
+            hold
+            icon={<IconTrunk size={22} />}
+            disabled={disabled}
+            onFire={() => run(() => api.setTrunk('open'), t('ctrl.trunk'))}
+          />
+        </div>
+      )}
     </div>
   )
 }

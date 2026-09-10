@@ -1,26 +1,47 @@
 /* action button grid used on the Controls screen */
+/* Four across, so the whole remote-action set is one glance rather than a
+   block that pushes the climate card off screen. Everything below is sized for
+   the ~72-79px column that leaves on a phone. */
+/* The margin matters now the grid sits at the BOTTOM of the screen: it is not
+   a .card, so it never picked up the `.card + .card` rhythm and sat flush
+   against the card above it. */
+.action-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; }
+
 .action {
   position: relative;
   overflow: hidden;
   border: 1px solid var(--border-strong);
   background: var(--surface-2);
   color: var(--text);
-  border-radius: var(--radius-lg);
-  padding: 18px 12px 14px;
+  border-radius: var(--radius-md);
+  padding: 13px 5px 11px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 9px;
-  min-height: 104px;
+  gap: 7px;
+  min-height: 84px;
   justify-content: center;
   transition: transform 0.08s ease, border-color 0.15s ease, background 0.15s ease;
 }
 .action:active { transform: scale(0.96); }
 .action:disabled { opacity: 0.5; }
 .action .action-icon { color: var(--text-secondary); display: flex; }
-.action .action-label { font-size: 14px; font-weight: 600; }
+/* 51DK labels are user-typed and can be long ("Car wash OFF"), so they wrap
+   rather than overflow — capped at two lines so one verbose command cannot
+   stretch every tile in the row. */
+.action .action-label {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 .action .action-hint {
-  font-size: 10px;
+  font-size: 9px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);

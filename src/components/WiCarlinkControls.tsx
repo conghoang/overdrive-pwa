@@ -143,7 +143,7 @@ export function WiCarlinkGrid() {
 
   return (
     <div>
-      <div class="grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+      <div class="grid action-grid">
         {cmds.map((c) => {
           const Icon = iconFor(c.icon)
           return (
@@ -153,7 +153,7 @@ export function WiCarlinkGrid() {
               disabled={disabled}
               onClick={() => fire(c)}
             >
-              <span class="action-icon"><Icon size={26} /></span>
+              <span class="action-icon"><Icon size={22} /></span>
               <span class="action-label">{c.label}</span>
             </button>
           )
