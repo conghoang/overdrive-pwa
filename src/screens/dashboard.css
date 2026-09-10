@@ -301,6 +301,12 @@
    at ~6px optical, which is what actually reads as attached. */
 .gauge-val-row { display: flex; align-items: center; gap: 4px; }
 .gauge-ico { display: flex; margin-top: 2px; }
+/* The fuel pump is not a solid shape: its body ends about two thirds across
+   and only a thin hose occupies the rest, so the eye measures the gap from the
+   body and reads it as farther off than the battery — whose cell and terminal
+   run the full width. Equal numbers, unequal appearance. Pulling it in lets
+   the light hose sit in the gap instead of the gap sitting after the hose. */
+.gauge-ico .ico-fuel { margin-right: -3px; }
 .gauge-val { font-size: 31px; font-weight: 700; line-height: 1; }
 .gauge-val small { font-size: 15px; color: var(--muted); font-weight: 600; }
 /* Range this ring's energy is worth, paired with the percentage above it. */

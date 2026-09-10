@@ -48,7 +48,7 @@ export function EnergyGauges({ s }: { s: StatusResponse }) {
             percent={s.range?.fuelPercent}
             color="var(--m-orange)"
             label={t('energy.fuel')}
-            icon={<IconFuel size={16} />}
+            icon={<IconFuel size={16} class="ico-fuel" />}
             sub={asRange(fuelKm)}
           />
         )}
