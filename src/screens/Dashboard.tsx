@@ -79,8 +79,20 @@ export function Dashboard() {
   const rawKmh =
     s.gps?.canSpeedKmh != null ? s.gps.canSpeedKmh : s.gps?.speed != null ? s.gps.speed * 3.6 : null
   const speedUnit = unit === 'mi' ? 'mph' : 'km/h'
+  /*
+   * A car in Park with the ignition off cannot be moving, whatever the GPS
+   * thinks. OverDrive's gps.isMoving is literally `speed > 1.0f` on the raw GPS
+   * fix — no smoothing, no ignition or gear check — so a stationary car with a
+   * mediocre fix (15 m accuracy here) drifts past it and reports a speed. That
+   * is how a parked car showed 11 km/h while OD's own UI said parked: OD reads
+   * gear and ACC for that, not the GPS.
+   *
+   * So the gear and ignition gate the readout, and isMoving only refines it —
+   * which also keeps it at 0 when stopped in gear at a light.
+   */
+  const canMove = powerOn && gear !== 'P'
   const speedDisp =
-    !s.gps?.isMoving || rawKmh == null
+    !canMove || !s.gps?.isMoving || rawKmh == null
       ? 0
       : Math.max(0, Math.round(unit === 'mi' ? rawKmh * 0.621371 : rawKmh))
 
