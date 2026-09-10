@@ -162,9 +162,13 @@ export function App() {
      * one way works and the other does nothing.
      *
      * Requiring dx to dominate still rejects a scroll, where dy is the larger
-     * of the two by a wide margin.
+     * of the two by a wide margin — and a scroll that drifts sideways almost
+     * never travels the 60px horizontally that is also required.
+     *
+     * At 1.2 a 130px swipe tolerates ~108px of arc (1.6 allowed ~81px), which
+     * covers a thumb sweeping across a phone held one-handed.
      */
-    if (Math.abs(dx) >= 60 && Math.abs(dx) >= Math.abs(dy) * 1.6) {
+    if (Math.abs(dx) >= 60 && Math.abs(dx) >= Math.abs(dy) * 1.2) {
       const i = TAB_ORDER.indexOf(tab.value) + (dx < 0 ? 1 : -1)
       if (i >= 0 && i < TAB_ORDER.length) tab.value = TAB_ORDER[i]
     }
