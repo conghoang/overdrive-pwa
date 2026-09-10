@@ -21,11 +21,21 @@ export function isConfigured(): boolean { return !!getBaseUrl() && !!getJwt() }
 
 /** Drop the session token but keep the URL, so re-login only needs the token. */
 export function clearAuth(): void { localStorage.removeItem(K_JWT) }
-/** Full reset (sign out). */
+/**
+ * Full reset (sign out).
+ *
+ * Everything the car put here goes, not just the credentials. Clearing only the
+ * token and URL left the previous owner's car PHOTO — a real picture of their
+ * car, plate and all — plus its name and their custom head-unit commands, so
+ * "sign out" on a sold or borrowed phone looked complete and wasn't. Only the
+ * two settings that describe the person using the phone rather than the car
+ * survive: language and theme.
+ */
+const KEEP_ON_SIGN_OUT = new Set(['odpwa.lang', 'odpwa.theme'])
 export function clearAll(): void {
-  localStorage.removeItem(K_JWT)
-  localStorage.removeItem(K_BASE)
-  localStorage.removeItem(K_DEVICE)
+  for (const key of Object.keys(localStorage)) {
+    if (key.startsWith('odpwa.') && !KEEP_ON_SIGN_OUT.has(key)) localStorage.removeItem(key)
+  }
 }
 
 /** Reduce a pasted URL to just its origin (scheme://host[:port]) — drops any path/query. */

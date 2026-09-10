@@ -112,12 +112,39 @@ export const DEFAULT_WC_COMMANDS: WcCommand[] = [
   { id: 'manual', label: 'Manual mode', kind: 'shell', value: wc('manual'), icon: 'sliders' },
 ]
 
+/*
+ * Validate, don't assert.
+ *
+ * These entries become a shell line on the head unit, and the old code took
+ * whatever JSON.parse returned and cast it to WcCommand[]. localStorage is not
+ * a trusted store — the app lives on a *.github.io origin it shares with every
+ * other Pages site on the account, and localStorage is scoped to the origin,
+ * not the path. Anything that can write this key could otherwise leave a button
+ * still labelled "Unlock" that runs something else entirely.
+ */
+function isCommand(v: unknown): v is WcCommand {
+  if (!v || typeof v !== 'object') return false
+  const c = v as Record<string, unknown>
+  return (
+    typeof c.id === 'string' &&
+    typeof c.label === 'string' &&
+    (c.kind === 'shell' || c.kind === 'openApp') &&
+    typeof c.value === 'string' &&
+    (c.icon === undefined || typeof c.icon === 'string')
+  )
+}
+
 function loadCommands(): WcCommand[] {
   try {
     const raw = localStorage.getItem(K_CMDS)
     if (raw) {
       const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed) && parsed.length) return parsed as WcCommand[]
+      if (Array.isArray(parsed)) {
+        const clean = parsed.filter(isCommand)
+        // All-or-nothing: a partially readable list would silently drop buttons
+        // the owner configured, which is worse than falling back to defaults.
+        if (clean.length && clean.length === parsed.length) return clean
+      }
     }
   } catch { /* ignore */ }
   return DEFAULT_WC_COMMANDS.map((c) => ({ ...c }))
@@ -132,6 +159,22 @@ export function saveCommands(cmds: WcCommand[]): void {
 
 export function resetCommands(): void {
   localStorage.removeItem(K_CMDS)
+  wcCommands.value = DEFAULT_WC_COMMANDS.map((c) => ({ ...c }))
+}
+
+/**
+ * Put every car-linked setting back to its default.
+ *
+ * clearAll() empties the storage, but these signals are already in memory —
+ * without this the sign-out screen keeps showing the old car's photo and name
+ * until the page happens to reload.
+ */
+export function resetSettings(): void {
+  carPhoto.value = null
+  carName.value = ''
+  showMap.value = false
+  wicarlink.value = false
+  dewarpByView.value = {}
   wcCommands.value = DEFAULT_WC_COMMANDS.map((c) => ({ ...c }))
 }
 

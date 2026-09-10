@@ -7,7 +7,7 @@ import { AppHeader } from '../components/AppHeader'
 import { DEFAULT_PHOTO } from '../components/CarHero'
 import { Switch } from '../components/Switch'
 import { WiCarlinkEditor } from '../components/WiCarlinkControls'
-import { carName, carPhoto, setCarName, setCarPhoto, setShowMap, setWicarlink, showMap, wicarlink } from '../lib/settings'
+import { carName, carPhoto, resetSettings, setCarName, setCarPhoto, setShowMap, setWicarlink, showMap, wicarlink } from '../lib/settings'
 import { fileToResizedDataUrl } from '../lib/image'
 import { toast } from '../lib/toast'
 import { lang, setLang, t } from '../lib/i18n'
@@ -25,6 +25,7 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
   function signOut() {
     reset()
     clearAll()
+    resetSettings() // storage is only half of it; the signals hold the photo too
     onSignOut()
   }
 
@@ -46,10 +47,12 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
       {/* car photo (setting) */}
       <div class="card">
         <div class="card-title">{t('dev.car_photo')}</div>
+        {/* Decorative: the card title above already says what this is, so an
+            alt would only repeat it — and "Car" was English in a Vietnamese UI. */}
         <img
           class="car-photo-preview"
           src={carPhoto.value || DEFAULT_PHOTO}
-          alt="Car"
+          alt=""
         />
         <div class="grid grid-2" style={{ marginTop: '12px' }}>
           <label class="btn" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
@@ -90,9 +93,10 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
       <div class="card" style={{ marginTop: '14px' }}>
         <div class="spread">
           <div class="card-title" style={{ margin: 0 }}>{t('dev.language')}</div>
-          <div class="seg">
-            <button class={lang.value === 'en' ? 'on' : ''} onClick={() => setLang('en')}>English</button>
-            <button class={lang.value === 'vi' ? 'on' : ''} onClick={() => setLang('vi')}>Tiếng Việt</button>
+          {/* Which language is active was signalled by text colour alone. */}
+          <div class="seg" role="radiogroup" aria-label={t('dev.language')}>
+            <button role="radio" aria-checked={lang.value === 'en'} class={lang.value === 'en' ? 'on' : ''} onClick={() => setLang('en')}>English</button>
+            <button role="radio" aria-checked={lang.value === 'vi'} class={lang.value === 'vi' ? 'on' : ''} onClick={() => setLang('vi')}>Tiếng Việt</button>
           </div>
         </div>
       </div>
