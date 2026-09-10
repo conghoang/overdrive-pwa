@@ -164,6 +164,9 @@ async function demoResponse<T>(path: string): Promise<T> {
   if (path === '/api/vehicle/state') return mockVehicleState() as unknown as T
   if (path === '/api/launcher/v1/summary')
     return { charging: { active: true, kw: 7.2, etaMin: 135, targetPct: 80 } } as unknown as T
+  if (path === '/api/settings/unified') {
+    return { config: { recording: { rectifyStrength: 80 } } } as unknown as T
+  }
   if (path === '/api/stream/quality') {
     return {
       success: true,
@@ -304,6 +307,24 @@ export interface StreamQuality { current?: string; options?: StreamQualityOption
 export const getStreamQuality = (): Promise<StreamQuality> => apiGet<StreamQuality>('/api/stream/quality')
 export const setStreamQuality = (id: string): Promise<ControlResult> =>
   apiPost(`/api/stream/quality/${encodeURIComponent(id)}`)
+
+/**
+ * The car's own fisheye-correction strength (0-100).
+ *
+ * Read from recording.rectifyStrength, which is what OverDrive's slider writes.
+ * That setting only reaches recordings and surveillance clips — never this
+ * stream — but it IS the user's stated preference for this car's lenses, so it
+ * makes a better default than a number picked here.
+ */
+export async function getRectifyStrength(): Promise<number> {
+  try {
+    const r = await apiGet<{ config?: Record<string, { rectifyStrength?: number }> }>('/api/settings/unified')
+    const v = r?.config?.recording?.rectifyStrength
+    return typeof v === 'number' ? Math.max(0, Math.min(100, v)) : 0
+  } catch {
+    return 0
+  }
+}
 
 export const streamEnable = (): Promise<ControlResult> => apiPost('/api/stream/enable')
 export const streamDisable = (): Promise<ControlResult> => apiPost('/api/stream/disable')

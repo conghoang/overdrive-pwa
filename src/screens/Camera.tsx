@@ -32,6 +32,10 @@ export function Camera() {
   // quality.current instead would reconnect once more on entry, when the
   // initial GET resolves and fills it in for the first time.
   const [restartAt, setRestartAt] = useState(0)
+  // Dewarp: on by default when the car has a correction strength configured,
+  // since that is the user's own setting for these lenses.
+  const [rectify, setRectify] = useState(0)
+  const [dewarp, setDewarp] = useState(true)
   const [detail, setDetail] = useState<string | null>(null)
   const supported = webCodecsSupported()
   const base = api.getBaseUrl()
@@ -42,8 +46,22 @@ export function Camera() {
   useEffect(() => {
     let live = true
     void api.getStreamQuality().then((q) => { if (live) setQuality(q) }).catch(() => {})
+    void api.getRectifyStrength().then((v) => { if (live) setRectify(v) }).catch(() => {})
     return () => { live = false }
   }, [])
+
+  /*
+   * Held in a ref as well as state. The stream effect does not list rectify in
+   * its deps (a strength change must not reconnect), so its closure would other-
+   * wise capture the value from mount — which is 0, before the car has answered.
+   * The ref gives player creation the live value; the effect covers changes made
+   * after it exists.
+   */
+  const strengthRef = useRef(0)
+  useEffect(() => {
+    strengthRef.current = dewarp ? rectify : 0
+    playerRef.current?.setStrength(strengthRef.current)
+  }, [dewarp, rectify])
 
   async function pickQuality(id: string) {
     if (id === quality.current) return
@@ -85,6 +103,7 @@ export function Camera() {
       playerRef.current = startPlayer({
         url: api.streamSocketUrl(),
         canvas: canvasRef.current,
+        strength: strengthRef.current,
         onState: (s, d) => {
           if (cancelled) return
           setState(s)
@@ -193,6 +212,16 @@ export function Camera() {
         <div class="cam-side">
           <div class="cam-current-k">{t('cam.view')}</div>
           <div class="cam-current">{t(CAMERA_VIEWS.find((v) => v.mode === view)?.key ?? 'cam.front')}</div>
+
+          {rectify > 0 && (
+            <button
+              class={'cam-dewarp' + (dewarp ? ' on' : '')}
+              aria-pressed={dewarp}
+              onClick={() => setDewarp((d) => !d)}
+            >
+              {t('cam.dewarp')}
+            </button>
+          )}
 
           {!!quality.options?.length && (
             <>
