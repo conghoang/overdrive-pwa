@@ -297,7 +297,31 @@
 /* Range this ring's energy is worth, paired with the percentage above it. */
 .gauge-sub { font-size: 13px; font-weight: 600; line-height: 1; color: var(--muted); }
 .gauge-sub .mono { color: var(--text); font-weight: 700; }
-/* Out of the circle: it has room to be readable here rather than squeezed. */
-.gauge-label { color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+/* Caption under the ring: the icon carries the identity, tinted to its own
+   ring's colour so the pair reads as one object. Its accessible name lives on
+   the element (role=img + aria-label), so losing the word is only visual.
+
+   The tinted disc matters — a bare glyph under a 132px ring reads as something
+   left over rather than a deliberate label. The wash is currentColor at low
+   opacity on a pseudo-element rather than color-mix(), which Safari only got
+   in 16.2 and this app still has to run on older iPhones. */
+.gauge-cap {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gauge-cap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.15;
+}
+.gauge-cap svg { position: relative; }
 .gauges-range { text-align: center; margin-top: 12px; color: var(--muted); font-size: 14px; font-weight: 600; }
 .gauges-range .mono { color: var(--text); font-size: 18px; }

@@ -1,12 +1,18 @@
+import type { JSX } from 'preact'
+
 export function CircularGauge({
   percent,
   color,
   label,
+  icon,
   sub,
 }: {
   percent: number | undefined
   color: string
+  /** Not rendered as text any more, but still the gauge's accessible name. */
   label: string
+  /** Shown in place of the text caption, tinted to `color`. */
+  icon: JSX.Element
   /**
    * Optional third line inside the ring — the range this energy source is
    * worth. Split so only the digits are monospaced, as the total range line
@@ -62,7 +68,15 @@ export function CircularGauge({
           )}
         </div>
       </div>
-      <div class="gauge-label">{label}</div>
+      {/*
+        The caption is an icon, tinted to its own ring so the two read as one
+        unit. role="img" + aria-label keeps the name — dropping the visible
+        word must not drop the word entirely, or this becomes another control
+        identified only by shape and colour. title gives the same on hover.
+      */}
+      <div class="gauge-cap" role="img" aria-label={label} title={label} style={{ color }}>
+        {icon}
+      </div>
     </div>
   )
 }

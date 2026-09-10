@@ -1,7 +1,7 @@
 import { CircularGauge } from './CircularGauge'
 import { distanceUnitLabel, fmtDistance } from '../lib/format'
 import { t } from '../lib/i18n'
-import { IconBolt } from './icons'
+import { IconBattery, IconBolt, IconFuel } from './icons'
 import type { StatusResponse } from '../lib/types'
 
 /** A range only counts if the car gave a real positive number, as OD treats it. */
@@ -40,6 +40,7 @@ export function EnergyGauges({ s }: { s: StatusResponse }) {
           percent={s.soc?.percent}
           color="var(--success)"
           label={t('energy.battery')}
+          icon={<IconBattery size={19} />}
           sub={asRange(evKm)}
         />
         {isPhev && (
@@ -47,6 +48,7 @@ export function EnergyGauges({ s }: { s: StatusResponse }) {
             percent={s.range?.fuelPercent}
             color="var(--m-orange)"
             label={t('energy.fuel')}
+            icon={<IconFuel size={18} />}
             sub={asRange(fuelKm)}
           />
         )}
