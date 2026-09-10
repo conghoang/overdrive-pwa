@@ -29,18 +29,32 @@ export function CarHero({ s }: { s: StatusResponse }) {
   const power = s.charging?.chargingPowerKW ?? s.charging?.powerKw
   const photo = carPhoto.value || DEFAULT_PHOTO
   const odo = odometer.value
-  const hasOdo = odo?.totalKm != null
   const range = s.range?.totalRangeKm ?? s.range?.elecRangeKm
+  /*
+   * Null means the odometer has not been READ yet; the store only replaces it
+   * once the call settles, and a car that cannot report one settles on an
+   * object whose totalKm is null. Those two states have to be told apart.
+   *
+   * Treating "not read yet" as "no odometer" made the headline show estimated
+   * range on first paint and then swap — number AND label — a beat later when
+   * the reading landed. So the odometer is assumed until proven otherwise: the
+   * label is right immediately and only the number fills in. Falling back to
+   * range still happens, just for cars that genuinely have no odometer (trip
+   * recording off), where it is the correct final answer rather than a flash.
+   */
+  const odoRead = odo !== null
+  const hasOdo = odo?.totalKm != null
+  const showOdo = !odoRead || hasOdo
 
   return (
     <div class="card car-hero-card">
       <div class="veh-range">
         <span class="veh-range-num mono">
-          {hasOdo ? fmtOdo(odo!.totalKm, unit) : fmtDistance(range, unit)}
+          {showOdo ? fmtOdo(odo?.totalKm, unit) : fmtDistance(range, unit)}
         </span>
         <span class="veh-range-unit">{distanceUnitLabel(unit)}</span>
       </div>
-      <div class="veh-range-label">{hasOdo ? t('car.odo') : t('car.range')}</div>
+      <div class="veh-range-label">{showOdo ? t('car.odo') : t('car.range')}</div>
 
       {/* EV / HEV split of that total. A BEV or a trim without the split leaves
           hevKm unavailable, so each leg is rendered only when the car reports
