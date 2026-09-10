@@ -2,10 +2,18 @@ export function CircularGauge({
   percent,
   color,
   label,
+  sub,
 }: {
   percent: number | undefined
   color: string
   label: string
+  /**
+   * Optional third line inside the ring — the range this energy source is
+   * worth. Split so only the digits are monospaced, as the total range line
+   * below the gauges already does; running the unit through the mono face too
+   * opens a visible gap between number and unit.
+   */
+  sub?: { value: string; unit: string }
 }) {
   const size = 132
   const stroke = 13
@@ -37,6 +45,11 @@ export function CircularGauge({
           <small>%</small>
         </div>
         <div class="gauge-label">{label}</div>
+        {sub && (
+          <div class="gauge-sub">
+            <span class="mono">{sub.value}</span> {sub.unit}
+          </div>
+        )}
       </div>
     </div>
   )

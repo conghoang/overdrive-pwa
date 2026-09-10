@@ -293,5 +293,10 @@
 .gauge-val { font-size: 30px; font-weight: 700; line-height: 1; }
 .gauge-val small { font-size: 15px; color: var(--muted); font-weight: 600; }
 .gauge-label { color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 5px; }
+/* Range for this ring's energy source. Third line inside a 106px inner circle,
+   so it stays small and tight to the label — it supports the percentage above
+   it rather than competing with it. */
+.gauge-sub { font-size: 12px; font-weight: 600; margin-top: 3px; color: var(--muted); }
+.gauge-sub .mono { color: var(--text); font-weight: 700; }
 .gauges-range { text-align: center; margin-top: 12px; color: var(--muted); font-size: 14px; font-weight: 600; }
 .gauges-range .mono { color: var(--text); font-size: 18px; }
