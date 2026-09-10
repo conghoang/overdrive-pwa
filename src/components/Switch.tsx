@@ -1,3 +1,4 @@
+import './switch.css'
 export function Switch({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
   return (
     <button

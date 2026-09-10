@@ -92,40 +92,6 @@
 .stepper-value { font-size: 34px; font-weight: 700; min-width: 96px; text-align: center; }
 .stepper-value small { font-size: 16px; color: var(--muted); font-weight: 600; }
 
-/* range slider */
-.slider {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 8px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--accent) var(--fill, 50%), var(--track) var(--fill, 50%));
-  outline: none;
-}
-/* Removing the UA ring without replacing it left the app's only range control
-   with no focus state at all — arrow keys moved the dewarp slider while nothing
-   on screen said it had focus. The ring is offset so it clears the thumb. */
-.slider:focus-visible {
-  outline: 2px solid var(--accent-strong);
-  outline-offset: 4px;
-}
-.slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: #eafffb;
-  border: 4px solid var(--accent-strong);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-}
-.slider::-moz-range-thumb {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #eafffb;
-  border: 4px solid var(--accent-strong);
-}
-
 /* climate airflow banner — full-bleed, feathered, dimmed when the AC is off */
 .climate-banner {
   position: relative;
@@ -262,32 +228,6 @@
 .seg3.cool button.on { color: #fff; background: var(--info); }
 .seg3.heat button.on { color: #fff; background: #e0554e; }
 
-/* switch */
-.switch {
-  width: 50px;
-  height: 30px;
-  border-radius: 999px;
-  border: 1px solid var(--border-strong);
-  background: var(--surface-soft);
-  position: relative;
-  padding: 0;
-  transition: background 0.18s ease, border-color 0.18s ease;
-  flex: 0 0 auto;
-}
-.switch.on { background: var(--accent); border-color: var(--accent); }
-.switch-knob {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-  transition: transform 0.18s ease;
-}
-.switch.on .switch-knob { transform: translateX(20px); }
-
 /* WiCarlink inline management bar (under the command grid) */
 .wc-bar { display: flex; gap: 10px; margin-top: 12px; }
 .wc-bar-btn {
@@ -324,14 +264,6 @@
 .modal-title { font-size: 18px; font-weight: 700; }
 .modal-body { color: var(--text-secondary); font-size: 14px; line-height: 1.5; margin: 10px 0 18px; }
 
-.wc-edit-link {
-  margin-top: 12px;
-  width: 100%;
-  padding: 9px;
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
 /* WiCarlink command editor */
 .wc-note {
   color: var(--muted);
@@ -367,18 +299,7 @@
 }
 .wc-edit-row + .wc-edit-row { border-top: 1px solid var(--border-soft); }
 .wc-edit-fields { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.wc-input {
-  width: 100%;
-  padding: 9px 11px;
-  font-size: 14px;
-  color: var(--text);
-  background: var(--surface-2);
-  border: 1px solid var(--border-strong);
-  border-radius: 10px;
-  outline: none;
-}
-.wc-input.mono { font-size: 12px; }
-.wc-input:focus { border-color: var(--accent-border); }
+
 .wc-icon-btn {
   flex: 0 0 auto;
   width: 42px;
@@ -436,15 +357,4 @@
 }
 
 /* segmented toggle */
-.seg { display: inline-flex; background: var(--surface-soft); border: 1px solid var(--border-soft); border-radius: 999px; padding: 3px; }
-.seg button {
-  border: none;
-  background: none;
-  color: var(--muted);
-  font-weight: 600;
-  font-size: 13px;
-  padding: 8px 16px;
-  border-radius: 999px;
-  transition: color 0.15s ease, background 0.15s ease;
-}
-.seg button.on { color: var(--app-bg); background: var(--accent); }
+
