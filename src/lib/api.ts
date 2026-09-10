@@ -339,7 +339,16 @@ export interface Odometer { totalKm: number | null; evKm: number | null; hevKm: 
 
 const NO_ODO: Odometer = { totalKm: null, evKm: null, hevKm: null }
 
-export async function getOdometer(): Promise<Odometer> {
+/**
+ * The odometer, or null when the car did not answer.
+ *
+ * Null and NO_ODO mean different things and callers depend on it. A failed
+ * request is "no new information" — the last known reading is still the best
+ * one available, and overwriting it on every tunnel blip would blank a number
+ * that is almost certainly still correct. NO_ODO is a definitive "this car
+ * cannot report one", which SHOULD replace whatever was cached.
+ */
+export async function getOdometer(): Promise<Odometer | null> {
   try {
     // Both in one round trip; either failing alone must not lose the other.
     const [cfg, log] = await Promise.all([
@@ -355,12 +364,16 @@ export async function getOdometer(): Promise<Odometer> {
     // omits the flag should keep working.
     if (cfg?.config?.enabled === false) return NO_ODO
 
-    const km = log?.trips?.[0]?.odometerEndKm
+    // The car never answered — say nothing rather than reporting "no odometer",
+    // which would look identical to trip recording being switched off.
+    if (!log) return null
+
+    const km = log.trips?.[0]?.odometerEndKm
     // Cars that do not report the odometer leave this at 0 rather than absent.
     const totalKm = typeof km === 'number' && km > 0 ? Math.round(km) : null
     return { totalKm, evKm: null, hevKm: null }
   } catch {
-    return NO_ODO // never break the poll
+    return null // never break the poll, and never invent an answer
   }
 }
 

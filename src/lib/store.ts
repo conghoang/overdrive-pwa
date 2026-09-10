@@ -11,7 +11,38 @@ export const connected = signal(false)
  * the trip log, which only advances when a trip closes, so asking on every
  * 5s poll would be pure waste.
  */
-export const odometer = signal<Odometer | null>(null)
+/*
+ * The odometer is remembered across launches.
+ *
+ * It arrives a beat after /status — long enough that the hero used to show a
+ * "--" on every cold start. An odometer only ever grows, and only while the car
+ * is being driven, so yesterday's reading is a far better first paint than no
+ * reading at all; the live value replaces it as soon as the car answers.
+ *
+ * Written to only when the car actually reports something (see getOdometer's
+ * null vs NO_ODO contract), so a tunnel blip cannot erase it. It is car-linked
+ * data, so it lives under odpwa.* and sign-out clears it with everything else.
+ */
+const K_ODO = 'odpwa.odo'
+function readCachedOdo(): Odometer | null {
+  try {
+    const raw = localStorage.getItem(K_ODO)
+    if (!raw) return null
+    const o: unknown = JSON.parse(raw)
+    if (!o || typeof o !== 'object') return null
+    const num = (v: unknown) => (typeof v === 'number' && isFinite(v) ? v : null)
+    const c = o as Record<string, unknown>
+    const totalKm = num(c.totalKm)
+    // A cached "no odometer" is worth nothing on first paint — it would just
+    // render the range, which is what happens anyway once the car answers.
+    if (totalKm == null) return null
+    return { totalKm, evKm: num(c.evKm), hevKm: num(c.hevKm) }
+  } catch {
+    return null
+  }
+}
+
+export const odometer = signal<Odometer | null>(readCachedOdo())
 /**
  * Outside air temperature. Cabin temperature is what the dashboard would prefer,
  * but OverDrive only sends climate.insideTempC while the sensor is answering
@@ -119,7 +150,15 @@ async function tick(): Promise<void> {
       // Fire-and-forget: the odometer is nice-to-have, and a missing debug
       // route must never take the telemetry poll down with it.
       void getOdometer()
-        .then((o) => { if (active) odometer.value = o })
+        .then((o) => {
+          // null means the car said nothing — keep whatever we already had.
+          if (!active || !o) return
+          odometer.value = o
+          try {
+            if (o.totalKm != null) localStorage.setItem(K_ODO, JSON.stringify(o))
+            else localStorage.removeItem(K_ODO) // definitively has none; stop remembering
+          } catch { /* private mode / quota — the reading is not worth failing over */ }
+        })
         .catch(() => {})
     }
     // Control-surface detail; failure here shouldn't knock out the whole poll.
@@ -215,6 +254,7 @@ export function reset(): void {
   chargeEtaMin.value = null
   chargeTargetPct.value = null
   odometer.value = null
+  localStorage.removeItem(K_ODO)
   outsideTempC.value = null
   pm25Inside.value = null
   pm25Outside.value = null
