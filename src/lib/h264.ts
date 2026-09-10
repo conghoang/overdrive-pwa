@@ -19,34 +19,50 @@ export interface PlayerHandle {
 }
 
 /*
- * Lens dewarp, ported verbatim from OverDrive's GpuMosaicRecorder shader.
+ * Lens dewarp.
  *
- * OD's own correction never reaches this stream: recording.rectifyStrength is
- * applied in the RECORDER, and blindspot.rectifyStrength drives a separate
- * pipeline with its own encoder and socket ("completely separate from the
- * /api/stream/* live-view stream", per StreamingApiHandler). So the same maths
- * runs here instead, on the decoded frame.
+ * NOT OverDrive's model. OD's rectify is a two-term radial polynomial capped at
+ * k1=0.30 / k2=0.10, and its own documentation calls it a fix for the "residual
+ * fisheye barrel curve" — a finishing pass on tiles that are already close to
+ * rectilinear. Ported faithfully and run against these cameras it does almost
+ * nothing: at full strength the horizontal edge pulls in ~14% while a 1.2x zoom
+ * is applied on top, so the picture just crops. The BYD lenses are true ~180°
+ * fisheyes with the image circle visible in frame, which is a different problem.
  *
- * strength 0..100 -> k1 = 0.30t, k2 = 0.10t, which is OD's 3:1 split; 0 is
- * bit-exact identity, so the shader can run unconditionally.
+ * This is the standard rectilinear unwrap for that case. For output radius u
+ * (normalised so the CORNER is 1, not the edge — otherwise corners sample past
+ * the source and smear against CLAMP_TO_EDGE):
+ *
+ *     rs = rmax * tan(u * A) / tan(A)
+ *
+ * A is the strength in radians. tan grows faster than linear, so mid radii
+ * sample from further IN: the compressed periphery of a fisheye gets spread
+ * out and straight lines straighten. As A -> 0 the ratio tends to u, so zero
+ * is exact identity and no branch is needed for "off". Both ends are fixed
+ * points, so the full image circle stays in frame — this straightens without
+ * cropping, unlike OD's zoom-to-fill.
  */
 const VERT = `attribute vec2 aPos;varying vec2 vUV;
 void main(){vUV=aPos*0.5+0.5;gl_Position=vec4(aPos,0.0,1.0);}`
 
-const FRAG = `precision mediump float;
+const FRAG = `precision highp float;
 varying vec2 vUV;
 uniform sampler2D uTex;
-uniform float uK1, uK2, uAspect;
+uniform float uA, uAspect;
 void main(){
   vec2 t = vec2(vUV.x, 1.0 - vUV.y);
   vec2 n = t * 2.0 - 1.0;
   vec2 na = vec2(n.x, n.y * uAspect);
-  float r2 = dot(na, na);
-  float r4 = r2 * r2;
-  float invDenom = 1.0 / (1.0 + uK1 * r2 + uK2 * r4);
-  float a2 = uAspect * uAspect;
-  float zoom = 1.0 + uK1 * a2 + uK2 * a2 * a2;
-  vec2 sa = (na * invDenom) * zoom;
+  float r = length(na);
+  float rmax = sqrt(1.0 + uAspect * uAspect);
+  float rs;
+  if (uA < 0.0001) {
+    rs = r;
+  } else {
+    rs = rmax * tan((r / rmax) * uA) / tan(uA);
+  }
+  vec2 dir = r > 0.000001 ? na / r : vec2(0.0);
+  vec2 sa = dir * rs;
   vec2 src = vec2(sa.x, sa.y / uAspect);
   vec2 uv = src * 0.5 + 0.5;
   gl_FragColor = texture2D(uTex, uv);
@@ -95,15 +111,13 @@ function makeGlRenderer(canvas: HTMLCanvasElement, strength: number): Renderer |
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
 
-  const uK1 = gl.getUniformLocation(prog, 'uK1')
-  const uK2 = gl.getUniformLocation(prog, 'uK2')
+  const uA = gl.getUniformLocation(prog, 'uA')
   const uAspect = gl.getUniformLocation(prog, 'uAspect')
-  let k1 = 0
-  let k2 = 0
+  let a = 0
+  /** 0-100 -> 0..1.1 rad. Past ~1.1 the centre magnifies faster than the frame
+   *  can show and the middle of the picture goes soft. */
   const apply = (v: number) => {
-    const t = Math.max(0, Math.min(100, v)) / 100
-    k1 = 0.3 * t
-    k2 = 0.1 * t
+    a = (Math.max(0, Math.min(100, v)) / 100) * 1.1
   }
   apply(strength)
 
@@ -112,8 +126,7 @@ function makeGlRenderer(canvas: HTMLCanvasElement, strength: number): Renderer |
       gl.viewport(0, 0, canvas.width, canvas.height)
       gl.bindTexture(gl.TEXTURE_2D, tex)
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, frame)
-      gl.uniform1f(uK1, k1)
-      gl.uniform1f(uK2, k2)
+      gl.uniform1f(uA, a)
       // Per-tile aspect (height/width) — 0.75 for the 4:3 camera tiles OD
       // assumes, but taken from the frame so a different profile still lines up.
       gl.uniform1f(uAspect, canvas.height / Math.max(1, canvas.width))

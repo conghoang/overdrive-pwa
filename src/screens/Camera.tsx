@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'preact/hooks'
 import * as api from '../lib/api'
 import { CAMERA_VIEWS } from '../lib/api'
 import { connected } from '../lib/store'
+import { dewarpStrength, setDewarpStrength } from '../lib/settings'
 import { AppHeader } from '../components/AppHeader'
 import { t } from '../lib/i18n'
 import { IconApp, IconCamera } from '../components/icons'
@@ -32,10 +33,10 @@ export function Camera() {
   // quality.current instead would reconnect once more on entry, when the
   // initial GET resolves and fills it in for the first time.
   const [restartAt, setRestartAt] = useState(0)
-  // Dewarp: on by default when the car has a correction strength configured,
-  // since that is the user's own setting for these lenses.
-  const [rectify, setRectify] = useState(0)
-  const [dewarp, setDewarp] = useState(true)
+  // Dewarp strength. The car's own recording.rectifyStrength is the starting
+  // point; once the user moves the slider their value is kept instead.
+  const [carRectify, setCarRectify] = useState(0)
+  const strength = dewarpStrength.value ?? carRectify
   const [detail, setDetail] = useState<string | null>(null)
   const supported = webCodecsSupported()
   const base = api.getBaseUrl()
@@ -46,7 +47,7 @@ export function Camera() {
   useEffect(() => {
     let live = true
     void api.getStreamQuality().then((q) => { if (live) setQuality(q) }).catch(() => {})
-    void api.getRectifyStrength().then((v) => { if (live) setRectify(v) }).catch(() => {})
+    void api.getRectifyStrength().then((v) => { if (live) setCarRectify(v) }).catch(() => {})
     return () => { live = false }
   }, [])
 
@@ -59,9 +60,9 @@ export function Camera() {
    */
   const strengthRef = useRef(0)
   useEffect(() => {
-    strengthRef.current = dewarp ? rectify : 0
-    playerRef.current?.setStrength(strengthRef.current)
-  }, [dewarp, rectify])
+    strengthRef.current = strength
+    playerRef.current?.setStrength(strength)
+  }, [strength])
 
   async function pickQuality(id: string) {
     if (id === quality.current) return
@@ -213,15 +214,21 @@ export function Camera() {
           <div class="cam-current-k">{t('cam.view')}</div>
           <div class="cam-current">{t(CAMERA_VIEWS.find((v) => v.mode === view)?.key ?? 'cam.front')}</div>
 
-          {rectify > 0 && (
-            <button
-              class={'cam-dewarp' + (dewarp ? ' on' : '')}
-              aria-pressed={dewarp}
-              onClick={() => setDewarp((d) => !d)}
-            >
-              {t('cam.dewarp')}
-            </button>
-          )}
+          <div class="cam-current-k cam-dewarp-k">
+            {t('cam.dewarp')} <b>{strength}</b>
+          </div>
+          <input
+            class="slider cam-dewarp-slider"
+            type="range"
+            min={0}
+            max={100}
+            step={5}
+            value={strength}
+            style={{ ['--fill' as string]: `${strength}%` }}
+            aria-label={t('cam.dewarp')}
+            disabled={!connected.value || isDemo}
+            onInput={(e) => setDewarpStrength(Number((e.target as HTMLInputElement).value))}
+          />
 
           {!!quality.options?.length && (
             <>

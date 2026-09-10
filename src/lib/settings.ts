@@ -26,6 +26,28 @@ export function setShowMap(on: boolean): void {
   localStorage.setItem(K_MAP, on ? '1' : '0')
 }
 
+/*
+ * Live-view fisheye correction, 0-100.
+ *
+ * null means "follow the car" — the camera screen then uses the car's own
+ * recording.rectifyStrength. Storing null rather than resolving it at first run
+ * means changing the setting on the car keeps carrying over, until the user
+ * moves this slider and states a preference of their own.
+ */
+const K_DEWARP = 'odpwa.dewarp'
+function readDewarp(): number | null {
+  const raw = localStorage.getItem(K_DEWARP)
+  if (raw == null) return null
+  const n = Number(raw)
+  return Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : null
+}
+export const dewarpStrength = signal<number | null>(readDewarp())
+export function setDewarpStrength(v: number | null): void {
+  dewarpStrength.value = v
+  if (v == null) localStorage.removeItem(K_DEWARP)
+  else localStorage.setItem(K_DEWARP, String(v))
+}
+
 // Optional user-supplied car photo (data URL), overriding the bundled default.
 const K_CARPHOTO = 'odpwa.carPhoto'
 export const carPhoto = signal<string | null>(localStorage.getItem(K_CARPHOTO))

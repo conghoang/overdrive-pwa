@@ -128,19 +128,13 @@
   color: var(--muted);
 }
 .cam-current { font-size: 17px; font-weight: 700; margin-top: 2px; }
-.cam-dewarp {
-  margin-top: 8px;
-  padding: 5px 11px;
-  border-radius: 999px;
-  border: 1px solid var(--border-strong);
-  background: var(--surface-2);
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-.cam-dewarp.on { background: var(--accent-soft); border-color: var(--accent-border); color: var(--accent-bright); }
+.cam-dewarp-k { margin-top: 10px; }
+.cam-dewarp-k b { color: var(--text); font-size: 12px; margin-left: 2px; }
+/* Shorter track and thumb than the climate slider — this one sits in a control
+   strip sized to keep the video on screen. */
+.cam-dewarp-slider { height: 6px; margin-top: 5px; }
+.cam-dewarp-slider::-webkit-slider-thumb { width: 18px; height: 18px; border-width: 3px; }
+.cam-dewarp-slider::-moz-range-thumb { width: 16px; height: 16px; border-width: 3px; }
 
 /* Native select, so a phone opens its own picker rather than a wall of buttons.
    Sized to its content — filling the column made a small control look like the
