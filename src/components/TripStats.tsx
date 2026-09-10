@@ -11,6 +11,30 @@ import {
   windowLabel,
 } from './StatChartCard'
 import type { TripConfig, TripRow } from '../lib/types'
+import { num, readCache, writeCache } from '../lib/cache'
+
+const CACHE_KEY = 'odpwa.data.trips'
+
+/*
+ * Only the fields this card reads. A week of trips carries start/end
+ * coordinates, elevation profiles, SoC and per-trip scores — none of it drawn
+ * here, and on a busy week that is a lot of quota for nothing.
+ */
+function trim(list: TripRow[]): TripRow[] {
+  return list.map((x) => ({
+    startTime: x.startTime, distanceKm: x.distanceKm, durationSeconds: x.durationSeconds,
+    avgSpeedKmh: x.avgSpeedKmh, energyUsedKwh: x.energyUsedKwh, energyMetered: x.energyMetered,
+    tripCost: x.tripCost, currency: x.currency,
+  }))
+}
+
+function revive(raw: unknown): TripRow[] | null {
+  if (!Array.isArray(raw)) return null
+  // Every row is bucketed by startTime and summed by distance, so both have to
+  // be real numbers before any of it reaches the chart.
+  const ok = raw.every((x) => x && typeof x === 'object' && num((x as TripRow).startTime) != null)
+  return ok ? (raw as TripRow[]) : null
+}
 
 const DAYS = 7
 
@@ -20,8 +44,11 @@ function fmtKm(v: number): string {
 
 export function TripStats() {
   const [cfg, setCfg] = useState<TripConfig | null>(null)
-  const [trips, setTrips] = useState<TripRow[] | null>(null)
-  const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading')
+  // Seeded from the last visit, so the card opens on real distances.
+  const [trips, setTrips] = useState<TripRow[] | null>(() => readCache(CACHE_KEY, revive))
+  const [state, setState] = useState<'loading' | 'ready' | 'error'>(
+    () => (readCache(CACHE_KEY, revive) ? 'ready' : 'loading'),
+  )
 
   useEffect(() => {
     let live = true
@@ -31,8 +58,12 @@ export function TripStats() {
         setCfg(c)
         setTrips(list)
         setState('ready')
+        // Recording off means the stored rows are stale by definition, so stop
+        // remembering them rather than opening on them next time.
+        if (c?.config?.enabled === false) localStorage.removeItem(CACHE_KEY)
+        else writeCache(CACHE_KEY, trim(list))
       })
-      .catch(() => { if (live) setState('error') })
+      .catch(() => { if (live) setState((cur) => (cur === 'ready' ? cur : 'error')) })
     return () => { live = false }
   }, [])
 

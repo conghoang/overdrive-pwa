@@ -11,6 +11,44 @@ import {
   windowLabel,
 } from './StatChartCard'
 import type { ChargingOverview, ChargingSession } from '../lib/types'
+import { num, readCache, writeCache } from '../lib/cache'
+
+const CACHE_KEY = 'odpwa.data.charging'
+
+/*
+ * Only what this card draws is kept — the day rows, the estimate flag and the
+ * single session the footer shows. The full response carries every session in
+ * the window with coordinates, temperatures and per-sample detail, none of
+ * which is rendered here and all of which would be spent quota.
+ */
+function trim(d: ChargingOverview): ChargingOverview {
+  const last = [...(d.sessions ?? [])].sort((a, b) => (b.startTime ?? 0) - (a.startTime ?? 0))[0]
+  return {
+    summary: {
+      daily: (d.summary?.daily ?? []).map((x) => ({
+        day: x.day, sessions: x.sessions, energy: x.energy, cost: x.cost, estimated: x.estimated,
+      })),
+      periodEstimatedSessions: d.summary?.periodEstimatedSessions,
+    },
+    sessions: last
+      ? [{
+          startTime: last.startTime, startSoc: last.startSoc, endSoc: last.endSoc,
+          energyAdded: last.energyAdded, durationMinutes: last.durationMinutes,
+          currency: last.currency, inProgress: last.inProgress,
+        }]
+      : [],
+  }
+}
+
+function revive(raw: unknown): ChargingOverview | null {
+  if (!raw || typeof raw !== 'object') return null
+  const d = raw as ChargingOverview
+  const daily = d.summary?.daily
+  if (!Array.isArray(daily)) return null
+  // One malformed row would reach the chart's arithmetic, so every row is checked.
+  if (!daily.every((x) => x && typeof x === 'object' && num((x as { day?: unknown }).day) != null)) return null
+  return d
+}
 
 /*
  * One window, deliberately.
@@ -33,15 +71,26 @@ function latest(sessions: ChargingSession[] | undefined): ChargingSession | null
 }
 
 export function ChargingStats() {
-  const [data, setData] = useState<ChargingOverview | null>(null)
-  const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading')
+  // Seeded from the last visit so the card opens on real numbers; the live
+  // fetch below replaces them a moment later.
+  const [data, setData] = useState<ChargingOverview | null>(() => readCache(CACHE_KEY, revive))
+  const [state, setState] = useState<'loading' | 'ready' | 'error'>(
+    () => (readCache(CACHE_KEY, revive) ? 'ready' : 'loading'),
+  )
 
   useEffect(() => {
     let live = true
     api
       .getChargingOverview(DAYS)
-      .then((d) => { if (live) { setData(d); setState('ready') } })
-      .catch(() => { if (live) setState('error') })
+      .then((d) => {
+        if (!live) return
+        setData(d)
+        setState('ready')
+        writeCache(CACHE_KEY, trim(d))
+      })
+      // Keep showing what we had rather than replacing real history with an
+      // error message the reload will clear anyway.
+      .catch(() => { if (live) setState((cur) => (cur === 'ready' ? cur : 'error')) })
     return () => { live = false }
   }, [])
 
