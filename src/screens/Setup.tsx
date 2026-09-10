@@ -15,6 +15,14 @@ export function Setup({ onDone }: { onDone: () => void }) {
   const scannerRef = useRef<QrScanner | null>(null)
   const canScan = qrSupported()
 
+  // Escape closes the scanner — the Cancel button was the only way out.
+  useEffect(() => {
+    if (!scanning) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setScanning(false) }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [scanning])
+
   // Run the scanner while the overlay is open; always tear the camera down.
   useEffect(() => {
     if (!scanning) return
@@ -145,13 +153,16 @@ export function Setup({ onDone }: { onDone: () => void }) {
         </button>
       </form>
 
+      {/* An opaque fixed overlay that was a plain div: it covered the form
+          without announcing itself, and the form underneath stayed in the tab
+          order, so keyboard focus walked invisible fields behind it. */}
       {scanning && (
-        <div class="scan-overlay">
+        <div class="scan-overlay" role="dialog" aria-modal="true" aria-labelledby="scan-title">
           <div class="scan-box">
             <video ref={videoRef} class="scan-video" muted playsinline />
             <div class="scan-frame" />
           </div>
-          <h3 class="scan-title">{t('setup.scan_title')}</h3>
+          <h3 class="scan-title" id="scan-title">{t('setup.scan_title')}</h3>
           <p class="scan-hint">{t('setup.scan_hint')}</p>
           <button class="btn block" onClick={() => setScanning(false)}>
             {t('setup.cancel')}

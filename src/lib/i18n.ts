@@ -10,9 +10,24 @@ function initial(): Lang {
 }
 
 export const lang = signal<Lang>(initial())
+
+/**
+ * Keep <html lang> honest.
+ *
+ * index.html ships lang="en" while the app defaults to Vietnamese, so every
+ * screen of Vietnamese sat inside a document claiming to be English: screen
+ * readers apply English pronunciation to it, and the browser offers to
+ * translate the page into the language it is already in.
+ */
+function syncDocumentLang(l: Lang): void {
+  document.documentElement.lang = l
+}
+syncDocumentLang(lang.value)
+
 export function setLang(l: Lang): void {
   lang.value = l
   localStorage.setItem(K, l)
+  syncDocumentLang(l)
 }
 
 const EN: Record<string, string> = {
@@ -38,7 +53,6 @@ const EN: Record<string, string> = {
   'cam.unsupported': 'This browser cannot decode the stream',
   'cam.open_od': 'Open in OverDrive',
   'cam.demo': 'No camera in demo mode',
-  'cam.note': 'Streaming uses the car\'s encoder — leave this tab when you are done.',
 
   'common.live': 'Live',
   'common.reconnecting': 'Reconnecting…',
@@ -94,11 +108,6 @@ const EN: Record<string, string> = {
   'tile.wifi': 'Wi-Fi',
   'tile.cellular': 'Cellular',
   'tile.pm25': 'PM2.5 in / out',
-
-  'charging.title': 'Charging',
-  'charging.power': 'Power',
-  'charging.state': 'State',
-  'charging.full': 'Full',
 
   'tyre.title': 'Tyre pressure',
   'tyre.unavailable': 'Unavailable — start the car to read TPMS.',
@@ -166,7 +175,7 @@ const EN: Record<string, string> = {
   'dev.car_name_ph': 'e.g. My Sealion',
   'dev.car_name_desc': 'Shown as the title of the first tab',
   'dev.map': 'Show map',
-  'dev.map_desc': 'Small map of the car on the Vehicle tab',
+  'dev.map_desc': 'Small map on the Vehicle tab. Map tiles are loaded from OpenStreetMap, so the car’s location is sent there.',
   'dev.language': 'Language',
   'dev.theme': 'Appearance',
   'dev.theme_system': 'System',
@@ -185,6 +194,8 @@ const EN: Record<string, string> = {
   'dev.footer': 'BYD Sealion 6 Vietnam Group',
 
   'wc.choose_icon': 'Choose icon',
+  'wc.kind_app': 'App',
+  'wc.kind_shell': 'Shell',
   'wc.edit_title': 'Edit 51DK',
   'wc.edit_sub': 'Add, remove, reorder or edit buttons',
   'wc.back': 'Back',
@@ -211,6 +222,7 @@ const EN: Record<string, string> = {
   'common.failed': 'Failed',
   'ctrl.set_temp': 'Set {temp}°C',
   'ctrl.auto_mode': 'Auto mode',
+  'ctrl.auto': 'AUTO',
   'setup.code_len': 'Access code must be 8 characters.',
   'setup.login_failed': 'Login failed',
   'account.photo_err': 'Could not load that image',
@@ -254,7 +266,6 @@ const VI: Record<string, string> = {
   'cam.unsupported': 'Trình duyệt này không giải mã được luồng',
   'cam.open_od': 'Mở trong OverDrive',
   'cam.demo': 'Chế độ thử không có camera',
-  'cam.note': 'Phát trực tiếp dùng bộ mã hóa của xe — rời tab khi xong.',
 
   'common.live': 'Trực tiếp',
   'common.reconnecting': 'Đang kết nối lại…',
@@ -310,11 +321,6 @@ const VI: Record<string, string> = {
   'tile.wifi': 'Wi-Fi',
   'tile.cellular': 'Di động',
   'tile.pm25': 'PM2.5 trong / ngoài',
-
-  'charging.title': 'Đang sạc',
-  'charging.power': 'Công suất',
-  'charging.state': 'Trạng thái',
-  'charging.full': 'Đầy',
 
   'tyre.title': 'Áp suất lốp',
   'tyre.unavailable': 'Không có dữ liệu — khởi động xe để đọc TPMS.',
@@ -382,7 +388,7 @@ const VI: Record<string, string> = {
   'dev.car_name_ph': 'VD: Sealion của tôi',
   'dev.car_name_desc': 'Hiển thị làm tiêu đề tab đầu tiên',
   'dev.map': 'Hiện bản đồ',
-  'dev.map_desc': 'Bản đồ nhỏ vị trí xe ở tab Xe',
+  'dev.map_desc': 'Bản đồ nhỏ ở tab Xe. Ảnh bản đồ tải từ OpenStreetMap, nên vị trí xe sẽ được gửi tới đó.',
   'dev.language': 'Ngôn ngữ',
   'dev.theme': 'Giao diện',
   'dev.theme_system': 'Hệ thống',
@@ -401,6 +407,8 @@ const VI: Record<string, string> = {
   'dev.footer': 'BYD Sealion 6 Vietnam Group',
 
   'wc.choose_icon': 'Chọn biểu tượng',
+  'wc.kind_app': 'Ứng dụng',
+  'wc.kind_shell': 'Lệnh shell',
   'wc.edit_title': 'Sửa 51DK',
   'wc.edit_sub': 'Thêm, xóa, sắp xếp hoặc sửa nút',
   'wc.back': 'Quay lại',
@@ -427,6 +435,7 @@ const VI: Record<string, string> = {
   'common.failed': 'Thất bại',
   'ctrl.set_temp': 'Đặt {temp}°C',
   'ctrl.auto_mode': 'Chế độ tự động',
+  'ctrl.auto': 'TỰ ĐỘNG',
   'setup.code_len': 'Mã truy cập phải có 8 ký tự.',
   'setup.login_failed': 'Đăng nhập thất bại',
   'account.photo_err': 'Không tải được ảnh',

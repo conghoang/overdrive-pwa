@@ -1,5 +1,21 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
 import type { JSX } from 'preact'
+/**
+ * Escape closes an open overlay.
+ *
+ * Both dialogs here could only be dismissed by clicking the backdrop — which
+ * is not a control, has no keyboard equivalent, and cannot be reached by
+ * anyone who is not using a pointer. Passing null for `onClose` covers the
+ * "cannot be dismissed right now" case (a command mid-flight).
+ */
+function useEscape(onClose: (() => void) | null) {
+  useEffect(() => {
+    if (!onClose) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+}
 import * as api from '../lib/api'
 import { ApiError } from '../lib/api'
 import { connected } from '../lib/store'
@@ -67,6 +83,18 @@ const ICON_KEYS = [
 ]
 
 /**
+ * Accessible name for an icon cell.
+ *
+ * Translating sixteen pictogram names would add sixteen dictionary entries for
+ * a purely decorative choice, so the name is positional instead — "Icon 5 of
+ * 16" is honest, localises for free, and is genuinely more useful than the
+ * English word "sliders" spoken to someone reading a Vietnamese UI.
+ */
+function iconLabel(key: string): string {
+  return `${t('wc.choose_icon')} ${ICON_KEYS.indexOf(key) + 1}/${ICON_KEYS.length}`
+}
+
+/**
  * The 51DK command grid — drops in where the default remote-action buttons are
  * on the Controls screen (replacing only those). Commands are fixed; if the
  * backend rejects a shell action (403, advanced actions off) we prompt to
@@ -75,6 +103,8 @@ const ICON_KEYS = [
 export function WiCarlinkGrid() {
   const [pending, setPending] = useState<WcCommand | null>(null)
   const [enabling, setEnabling] = useState(false)
+  // Null while a command is in flight: the dialog must not vanish mid-enable.
+  useEscape(pending && !enabling ? () => setPending(null) : null)
   const disabled = !connected.value
   const cmds = wcCommands.value.length ? wcCommands.value : DEFAULT_WC_COMMANDS
 
@@ -132,8 +162,14 @@ export function WiCarlinkGrid() {
 
       {pending && (
         <div class="modal-backdrop" onClick={() => !enabling && setPending(null)}>
-          <div class="modal" onClick={(e) => e.stopPropagation()}>
-            <h3 class="modal-title">{t('wc.enable_advanced_q')}</h3>
+          <div
+            class="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="wc-enable-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 class="modal-title" id="wc-enable-title">{t('wc.enable_advanced_q')}</h3>
             <p class="modal-body">{t('wc.enable_body', { label: pending.label })}</p>
             <div class="grid grid-2">
               <button class="btn" disabled={enabling} onClick={() => setPending(null)}>
@@ -155,6 +191,7 @@ export function WiCarlinkEditor({ onDone }: { onDone: () => void }) {
   const [draft, setDraft] = useState<WcCommand[]>(() => wcCommands.value.map((c) => ({ ...c })))
   const [dragId, setDragId] = useState<string | null>(null)
   const [iconPickFor, setIconPickFor] = useState<string | null>(null)
+  useEscape(iconPickFor ? () => setIconPickFor(null) : null)
   const rowEls = useRef<Record<string, HTMLElement | null>>({})
   const dragging = useRef<string | null>(null)
 
@@ -274,8 +311,8 @@ export function WiCarlinkEditor({ onDone }: { onDone: () => void }) {
                     value={c.kind}
                     onChange={(e) => update(c.id, { kind: (e.target as HTMLSelectElement).value as WcKind })}
                   >
-                    <option value="openApp">app</option>
-                    <option value="shell">shell</option>
+                    <option value="openApp">{t('wc.kind_app')}</option>
+                    <option value="shell">{t('wc.kind_shell')}</option>
                   </select>
                 </div>
                 <input
@@ -315,8 +352,14 @@ export function WiCarlinkEditor({ onDone }: { onDone: () => void }) {
 
       {iconPickFor && (
         <div class="modal-backdrop" onClick={() => setIconPickFor(null)}>
-          <div class="modal" onClick={(e) => e.stopPropagation()}>
-            <h3 class="modal-title">{t('wc.choose_icon')}</h3>
+          <div
+            class="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="wc-icon-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 class="modal-title" id="wc-icon-title">{t('wc.choose_icon')}</h3>
             <div class="icon-grid">
               {ICON_KEYS.map((k) => {
                 const Ico = iconFor(k)
@@ -326,7 +369,11 @@ export function WiCarlinkEditor({ onDone }: { onDone: () => void }) {
                     key={k}
                     type="button"
                     class={'icon-cell' + (on ? ' on' : '')}
-                    aria-label={k}
+                    // aria-label was the raw ICON_KEYS token ('bolt', 'sliders'),
+                    // i.e. developer English read aloud to a Vietnamese user, and
+                    // the chosen cell was marked by background colour only.
+                    aria-label={iconLabel(k)}
+                    aria-pressed={on}
                     onClick={() => {
                       update(iconPickFor, { icon: k })
                       setIconPickFor(null)

@@ -14,17 +14,34 @@ function Seg({
   value,
   tone,
   disabled,
+  label,
   onSet,
 }: {
   value: number
   tone: 'cool' | 'heat'
   disabled: boolean
+  /** Names the group, e.g. "Driver · Cooling" — the buttons alone are ambiguous. */
+  label: string
   onSet: (level: number) => void
 }) {
+  /*
+   * Twelve buttons on this screen read "Off / Low / High" and nothing else.
+   * Without the radio roles a screen reader gets an undifferentiated run of
+   * them with no idea which is set or which seat and mode it belongs to, and
+   * the selected one is marked only by a background colour. `label` names the
+   * group; the roles carry the selection.
+   */
   return (
-    <div class={'seg3 ' + tone}>
+    <div class={'seg3 ' + tone} role="radiogroup" aria-label={label}>
       {levelLabels().map((lab, lvl) => (
-        <button key={lvl} class={value === lvl ? 'on' : ''} disabled={disabled} onClick={() => { tapFeedback(); onSet(lvl) }}>
+        <button
+          key={lvl}
+          class={value === lvl ? 'on' : ''}
+          disabled={disabled}
+          role="radio"
+          aria-checked={value === lvl}
+          onClick={() => { tapFeedback(); onSet(lvl) }}
+        >
           {lab}
         </button>
       ))}
@@ -73,12 +90,24 @@ export function Seats() {
             {canCool && (
               <div class="seat-mode">
                 <div class="seat-mode-label cool"><IconSnow size={15} /> {t('seat.cooling')}</div>
-                <Seg value={cool[c.idx] ?? 0} tone="cool" disabled={disabled} onSet={(l) => set('cool', c.pos, l)} />
+                <Seg
+                  value={cool[c.idx] ?? 0}
+                  tone="cool"
+                  disabled={disabled}
+                  label={`${t(c.key)} · ${t('seat.cooling')}`}
+                  onSet={(l) => set('cool', c.pos, l)}
+                />
               </div>
             )}
             <div class="seat-mode">
               <div class="seat-mode-label heat"><IconFlame size={15} /> {t('seat.heating')}</div>
-              <Seg value={heat[c.idx] ?? 0} tone="heat" disabled={disabled} onSet={(l) => set('heat', c.pos, l)} />
+              <Seg
+                value={heat[c.idx] ?? 0}
+                tone="heat"
+                disabled={disabled}
+                label={`${t(c.key)} · ${t('seat.heating')}`}
+                onSet={(l) => set('heat', c.pos, l)}
+              />
             </div>
           </div>
         ))}

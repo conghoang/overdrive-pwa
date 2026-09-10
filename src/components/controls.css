@@ -71,6 +71,13 @@
   background: linear-gradient(90deg, var(--accent) var(--fill, 50%), var(--track) var(--fill, 50%));
   outline: none;
 }
+/* Removing the UA ring without replacing it left the app's only range control
+   with no focus state at all — arrow keys moved the dewarp slider while nothing
+   on screen said it had focus. The ring is offset so it clears the thumb. */
+.slider:focus-visible {
+  outline: 2px solid var(--accent-strong);
+  outline-offset: 4px;
+}
 .slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 26px;

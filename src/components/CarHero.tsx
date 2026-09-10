@@ -68,9 +68,12 @@ export function CarHero({ s }: { s: StatusResponse }) {
         <div class="car-photo"><CarImage color="#c7ccd1" /></div>
       )}
 
-      <div class="prnd">
+      {/* Read aloud, "P R N D" is four letters with nothing to say which one
+          is current — the selected gear is pure colour. The group carries the
+          answer as text so it does not depend on seeing the highlight. */}
+      <div class="prnd" role="img" aria-label={`${t('vitals.gear')}: ${gear ?? '--'}`}>
         {GEARS.map((g) => (
-          <span key={g} class={'prnd-item' + (gear === g ? ' on' : '')}>{g}</span>
+          <span key={g} class={'prnd-item' + (gear === g ? ' on' : '')} aria-hidden="true">{g}</span>
         ))}
       </div>
 
