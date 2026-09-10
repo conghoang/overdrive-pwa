@@ -52,10 +52,59 @@ h1, h2, h3, p { margin: 0; }
   margin: 0 auto;
 }
 
-.screen-anim { animation: screen-in 0.22s ease; }
-@keyframes screen-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+/*
+ * Tab transitions: the outgoing screen leaves, the incoming one arrives, both
+ * in the direction of travel — so moving right through the tab bar looks like
+ * moving right, and the swipe gesture matches what the screen does.
+ *
+ * The two screens are stacked in ONE grid cell rather than positioned
+ * absolutely. Absolute positioning would take both out of flow and collapse
+ * the page height to nothing mid-transition, which reads as a scroll jump on a
+ * long dashboard; a grid cell keeps the container as tall as the taller screen.
+ *
+ * overflow-x: clip, not hidden — hidden makes this a scroll container, and the
+ * fullscreen camera relies on position: fixed escaping its ancestors.
+ */
+.screen-stack { display: grid; --tab-anim: 0.26s; }
+/* hidden first as the fallback for engines without overflow: clip. Neither
+   breaks the fullscreen camera — only a transform or filter on an ancestor
+   would, which is why the entering screen sheds its animation class. */
+.screen-stack.animating { overflow-x: hidden; overflow-x: clip; }
+.screen-stack > * { grid-area: 1 / 1; min-width: 0; }
+
+/*
+ * Deliberately NO animation-fill-mode on the entering screen. Its end state is
+ * its natural state, so once the animation is done no transform is left behind
+ * — and a lingering transform on an ancestor would silently re-anchor the
+ * fullscreen camera's position: fixed to this element instead of the viewport.
+ * The class is dropped when the transition ends for the same reason.
+ */
+.screen-in-fwd { animation: screen-in-fwd var(--tab-anim, 0.26s) cubic-bezier(0.22, 0.61, 0.36, 1); }
+.screen-in-back { animation: screen-in-back var(--tab-anim, 0.26s) cubic-bezier(0.22, 0.61, 0.36, 1); }
+/* The leaving screen is unmounted straight after, so it may hold its end state. */
+.screen-out-fwd { animation: screen-out-fwd var(--tab-anim, 0.26s) cubic-bezier(0.22, 0.61, 0.36, 1) forwards; }
+.screen-out-back { animation: screen-out-back var(--tab-anim, 0.26s) cubic-bezier(0.22, 0.61, 0.36, 1) forwards; }
+/* It is on its way out; taps belong to the screen arriving. */
+.screen-out-fwd, .screen-out-back { pointer-events: none; }
+
+@keyframes screen-in-fwd {
+  from { opacity: 0.4; transform: translateX(100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes screen-in-back {
+  from { opacity: 0.4; transform: translateX(-100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+/* The outgoing screen travels a shorter distance than the incoming one covers.
+   That parallax is what makes the new screen read as sliding OVER the old one
+   rather than the two being dragged along on one strip. */
+@keyframes screen-out-fwd {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(-30%); }
+}
+@keyframes screen-out-back {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(30%); }
 }
 
 .screen-head {

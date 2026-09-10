@@ -48,8 +48,38 @@ function hasScrollableX(el: HTMLElement | null): boolean {
   return false
 }
 
+/** How long the tab slide runs; must match --tab-anim in global.css. */
+const TAB_ANIM_MS = 260
+
+function renderTab(which: Tab, onSignOut: () => void) {
+  if (which === 'dashboard') return <Dashboard />
+  if (which === 'controls') return <Controls />
+  if (which === 'camera') return <CameraTab />
+  return <Account onSignOut={onSignOut} />
+}
+
 export function App() {
   const swipe = useRef<{ x: number; y: number; guard: boolean } | null>(null)
+  /*
+   * The screen being left, kept mounted just long enough to animate out.
+   * `dir` is the direction of travel through TAB_ORDER, so tapping the last
+   * tab from the first slides the same way the swipe gesture would.
+   */
+  const [leaving, setLeaving] = useState<{ tab: Tab; dir: 1 | -1 } | null>(null)
+  const prevTab = useRef(tab.value)
+
+  useEffect(() => {
+    const from = prevTab.current
+    if (from === tab.value) return
+    prevTab.current = tab.value
+    const dir: 1 | -1 = TAB_ORDER.indexOf(tab.value) > TAB_ORDER.indexOf(from) ? 1 : -1
+    setLeaving({ tab: from, dir })
+    // Each screen has its own scroll position; arriving halfway down a tab you
+    // have never opened is disorienting, and mid-slide it looks like a jump.
+    window.scrollTo(0, 0)
+    const id = setTimeout(() => setLeaving(null), TAB_ANIM_MS)
+    return () => clearTimeout(id)
+  }, [tab.value])
 
   // Not set up yet, or the backend rejected our token → show the setup screen.
   if (!configured.value || store.authLost.value) {
@@ -95,11 +125,21 @@ export function App() {
   return (
     <div class="app">
       <main class="app-main" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-        <div class="screen-anim" key={tab.value}>
-          {tab.value === 'dashboard' && <Dashboard />}
-          {tab.value === 'controls' && <Controls />}
-          {tab.value === 'camera' && <CameraTab />}
-          {tab.value === 'account' && <Account onSignOut={() => (configured.value = false)} />}
+        <div class={'screen-stack' + (leaving ? ' animating' : '')}>
+          {leaving && (
+            <div class={leaving.dir > 0 ? 'screen-out-fwd' : 'screen-out-back'} key={leaving.tab}>
+              {renderTab(leaving.tab, () => (configured.value = false))}
+            </div>
+          )}
+          {/* No animation class once the slide is over: the class carries a
+              transform, and a transform left on an ancestor would re-anchor
+              the fullscreen camera's position: fixed to this element. */}
+          <div
+            class={leaving ? (leaving.dir > 0 ? 'screen-in-fwd' : 'screen-in-back') : undefined}
+            key={tab.value}
+          >
+            {renderTab(tab.value, () => (configured.value = false))}
+          </div>
         </div>
       </main>
       <TabBar active={tab.value} onChange={(t) => (tab.value = t)} />
