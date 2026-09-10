@@ -10,7 +10,7 @@ interface Props {
   hold?: boolean
   tone?: 'default' | 'accent' | 'danger'
   disabled?: boolean
-  onFire: () => void | Promise<void>
+  onFire: () => void | Promise<unknown>
 }
 
 const HOLD_MS = 900
@@ -23,7 +23,7 @@ const HOLD_MS = 900
  *
  * Returns the pointer handlers, the 0..1 progress for the fill, and `busy`.
  */
-export function useHold(onFire: () => void | Promise<void>, hold: boolean, disabled: boolean) {
+export function useHold(onFire: () => void | Promise<unknown>, hold: boolean, disabled: boolean) {
   const [busy, setBusy] = useState(false)
   const [progress, setProgress] = useState(0)
   const raf = useRef<number | null>(null)

@@ -39,7 +39,7 @@ function QuickBtn({
   disabled: boolean
   /** Press-and-hold, for actions that physically open the car. */
   hold?: boolean
-  onFire: () => void | Promise<void>
+  onFire: () => void | Promise<unknown>
 }) {
   const { busy, progress, handlers } = useHold(onFire, !!hold, disabled)
   return (

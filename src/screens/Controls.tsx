@@ -36,6 +36,40 @@ const TEMP_MAX = 30
  */
 const SETPOINT_SETTLE_MS = 4000
 
+/**
+ * Show a change straight away, and let the car correct it.
+ *
+ * Climate state only arrives on the 5s telemetry poll, and the car itself takes
+ * a moment to apply a command — so tapping a fan speed left the bar sitting on
+ * the old value for ten seconds or more, which reads as a dropped tap and
+ * invites a second one.
+ *
+ * The optimistic value is held until the car agrees (it confirms, and the
+ * override is dropped), the caller rolls it back (the command was rejected), or
+ * the window lapses — so a change the car silently ignored corrects itself
+ * instead of leaving the UI asserting something untrue indefinitely.
+ */
+const OPTIMISTIC_MS = 8000
+function useOptimistic<T>(carValue: T) {
+  const [pending, setPending] = useState<{ value: T; at: number } | null>(null)
+
+  useEffect(() => {
+    if (!pending) return
+    if (carValue === pending.value) { setPending(null); return } // car agrees
+    const left = OPTIMISTIC_MS - (Date.now() - pending.at)
+    if (left <= 0) { setPending(null); return }
+    const id = setTimeout(() => setPending(null), left)
+    return () => clearTimeout(id)
+  }, [carValue, pending])
+
+  const shown = pending ? pending.value : carValue
+  return {
+    shown,
+    predict: (v: T) => setPending({ value: v, at: Date.now() }),
+    rollback: () => setPending(null),
+  }
+}
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 // Bumped on every climate command so a stale wake-resend can cancel itself.
@@ -49,11 +83,13 @@ function handleError(e: unknown) {
   toast(e instanceof Error ? e.message : t('common.failed'), 'err')
 }
 
-async function run(fn: () => Promise<ControlResult>, okMsg: string) {
+/** Returns whether the car accepted it, so an optimistic UI can be rolled back. */
+async function run(fn: () => Promise<ControlResult>, okMsg: string): Promise<boolean> {
   try {
-    toastResult(await fn(), okMsg)
+    return toastResult(await fn(), okMsg)
   } catch (e) {
     handleError(e)
+    return false
   } finally {
     refresh()
   }
@@ -63,15 +99,17 @@ async function run(fn: () => Promise<ControlResult>, okMsg: string) {
 // first send. Show feedback immediately, then re-send once so a sleeping car still
 // acts — but skip the resend if a newer climate command has since been issued
 // (so a quick ON→OFF can't be undone by ON's late resend).
-async function runClimate(fn: () => Promise<ControlResult>, okMsg: string) {
+async function runClimate(fn: () => Promise<ControlResult>, okMsg: string): Promise<boolean> {
   const gen = ++climateGen
   try {
-    toastResult(await fn(), okMsg)
+    const ok = toastResult(await fn(), okMsg)
     void sleep(600).then(() => {
       if (gen === climateGen) fn().catch(() => {})
     })
+    return ok
   } catch (e) {
     handleError(e)
+    return false
   } finally {
     refresh()
   }
@@ -90,8 +128,14 @@ export function Controls() {
   const wc = wicarlink.value
 
   const vs = vehicleState.value
-  const climateActive = !!(vs?.climate?.acOn || vs?.climate?.remoteClimateActive)
-  const fanLevel = vs?.climate?.fanLevel
+  /*
+   * Both of these are shown optimistically: the car reports them only on the
+   * poll, so without this a tap sat visibly inert for seconds.
+   */
+  const ac = useOptimistic(!!(vs?.climate?.acOn || vs?.climate?.remoteClimateActive))
+  const climateActive = ac.shown
+  const fan = useOptimistic(vs?.climate?.fanLevel)
+  const fanLevel = fan.shown
   const carSetpoint = vs?.climate?.setpointDriver
   /*
    * Refuse a setpoint we cannot render honestly. The value is expressed in the
@@ -185,11 +229,14 @@ export function Controls() {
             class={'climate-toggle' + (climateActive ? ' on' : '')}
             disabled={disabled}
             aria-pressed={climateActive}
-            onClick={() =>
-              climateActive
-                ? runClimate(api.climateOff, `${t('ctrl.climate')} · ${t('common.off')}`)
-                : runClimate(() => api.climateOn(temp), `${t('ctrl.climate')} · ${temp}°C`)
-            }
+            onClick={async () => {
+              const next = !climateActive
+              ac.predict(next)
+              const ok = next
+                ? await runClimate(() => api.climateOn(temp), `${t('ctrl.climate')} · ${temp}°C`)
+                : await runClimate(api.climateOff, `${t('ctrl.climate')} · ${t('common.off')}`)
+              if (!ok) ac.rollback() // never leave the toggle asserting a state the car refused
+            }}
           >
             {climateActive ? t('common.on') : t('common.off')}
           </button>
@@ -225,7 +272,11 @@ export function Controls() {
                 role="radio"
                 aria-checked={fanLevel === i + 1}
                 aria-label={`${t('ctrl.fan')} ${i + 1}`}
-                onClick={() => run(() => api.setFan(i + 1), `${t('ctrl.fan')} ${i + 1}`)}
+                onClick={async () => {
+                  fan.predict(i + 1)
+                  const ok = await run(() => api.setFan(i + 1), `${t('ctrl.fan')} ${i + 1}`)
+                  if (!ok) fan.rollback()
+                }}
               />
             ))}
           </div>
