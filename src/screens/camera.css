@@ -68,7 +68,20 @@
 }
 /* The car is inset so the ring of hotspots sits AROUND it while staying inside
    the picker box — otherwise the top and bottom buttons hang over the card. */
-.cam-car { position: absolute; inset: 30px 42px; width: auto; height: auto; }
+/* Sized explicitly, NOT by inset + width:auto.
+   For an absolutely positioned REPLACED element (an <svg> is one), width:auto
+   resolves to the element's INTRINSIC size, not to the box the insets describe
+   — CSS 2.1 §10.3.8. So the insets never constrained it. Chrome happened to
+   fill the box anyway; Safari followed the spec and drew the car at full size,
+   overflowing the card on iOS. Explicit width/height removes the ambiguity. */
+.cam-car {
+  position: absolute;
+  display: block;
+  left: 42px;
+  top: 30px;
+  width: calc(100% - 84px);
+  height: calc(100% - 60px);
+}
 .cc-body { fill: var(--surface-3); stroke: var(--border-strong); stroke-width: 3; }
 .cc-glass { fill: rgba(150, 190, 225, 0.22); }
 .cc-roof { fill: rgba(150, 190, 225, 0.10); }
@@ -147,7 +160,12 @@
 @media (max-width: 380px) {
   .cam-controls { gap: 12px; padding: 14px 12px; }
   .cam-picker { width: 156px; height: 186px; }
-  .cam-car { inset: 26px 36px; }
+  .cam-car {
+    left: 36px;
+    top: 26px;
+    width: calc(100% - 72px);
+    height: calc(100% - 52px);
+  }
   .cam-hotspot { width: 34px; height: 34px; }
 }
 
