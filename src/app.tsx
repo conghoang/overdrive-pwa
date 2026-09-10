@@ -151,9 +151,20 @@ export function App() {
     if (!s || s.guard) return
     const dx = x - s.x
     const dy = y - s.y
-    // mostly-horizontal swipe past the threshold, with little vertical travel, so
-    // a diagonal gesture during a vertical scroll can't flip tabs.
-    if (Math.abs(dx) >= 70 && Math.abs(dy) <= 45 && Math.abs(dx) >= Math.abs(dy) * 2) {
+    /*
+     * Judged by DOMINANCE, not by an absolute cap on vertical travel.
+     *
+     * A thumb pivots from its base, so a swipe arcs rather than running
+     * straight: a 130px horizontal drag drifts 50-60px vertically without
+     * feeling diagonal at all, and how much it arcs depends on which direction
+     * it travels. The old `|dy| <= 45` therefore rejected one direction while
+     * accepting the other — which is exactly what it looks like when swiping
+     * one way works and the other does nothing.
+     *
+     * Requiring dx to dominate still rejects a scroll, where dy is the larger
+     * of the two by a wide margin.
+     */
+    if (Math.abs(dx) >= 60 && Math.abs(dx) >= Math.abs(dy) * 1.6) {
       const i = TAB_ORDER.indexOf(tab.value) + (dx < 0 ? 1 : -1)
       if (i >= 0 && i < TAB_ORDER.length) tab.value = TAB_ORDER[i]
     }

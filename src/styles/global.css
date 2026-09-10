@@ -25,7 +25,10 @@ body {
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  overscroll-behavior-y: none;
+  /* Both axes. Y stops pull-to-refresh; X stops Chrome treating a horizontal
+     drag as history back/forward — which ate the tab swipe in whichever
+     direction happened to start near an edge. */
+  overscroll-behavior: none;
 }
 
 #app { min-height: 100dvh; }
