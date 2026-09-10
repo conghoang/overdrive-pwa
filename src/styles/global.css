@@ -35,6 +35,17 @@ body {
    from the Leaflet map, which needs it. */
 button, a, select, label, .tab, .tile { touch-action: manipulation; }
 
+/* Images must not swallow a horizontal swipe.
+   iOS treats a drag that begins on an image as a drag-out / callout gesture and
+   fires touchcancel instead of touchend — and the car photo is most of the
+   first screen, so the tab swipe people tried first was the one that never
+   worked. Nothing here is meant to be dragged out of the page. */
+img {
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
 button { font-family: inherit; color: inherit; cursor: pointer; }
 a { color: var(--accent-bright); text-decoration: none; }
 

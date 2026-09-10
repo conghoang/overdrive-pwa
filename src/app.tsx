@@ -51,7 +51,9 @@ function renderTab(which: Tab, onSignOut: () => void) {
 }
 
 export function App() {
-  const swipe = useRef<{ x: number; y: number; guard: boolean } | null>(null)
+  // x/y where the finger landed, and where it last was — the end position has
+  // to be remembered because a cancelled touch reports no coordinates.
+  const swipe = useRef<{ x: number; y: number; lastX: number; lastY: number; guard: boolean } | null>(null)
   /*
    * The screen being left, kept mounted just long enough to animate out.
    * `dir` is the direction of travel through TAB_ORDER, so tapping the last
@@ -124,16 +126,31 @@ export function App() {
     const tag = el?.tagName
     const guard =
       tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || hasScrollableX(el)
-    swipe.current = { x: t.clientX, y: t.clientY, guard }
+    swipe.current = { x: t.clientX, y: t.clientY, lastX: t.clientX, lastY: t.clientY, guard }
   }
 
-  function onTouchEnd(e: JSX.TargetedTouchEvent<HTMLElement>) {
+  function onTouchMove(e: JSX.TargetedTouchEvent<HTMLElement>) {
+    const s = swipe.current
+    if (!s || e.touches.length !== 1) return
+    s.lastX = e.touches[0].clientX
+    s.lastY = e.touches[0].clientY
+  }
+
+  /**
+   * Resolve the gesture.
+   *
+   * Called from touchend AND touchcancel. iOS fires cancel INSTEAD of end when
+   * it decides the touch belongs to something else — a drag off an image being
+   * the common one, and the hero photo is most of the first screen, so a swipe
+   * that began on it simply never completed. The last move position is used
+   * because a cancelled touch carries no useful coordinates of its own.
+   */
+  function endSwipe(x: number, y: number) {
     const s = swipe.current
     swipe.current = null
     if (!s || s.guard) return
-    const t = e.changedTouches[0]
-    const dx = t.clientX - s.x
-    const dy = t.clientY - s.y
+    const dx = x - s.x
+    const dy = y - s.y
     // mostly-horizontal swipe past the threshold, with little vertical travel, so
     // a diagonal gesture during a vertical scroll can't flip tabs.
     if (Math.abs(dx) >= 70 && Math.abs(dy) <= 45 && Math.abs(dx) >= Math.abs(dy) * 2) {
@@ -142,9 +159,25 @@ export function App() {
     }
   }
 
+  function onTouchEnd(e: JSX.TargetedTouchEvent<HTMLElement>) {
+    const t = e.changedTouches[0]
+    endSwipe(t ? t.clientX : (swipe.current?.lastX ?? 0), t ? t.clientY : (swipe.current?.lastY ?? 0))
+  }
+
+  function onTouchCancel() {
+    const s = swipe.current
+    if (s) endSwipe(s.lastX, s.lastY)
+  }
+
   return (
     <div class="app">
-      <main class="app-main" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <main
+        class="app-main"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        onTouchCancel={onTouchCancel}
+      >
         <div class={'screen-stack' + (leaving ? ' animating' : '')}>
           {leaving && (
             <div class={leaving.dir > 0 ? 'screen-out-fwd' : 'screen-out-back'} key={leaving.tab}>
