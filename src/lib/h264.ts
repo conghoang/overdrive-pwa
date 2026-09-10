@@ -90,6 +90,8 @@ void main(){
 }`
 
 interface Renderer {
+  /** True once the GPU has taken the context back; nothing will draw again. */
+  lost(): boolean
   draw(frame: VideoFrame): void
   setStrength(v: number): void
   /** 1 for a single camera, 2 for the 2x2 mosaic. */
@@ -97,25 +99,80 @@ interface Renderer {
   destroy(): void
 }
 
+/**
+ * Can this device actually run the dewarp shader?
+ *
+ * Asked on a THROWAWAY canvas, because the answer decides which context the
+ * real canvas takes. A canvas that has handed out a WebGL context can never
+ * hand out a 2D one, so probing on the real canvas would burn the very fallback
+ * the probe exists to choose — a shader that fails to compile there leaves the
+ * player with no way to draw at all. Cached: the answer is a property of the
+ * driver, not of the canvas.
+ */
+let glProbe: boolean | null = null
+function glUsable(): boolean {
+  if (glProbe !== null) return glProbe
+  glProbe = false
+  try {
+    const probe = document.createElement('canvas')
+    probe.width = 1
+    probe.height = 1
+    const gl = probe.getContext('webgl')
+    if (!gl) return glProbe
+    const built = buildProgram(gl)
+    if (built) {
+      gl.deleteProgram(built.prog)
+      glProbe = true
+    }
+    // Hand the scratch context back rather than waiting for GC; browsers cap
+    // how many live WebGL contexts a page may hold.
+    gl.getExtension('WEBGL_lose_context')?.loseContext()
+  } catch {
+    /* treat any failure as "no WebGL" */
+  }
+  return glProbe
+}
+
+/** Compile + link the dewarp program, cleaning up after itself on failure. */
+function buildProgram(gl: WebGLRenderingContext): { prog: WebGLProgram } | null {
+  const shader = (type: number, src: string) => {
+    const sh = gl.createShader(type)!
+    gl.shaderSource(sh, src)
+    gl.compileShader(sh)
+    if (gl.getShaderParameter(sh, gl.COMPILE_STATUS)) return sh
+    gl.deleteShader(sh)
+    return null
+  }
+  const vs = shader(gl.VERTEX_SHADER, VERT)
+  const fs = vs ? shader(gl.FRAGMENT_SHADER, FRAG) : null
+  if (!vs || !fs) {
+    if (vs) gl.deleteShader(vs)
+    return null
+  }
+  const prog = gl.createProgram()!
+  gl.attachShader(prog, vs)
+  gl.attachShader(prog, fs)
+  gl.linkProgram(prog)
+  // Flagged for deletion now: the program keeps them alive while it is linked,
+  // and they go with it on deleteProgram. Without this they outlive every
+  // reconnect, and a stream restart rebuilds the program from scratch.
+  gl.deleteShader(vs)
+  gl.deleteShader(fs)
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+    gl.deleteProgram(prog)
+    return null
+  }
+  return { prog }
+}
+
 /** WebGL renderer; returns null if WebGL is unavailable so the 2D path can run. */
 function makeGlRenderer(canvas: HTMLCanvasElement, strength: number): Renderer | null {
   const gl = canvas.getContext('webgl', { alpha: false, preserveDrawingBuffer: false })
   if (!gl) return null
 
-  function shader(type: number, src: string) {
-    const sh = gl!.createShader(type)!
-    gl!.shaderSource(sh, src)
-    gl!.compileShader(sh)
-    return gl!.getShaderParameter(sh, gl!.COMPILE_STATUS) ? sh : null
-  }
-  const vs = shader(gl.VERTEX_SHADER, VERT)
-  const fs = shader(gl.FRAGMENT_SHADER, FRAG)
-  if (!vs || !fs) return null
-  const prog = gl.createProgram()!
-  gl.attachShader(prog, vs)
-  gl.attachShader(prog, fs)
-  gl.linkProgram(prog)
-  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null
+  const built = buildProgram(gl)
+  if (!built) return null
+  const prog = built.prog
   gl.useProgram(prog)
 
   const buf = gl.createBuffer()
@@ -146,7 +203,12 @@ function makeGlRenderer(canvas: HTMLCanvasElement, strength: number): Renderer |
   apply(strength)
 
   return {
+    lost: () => gl.isContextLost(),
     draw(frame) {
+      // Android reclaims GPU contexts from backgrounded tabs. Drawing into a
+      // lost context is a silent no-op, which would leave a black canvas
+      // reporting itself as live, so the caller is told instead.
+      if (gl.isContextLost()) throw new Error('gl context lost')
       gl.viewport(0, 0, canvas.width, canvas.height)
       gl.bindTexture(gl.TEXTURE_2D, tex)
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, frame)
@@ -225,7 +287,9 @@ export function startPlayer(opts: {
   onState: (s: PlayerState, detail?: string) => void
 }): PlayerHandle {
   const { url, canvas, onState } = opts
-  let renderer = makeGlRenderer(canvas, opts.strength ?? 0)
+  // Ask the throwaway probe FIRST — see glUsable(). Only a device that can run
+  // the shader is allowed to spend this canvas's one context on WebGL.
+  let renderer = glUsable() ? makeGlRenderer(canvas, opts.strength ?? 0) : null
   renderer?.setTiles(opts.tiles ?? 1)
   // WebGL missing (or blocked) is not fatal: fall back to a plain 2D blit, which
   // simply cannot dewarp.
@@ -255,9 +319,27 @@ export function startPlayer(opts: {
       canvas.width = frame.displayWidth
       canvas.height = frame.displayHeight
     }
-    if (renderer) renderer.draw(frame)
-    else ctx!.drawImage(frame, 0, 0)
-    frame.close()
+    /*
+     * close() belongs in a finally, not after the draw.
+     *
+     * Uploading an unusable frame throws (texImage2D and drawImage both do),
+     * and that throw leaves this VideoFrame open. Frames are a hard-limited
+     * resource: a handful of leaked ones fill the decoder's output queue and
+     * decode() silently stops producing anything — a frozen picture with the
+     * socket still running at full bitrate. One escaped frame is enough.
+     */
+    try {
+      if (renderer) renderer.draw(frame)
+      else ctx!.drawImage(frame, 0, 0)
+    } catch {
+      // A lost GL context is terminal for this canvas; say so instead of
+      // leaving a black rectangle labelled "Live".
+      if (renderer?.lost()) fail('gl lost')
+      else if (++errors > 40) fail('render failed')
+      return
+    } finally {
+      frame.close()
+    }
     if (!painted) {
       painted = true
       onState('live') // a decoded frame is the only honest proof it works
@@ -324,8 +406,11 @@ export function startPlayer(opts: {
         gotKeyframe = false
         try {
           decoder!.reset()
-          configure(codecFromSps(nal))
-        } catch { /* next keyframe will retry */ }
+          // Same rule as the first SPS below: an unconfigurable decoder is not
+          // going to recover on the next keyframe, and staying quiet freezes
+          // the picture on the last pre-switch frame while still saying "Live".
+          if (!configure(codecFromSps(nal))) fail('codec unsupported')
+        } catch { fail('codec unsupported') }
         return
       }
       if (!sps) {
@@ -365,7 +450,11 @@ export function startPlayer(opts: {
 
   decoder = new VideoDecoder({
     output: paint,
-    error: () => { if (!painted) fail('decoder error') },
+    // Terminal by spec — the codec cannot decode again after this fires. It was
+    // previously ignored once a frame had painted, which turned a dead decoder
+    // into a still photo of the car sitting under a green "Live" dot. A stale
+    // camera image presented as live is worse than an honest error.
+    error: () => fail('decoder error'),
   })
   // Provisional: the real profile comes from the first SPS, above.
   configure('avc1.42C01F')

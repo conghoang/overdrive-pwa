@@ -160,6 +160,8 @@ export interface ControlResult {
   outcome?: string
   latencyMs?: number
   path?: string
+  /** Stream enable only: not a failure, means "the pipeline is still coming up — ask again". */
+  starting?: boolean
 }
 
 export interface LoginResponse {

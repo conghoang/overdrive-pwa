@@ -1,4 +1,4 @@
-import { useRef, useState } from 'preact/hooks'
+import { useEffect, useRef, useState } from 'preact/hooks'
 import type { JSX } from 'preact'
 import { t } from '../lib/i18n'
 import { commitFeedback, tapFeedback } from '../lib/haptics'
@@ -57,6 +57,16 @@ export function ActionButton({ label, icon, hold, tone = 'default', disabled, on
       raf.current = null
     }
   }
+
+  /*
+   * A hold in flight when this button disappears must not still complete.
+   *
+   * The loop only stopped on pointerup, so an unmount mid-hold left it running:
+   * the 900 ms mark would arrive and call onFire() for real. The case that
+   * matters is a poll returning 401 while the user holds Unlock — the app swaps
+   * to the sign-in screen, and a moment later the dead session sends an unlock.
+   */
+  useEffect(() => cancelHold, [])
 
   function onDown(e: JSX.TargetedPointerEvent<HTMLButtonElement>) {
     if (disabled || busy) return

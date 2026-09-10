@@ -23,6 +23,40 @@ import './camera.css'
  * running because a screen unmounted would be a battery bug on the car, not
  * just here.
  */
+/*
+ * The head unit has ONE pipeline, and enable/disable are absolute rather than
+ * refcounted. Sent concurrently they race: switching camera fires the old
+ * effect's disable and the new effect's enable as two independent requests
+ * through the tunnel, and if the disable is served second the pipeline ends up
+ * off while a socket sits open waiting for frames that never come — a spinner
+ * that only leaving the tab clears. Queueing them makes the order the order
+ * they were issued in.
+ */
+let streamQueue: Promise<unknown> = Promise.resolve()
+function queued<T>(fn: () => Promise<T>): Promise<T> {
+  const next = streamQueue.then(fn, fn) // a failed predecessor must not block the queue
+  streamQueue = next.catch(() => {})
+  return next
+}
+
+/*
+ * The AVM pipeline cold-starts in a few seconds, and until it is up the car
+ * answers enable with HTTP 200 {success:false, starting:true} — its own comment
+ * calls this "the client re-polls until pipelineRunning flips true". Nothing
+ * here re-polled, so a parked car with a cold pipeline showed "Connecting…"
+ * forever: not an error, just a request whose answer was "ask again".
+ */
+async function enableStream(isCancelled: () => boolean): Promise<void> {
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const res = await queued(() => api.streamEnable())
+    if (isCancelled()) return
+    if (res?.success !== false || res.starting !== true) return
+    await new Promise((r) => setTimeout(r, 700))
+    if (isCancelled()) return
+  }
+  throw new Error('stream did not start')
+}
+
 export function Camera() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const playerRef = useRef<PlayerHandle | null>(null)
@@ -93,16 +127,38 @@ export function Camera() {
     }
   }
 
+  /*
+   * Backgrounding the app must stop the stream.
+   *
+   * Switching tabs already unmounts this screen, but locking the phone or
+   * swapping apps does not: the effect never re-ran, so the socket stayed open
+   * and the car kept encoding at full rate in the owner's pocket. That is the
+   * most expensive thing this app can leave running, and the poll in store.ts
+   * already backs off when hidden — this was the one place that didn't.
+   */
+  const [visible, setVisible] = useState(!document.hidden)
   useEffect(() => {
-    if (!supported || isDemo) return
+    const sync = () => setVisible(!document.hidden)
+    document.addEventListener('visibilitychange', sync)
+    // iOS often skips visibilitychange when the app is swiped away; pagehide fires.
+    window.addEventListener('pagehide', sync)
+    return () => {
+      document.removeEventListener('visibilitychange', sync)
+      window.removeEventListener('pagehide', sync)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!supported || isDemo || !visible) return
     let cancelled = false
 
     async function begin() {
       setDetail(null)
       setState('connecting')
       try {
-        await api.streamEnable()
-        await api.streamView(view)
+        await enableStream(() => cancelled)
+        if (cancelled) return
+        await queued(() => api.streamView(view))
       } catch {
         if (!cancelled) {
           setState('error')
@@ -129,11 +185,11 @@ export function Camera() {
       cancelled = true
       playerRef.current?.stop()
       playerRef.current = null
-      // Fire-and-forget: the screen is going away regardless, but the car must
-      // not be left encoding.
-      void api.streamDisable().catch(() => {})
+      // Fire-and-forget, but QUEUED: the screen is going away regardless and we
+      // will not await it, yet it still has to land before the next enable.
+      void queued(() => api.streamDisable()).catch(() => {})
     }
-  }, [view, supported, isDemo, restartAt])
+  }, [view, supported, isDemo, restartAt, visible])
 
   /*
    * Fullscreen is CSS first, Fullscreen API second.
@@ -161,8 +217,21 @@ export function Camera() {
     const sync = () => {
       if (!document.fullscreenElement && full) setFull(false)
     }
+    /*
+     * Escape has to be handled here too, not just via fullscreenchange. When
+     * requestFullscreen is refused — which is always on iOS Safari for a
+     * <canvas> — the overlay is the only thing that happened, so the browser
+     * never fires fullscreenchange and Escape would do nothing at all.
+     */
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && full) setFull(false)
+    }
     document.addEventListener('fullscreenchange', sync)
-    return () => document.removeEventListener('fullscreenchange', sync)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('fullscreenchange', sync)
+      document.removeEventListener('keydown', onKey)
+    }
   }, [full])
 
   const label =

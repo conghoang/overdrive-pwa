@@ -41,10 +41,22 @@ export class QrScanner {
    */
   async start(video: HTMLVideoElement): Promise<string> {
     this.stopped = false
-    this.stream = await navigator.mediaDevices.getUserMedia({
+    const stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: { ideal: 'environment' } },
       audio: false,
     })
+    /*
+     * The permission prompt can sit open for seconds, and the user may cancel
+     * the scanner in that time. stop() ran while `stream` was still null, so it
+     * had nothing to release — the tracks arrive here orphaned, with the phone's
+     * camera indicator lit and no reference left that could ever turn it off.
+     * Releasing them is the whole point of the check.
+     */
+    if (this.stopped) {
+      stream.getTracks().forEach((t) => t.stop())
+      throw new Error('cancelled')
+    }
+    this.stream = stream
     video.srcObject = this.stream
     video.setAttribute('playsinline', 'true') // iOS: don't go fullscreen
     video.muted = true

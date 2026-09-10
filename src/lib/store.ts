@@ -25,6 +25,8 @@ export const pm25Inside = signal<number | null>(null)
 export const pm25Outside = signal<number | null>(null)
 let odoAt = 0
 const ODO_INTERVAL_MS = 60_000
+/** Consecutive /api/vehicle/state failures; past 3 the last reading is dropped. */
+let vsFails = 0
 
 // Charging estimate (minutes to full) + target %, fetched only while charging.
 export const chargeEtaMin = signal<number | null>(null)
@@ -109,42 +111,56 @@ async function tick(): Promise<void> {
       cloudFetched = true
       void fetchCloud() // once per session; don't block the poll
     }
-    if (Date.now() - odoAt > ODO_INTERVAL_MS) {
+    const wantEnv = Date.now() - odoAt > ODO_INTERVAL_MS
+    // Charging time-to-full: only while charging/plugged (extra call otherwise wasteful).
+    const wantCharge = !!(s.charging?.charging || s.charging?.plugged)
+    if (wantEnv) {
       odoAt = Date.now()
       // Fire-and-forget: the odometer is nice-to-have, and a missing debug
       // route must never take the telemetry poll down with it.
       void getOdometer()
         .then((o) => { if (active) odometer.value = o })
         .catch(() => {})
-      void getSummary()
-        .then((sum) => {
-          if (!active) return
-          const num = (v: unknown) => (typeof v === 'number' ? v : null)
-          outsideTempC.value = num(sum.env?.tempC)
-          pm25Inside.value = num(sum.air?.pm25Inside)
-          pm25Outside.value = num(sum.air?.pm25Outside)
-        })
-        .catch(() => {})
     }
     // Control-surface detail; failure here shouldn't knock out the whole poll.
     try {
       const vs = await getVehicleState()
-      if (active) vehicleState.value = vs
+      if (active) {
+        vehicleState.value = vs
+        vsFails = 0
+      }
     } catch (e) {
       if (e instanceof AuthError) throw e
+      /*
+       * Keeping the last good reading through a blip is right; keeping it
+       * forever is not. /status can stay healthy while this one route fails, and
+       * then the card goes on saying "Doors · Locked" from a reading taken
+       * hours ago, under a green dot, with nothing to distinguish it from live.
+       * After three misses (~15 s) drop it, so the UI shows "no data" instead
+       * of a confident lie about whether the car is locked.
+       */
+      if (active && ++vsFails >= 3) vehicleState.value = null
     }
-    // Charging time-to-full: only while charging/plugged (extra call otherwise wasteful).
-    if (active && (s.charging?.charging || s.charging?.plugged)) {
+    // One /summary per tick. Both the env window and charging read from it, and
+    // when they coincided this fired the same request twice a minute.
+    if (active && (wantEnv || wantCharge)) {
       try {
         const sum = await getSummary()
-        if (active) {
+        if (active && wantEnv) {
+          const num = (v: unknown) => (typeof v === 'number' ? v : null)
+          outsideTempC.value = num(sum.env?.tempC)
+          pm25Inside.value = num(sum.air?.pm25Inside)
+          pm25Outside.value = num(sum.air?.pm25Outside)
+        }
+        if (active && wantCharge) {
           chargeEtaMin.value = sum.charging?.etaMin ?? null
           chargeTargetPct.value = sum.charging?.targetPct ?? null
         }
       } catch (e) {
         if (e instanceof AuthError) throw e
       }
-    } else if (active) {
+    }
+    if (active && !wantCharge) {
       chargeEtaMin.value = null
       chargeTargetPct.value = null
     }
@@ -203,6 +219,7 @@ export function reset(): void {
   pm25Inside.value = null
   pm25Outside.value = null
   odoAt = 0
+  vsFails = 0
   authLost.value = false
   cloudConfigured.value = null
   cloudFetched = false

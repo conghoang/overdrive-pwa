@@ -81,7 +81,15 @@ export function Controls() {
   function changeTemp(delta: number) {
     const nt = Math.min(TEMP_MAX, Math.max(TEMP_MIN, temp + delta))
     setTemp(nt)
-    if (climateActive) run(() => api.setClimateTemp(nt), t('ctrl.set_temp', { temp: nt }))
+    /*
+     * runClimate, not run: setting the temperature IS a climate command, so it
+     * has to take the generation with it. It went through plain run() before,
+     * which left climateGen untouched — so turning the AC on at 22° and then
+     * tapping + inside the 600 ms window let the ON resend fire climateOn(22)
+     * and put the car back to 22, while the stepper kept showing 24 with no way
+     * to notice. Owning the generation also gets the temp its own wake-resend.
+     */
+    if (climateActive) runClimate(() => api.setClimateTemp(nt), t('ctrl.set_temp', { temp: nt }))
   }
 
   return (
@@ -141,13 +149,14 @@ export function Controls() {
           <button
             class={'climate-toggle' + (climateActive ? ' on' : '')}
             disabled={disabled}
+            aria-pressed={climateActive}
             onClick={() =>
               climateActive
                 ? runClimate(api.climateOff, `${t('ctrl.climate')} · ${t('common.off')}`)
                 : runClimate(() => api.climateOn(temp), `${t('ctrl.climate')} · ${temp}°C`)
             }
           >
-            {climateActive ? 'ON' : 'OFF'}
+            {climateActive ? t('common.on') : t('common.off')}
           </button>
         </div>
 
@@ -166,15 +175,21 @@ export function Controls() {
 
         <div class="climate-fan">
           <button class="btn climate-auto" disabled={disabled} onClick={() => run(() => api.setClimateAuto(true), t('ctrl.auto_mode'))}>
-            AUTO
+            {t('ctrl.auto')}
           </button>
-          <div class="fan-bar">
+          {/* A row of seven bars whose only difference is colour. Without the
+              radio semantics a screen reader hears seven identical buttons and
+              cannot tell which level is set — and neither can anyone reading
+              the fill by hue alone. */}
+          <div class="fan-bar" role="radiogroup" aria-label={t('ctrl.fan')}>
             {Array.from({ length: 7 }).map((_, i) => (
               <button
                 key={i}
                 class={'fan-seg' + ((fanLevel ?? 0) > i ? ' on' : '')}
                 disabled={disabled}
-                aria-label={`Fan ${i + 1}`}
+                role="radio"
+                aria-checked={fanLevel === i + 1}
+                aria-label={`${t('ctrl.fan')} ${i + 1}`}
                 onClick={() => run(() => api.setFan(i + 1), `${t('ctrl.fan')} ${i + 1}`)}
               />
             ))}
