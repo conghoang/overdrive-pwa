@@ -40,7 +40,7 @@ export function EnergyGauges({ s }: { s: StatusResponse }) {
           percent={s.soc?.percent}
           color="var(--success)"
           label={t('energy.battery')}
-          icon={<IconBattery size={19} />}
+          icon={<IconBattery size={17} />}
           sub={asRange(evKm)}
         />
         {isPhev && (
@@ -48,7 +48,7 @@ export function EnergyGauges({ s }: { s: StatusResponse }) {
             percent={s.range?.fuelPercent}
             color="var(--m-orange)"
             label={t('energy.fuel')}
-            icon={<IconFuel size={18} />}
+            icon={<IconFuel size={16} />}
             sub={asRange(fuelKm)}
           />
         )}

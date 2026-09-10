@@ -29,53 +29,52 @@ export function CircularGauge({
   const dash = (pct / 100) * circ
 
   /*
-   * Two lines inside the ring, never three.
+   * Everything lives inside the ring: icon beside the percentage, range under
+   * it. Two lines, and the icon costs no vertical space at all because it
+   * shares the first one.
    *
-   * The inner circle is only 106px across, and percentage + name + range
-   * crowded it — three stacked lines in a round hole, each one squeezed to fit.
-   * The two NUMBERS belong together, because that pairing is the point: 68% is
-   * what you have, 75 km is what it gets you. The name is the one part that
-   * doesn't have to be in the circle at all, so it becomes a caption beneath
-   * it, where it has room to be legible instead of tiny.
+   * The pairing is what makes it readable — the icon says which energy, the
+   * number says how much of it, and they sit together instead of the name
+   * being parked below the ring away from the figure it describes.
    */
   return (
     <div class="gauge">
-      <div class="gauge-ring">
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--track-deep)" stroke-width={stroke} />
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={r}
-            fill="none"
-            stroke={color}
-            stroke-width={stroke}
-            stroke-linecap="round"
-            stroke-dasharray={`${dash} ${circ}`}
-            transform={`rotate(-90 ${size / 2} ${size / 2})`}
-            style={{ transition: 'stroke-dasharray 0.6s ease' }}
-          />
-        </svg>
-        <div class="gauge-center">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--track-deep)" stroke-width={stroke} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke={color}
+          stroke-width={stroke}
+          stroke-linecap="round"
+          stroke-dasharray={`${dash} ${circ}`}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+          style={{ transition: 'stroke-dasharray 0.6s ease' }}
+        />
+      </svg>
+      <div class="gauge-center">
+        <div class="gauge-val-row">
+          {/*
+            role="img" + aria-label keeps the name now that the word is gone.
+            Without it this is a gauge identified only by shape and colour —
+            the defect just cleared out of the fan bar and the seat segments.
+            title gives sighted users the same on hover.
+          */}
+          <span class="gauge-ico" role="img" aria-label={label} title={label} style={{ color }}>
+            {icon}
+          </span>
           <div class="gauge-val mono">
             {percent == null ? '--' : Math.round(pct)}
             <small>%</small>
           </div>
-          {sub && (
-            <div class="gauge-sub">
-              <span class="mono">{sub.value}</span> {sub.unit}
-            </div>
-          )}
         </div>
-      </div>
-      {/*
-        The caption is an icon, tinted to its own ring so the two read as one
-        unit. role="img" + aria-label keeps the name — dropping the visible
-        word must not drop the word entirely, or this becomes another control
-        identified only by shape and colour. title gives the same on hover.
-      */}
-      <div class="gauge-cap" role="img" aria-label={label} title={label} style={{ color }}>
-        {icon}
+        {sub && (
+          <div class="gauge-sub">
+            <span class="mono">{sub.value}</span> {sub.unit}
+          </div>
+        )}
       </div>
     </div>
   )

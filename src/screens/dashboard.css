@@ -288,40 +288,18 @@
 /* dual ring gauges */
 .gauges { display: flex; align-items: center; justify-content: space-around; gap: 12px; padding: 6px 0 2px; }
 .gauges.single { justify-content: center; }
-/* Ring, then its name underneath. Only the two numbers live in the circle. */
-.gauge { display: flex; flex-direction: column; align-items: center; gap: 9px; }
-.gauge-ring { position: relative; width: 132px; height: 132px; }
-.gauge-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+/* The whole readout sits inside the ring. */
+.gauge { position: relative; width: 132px; height: 132px; }
+.gauge-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
+/* Icon beside the number, sharing its line — it identifies the ring without
+   costing a row. Optically nudged down: the glyph's mass sits lower than the
+   digits' cap height, so true centring reads as too high. */
+.gauge-val-row { display: flex; align-items: center; gap: 7px; }
+.gauge-ico { display: flex; margin-top: 2px; }
 .gauge-val { font-size: 31px; font-weight: 700; line-height: 1; }
 .gauge-val small { font-size: 15px; color: var(--muted); font-weight: 600; }
 /* Range this ring's energy is worth, paired with the percentage above it. */
 .gauge-sub { font-size: 13px; font-weight: 600; line-height: 1; color: var(--muted); }
 .gauge-sub .mono { color: var(--text); font-weight: 700; }
-/* Caption under the ring: the icon carries the identity, tinted to its own
-   ring's colour so the pair reads as one object. Its accessible name lives on
-   the element (role=img + aria-label), so losing the word is only visual.
-
-   The tinted disc matters — a bare glyph under a 132px ring reads as something
-   left over rather than a deliberate label. The wash is currentColor at low
-   opacity on a pseudo-element rather than color-mix(), which Safari only got
-   in 16.2 and this app still has to run on older iPhones. */
-.gauge-cap {
-  position: relative;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.gauge-cap::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: currentColor;
-  opacity: 0.15;
-}
-.gauge-cap svg { position: relative; }
 .gauges-range { text-align: center; margin-top: 12px; color: var(--muted); font-size: 14px; font-weight: 600; }
 .gauges-range .mono { color: var(--text); font-size: 18px; }
