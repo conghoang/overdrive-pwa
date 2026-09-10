@@ -375,6 +375,8 @@ const VI: Record<string, string> = {
   'ctrl.flash': 'Nháy đèn',
   'ctrl.find': 'Tìm xe',
   'ctrl.trunk': 'Cốp',
+  'ctrl.trunk_open': 'Mở cốp',
+  'ctrl.trunk_close': 'Đóng cốp',
   'ctrl.start': 'Khởi động',
   'ctrl.hold': 'giữ',
   'ctrl.climate': 'Điều hòa',
