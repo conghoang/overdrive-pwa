@@ -5,16 +5,8 @@ import { authLost, cloudConfigured, connected, refresh, vehicleState } from '../
 import { toast, toastResult } from '../lib/toast'
 import type { ControlResult } from '../lib/types'
 import { ActionButton } from '../components/HoldButton'
-import {
-  IconBell,
-  IconBolt,
-  IconLock,
-  IconMinus,
-  IconPlus,
-  IconTrunk,
-  IconUnlock,
-  IconWind,
-} from '../components/icons'
+import { IconBolt, IconLock, IconTrunk, IconUnlock, IconWind } from '../components/icons'
+import { IconBell, IconMinus, IconPlus } from '../components/icons-extra'
 import { wicarlink } from '../lib/settings'
 import { t } from '../lib/i18n'
 import { WiCarlinkGrid } from '../components/WiCarlinkControls'

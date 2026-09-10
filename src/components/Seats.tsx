@@ -4,7 +4,7 @@ import { toast, toastResult } from '../lib/toast'
 import { t } from '../lib/i18n'
 import { tapFeedback } from '../lib/haptics'
 import { SeatVisual } from './SeatVisual'
-import { IconFlame, IconSnow } from './icons'
+import { IconFlame, IconSnow } from './icons-extra'
 
 function levelLabels() {
   return [t('level.off'), t('level.low'), t('level.high')]

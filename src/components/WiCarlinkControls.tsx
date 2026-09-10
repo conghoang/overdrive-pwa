@@ -22,24 +22,8 @@ import { connected } from '../lib/store'
 import { toast, toastResult } from '../lib/toast'
 import { t } from '../lib/i18n'
 import { DEFAULT_WC_COMMANDS, wcCommands, type WcCommand } from '../lib/settings'
-import {
-  IconApp,
-  IconBack,
-  IconBluetooth,
-  IconBolt,
-  IconCar,
-  IconHome,
-  IconLink,
-  IconLock,
-  IconNext,
-  IconPlay,
-  IconPower,
-  IconPrev,
-  IconSliders,
-  IconTrunk,
-  IconUnlock,
-  IconWind,
-} from './icons'
+import { IconBolt, IconLock, IconSliders, IconTrunk, IconUnlock, IconWind } from './icons'
+import { IconApp, IconBack, IconBluetooth, IconCar, IconHome, IconLink, IconNext, IconPlay, IconPower, IconPrev } from './icons-extra'
 import './controls.css'
 
 const ICONS: Record<string, (p: { size?: number }) => JSX.Element> = {

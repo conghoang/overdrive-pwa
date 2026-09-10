@@ -20,18 +20,7 @@ import { QuickActions } from '../components/QuickActions'
 import { EnergyGauges } from '../components/EnergyGauges'
 import { StatTile } from '../components/StatTile'
 import { Tyres } from '../components/Tyres'
-import {
-  IconAir,
-  IconLock,
-  IconMapOpen,
-  IconPin,
-  IconPlug,
-  IconThermo,
-  IconUnlock,
-  IconWifi,
-  IconWind,
-  IconWindow,
-} from '../components/icons'
+import { IconAir, IconLock, IconMapOpen, IconPin, IconPlug, IconThermo, IconUnlock, IconWifi, IconWind, IconWindow } from '../components/icons'
 import type { WindowsState } from '../lib/types'
 import './dashboard.css'
 

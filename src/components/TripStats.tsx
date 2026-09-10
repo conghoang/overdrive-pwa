@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks'
 import * as api from '../lib/api'
 import { t } from '../lib/i18n'
-import { IconCar } from './icons'
+import { IconCar } from './icons-extra'
 import {
   buildWindow,
   dayKey,

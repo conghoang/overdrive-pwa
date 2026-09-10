@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks'
 import type { JSX } from 'preact'
 import { lang, t } from '../lib/i18n'
-import { IconArrow } from './icons'
+import { IconArrow } from './icons-extra'
 import './chargingstats.css'
 
 /** One column: a day, its value, and the letter under it. */

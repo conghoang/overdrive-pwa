@@ -11,7 +11,7 @@ import {
   type WcKind,
 } from '../lib/settings'
 import { ICON_KEYS, iconFor, iconLabel, useEscape } from './WiCarlinkControls'
-import { IconBack, IconGrip, IconPlus, IconTrash } from './icons'
+import { IconBack, IconGrip, IconPlus, IconTrash } from './icons-extra'
 import './controls.css'
 
 /** Full-screen editor: add / remove / reorder / edit 51DK command buttons. */

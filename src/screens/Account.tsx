@@ -1,6 +1,6 @@
 import { clearAll, getBaseUrl, getDeviceId } from '../lib/api'
 import { connected, reset, status } from '../lib/store'
-import { IconPower, IconRefresh } from '../components/icons'
+import { IconPower, IconRefresh } from '../components/icons-extra'
 import * as store from '../lib/store'
 import { useState } from 'preact/hooks'
 import { AppHeader } from '../components/AppHeader'

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'preact/hooks'
 import { getBaseUrl, isValidAccessCode, login, normalizeBase } from '../lib/api'
 import { t } from '../lib/i18n'
 import { QrScanner, qrSupported, urlFromScan } from '../lib/qr'
-import { IconArrow, IconQr, IconRefresh } from '../components/icons'
+import { IconArrow, IconQr, IconRefresh } from '../components/icons-extra'
 import './setup.css'
 
 export function Setup({ onDone }: { onDone: () => void }) {

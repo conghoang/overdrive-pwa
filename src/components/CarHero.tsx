@@ -5,7 +5,6 @@ import { distanceUnitLabel, fmtDistance, fmtEta, fmtNum, fmtOdo } from '../lib/f
 import { t } from '../lib/i18n'
 import { effectiveGear } from '../lib/vehicle'
 import { IconBolt } from './icons'
-import { CarImage } from './CarImage'
 import type { StatusResponse } from '../lib/types'
 
 const GEARS = ['P', 'R', 'N', 'D']
@@ -66,7 +65,13 @@ export function CarHero({ s }: { s: StatusResponse }) {
       {imgOk ? (
         <img class="car-photo" src={photo} alt="" onError={() => setImgOk(false)} />
       ) : (
-        <div class="car-photo"><CarImage color="#c7ccd1" /></div>
+        <div class="car-photo">
+          {/* A static file, not inline SVG: it never changes colour (one fixed
+              call site) and it is the fallback for a fallback — so it stays out
+              of the bundle and is only fetched if the photo above actually
+              fails. */}
+          <img class="car-svg" src={`${import.meta.env.BASE_URL}car/silhouette.svg`} alt="" />
+        </div>
       )}
 
       {/* Read aloud, "P R N D" is four letters with nothing to say which one
