@@ -6,28 +6,42 @@ import { Setup } from './screens/Setup'
 import { Dashboard } from './screens/Dashboard'
 import { Controls } from './screens/Controls'
 import { Account } from './screens/Account'
-import { Data } from './screens/Data'
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks'
 
 /**
- * Camera tab, loaded on first open only: the screen pulls in the H.264 /
- * WebCodecs player, which nobody who never opens it should have to download.
+ * Load a screen on first open only.
+ *
+ * Camera pulls in the H.264 / WebCodecs player and Data pulls in the charts —
+ * neither belongs in the bundle of someone who never opens that tab. The two
+ * tabs people use on every launch stay eager, so the app still paints straight
+ * into the dashboard with no extra round-trip.
  *
  * Plain dynamic import rather than preact/compat's lazy + Suspense — that pair
  * threw "Cannot read properties of null (reading '__H')" here and rendered an
  * empty screen. Vite code-splits on the import() either way, so the only thing
  * lost is the Suspense boundary, which this replaces with a state flag.
  */
-function CameraTab() {
-  const [Comp, setComp] = useState<null | (() => JSX.Element)>(null)
-  useEffect(() => {
-    let live = true
-    void import('./screens/Camera').then((m) => { if (live) setComp(() => m.Camera) })
-    return () => { live = false }
-  }, [])
-  if (!Comp) return <div class="card"><div class="center-note">…</div></div>
-  return <Comp />
+function lazyScreen<K extends string>(
+  load: () => Promise<Record<K, () => JSX.Element>>,
+  name: K,
+) {
+  return function LazyScreen() {
+    const [Comp, setComp] = useState<null | (() => JSX.Element)>(null)
+    useEffect(() => {
+      let live = true
+      // setComp(() => C) — the updater form, or React/Preact would CALL the
+      // component instead of storing it.
+      void load().then((m) => { if (live) setComp(() => m[name]) })
+      return () => { live = false }
+    }, [])
+    if (!Comp) return <div class="card"><div class="center-note">…</div></div>
+    return <Comp />
+  }
 }
+
+const CameraTab = lazyScreen(() => import('./screens/Camera'), 'Camera')
+const DataTab = lazyScreen(() => import('./screens/Data'), 'Data')
+
 import { TabBar } from './components/TabBar'
 import { Toaster } from './components/Toaster'
 
@@ -56,7 +70,7 @@ function renderTab(which: Tab, onSignOut: () => void) {
   if (which === 'dashboard') return <Dashboard />
   if (which === 'controls') return <Controls />
   if (which === 'camera') return <CameraTab />
-  if (which === 'data') return <Data />
+  if (which === 'data') return <DataTab />
   return <Account onSignOut={onSignOut} />
 }
 
