@@ -6,7 +6,7 @@ import { Setup } from './screens/Setup'
 import { Dashboard } from './screens/Dashboard'
 import { Controls } from './screens/Controls'
 import { Account } from './screens/Account'
-import { useEffect, useRef, useState } from 'preact/hooks'
+import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks'
 
 /**
  * Camera tab, loaded on first open only: the screen pulls in the H.264 /
@@ -64,20 +64,48 @@ export function App() {
    * The screen being left, kept mounted just long enough to animate out.
    * `dir` is the direction of travel through TAB_ORDER, so tapping the last
    * tab from the first slides the same way the swipe gesture would.
+   *
+   * Derived DURING render, not in an effect. Effects run after the browser has
+   * painted, so setting this from one meant the first painted frame showed the
+   * incoming screen already sitting in its final position with no animation
+   * class — then the class landed and it jumped back off-screen to slide in.
+   * That one frame is the flash. Computing it here puts the class on the
+   * element in the same frame it first paints, so there is nothing to see
+   * before the slide starts. A ref rather than state because state set during
+   * render is what causes that extra frame in the first place.
    */
-  const [leaving, setLeaving] = useState<{ tab: Tab; dir: 1 | -1 } | null>(null)
+  const leavingRef = useRef<{ tab: Tab; dir: 1 | -1 } | null>(null)
   const prevTab = useRef(tab.value)
+  const [, forceRender] = useState(0)
 
-  useEffect(() => {
+  if (prevTab.current !== tab.value) {
     const from = prevTab.current
-    if (from === tab.value) return
     prevTab.current = tab.value
-    const dir: 1 | -1 = TAB_ORDER.indexOf(tab.value) > TAB_ORDER.indexOf(from) ? 1 : -1
-    setLeaving({ tab: from, dir })
-    // Each screen has its own scroll position; arriving halfway down a tab you
-    // have never opened is disorienting, and mid-slide it looks like a jump.
-    window.scrollTo(0, 0)
-    const id = setTimeout(() => setLeaving(null), TAB_ANIM_MS)
+    leavingRef.current = {
+      tab: from,
+      dir: TAB_ORDER.indexOf(tab.value) > TAB_ORDER.indexOf(from) ? 1 : -1,
+    }
+  }
+  const leaving = leavingRef.current
+
+  /*
+   * Scroll reset belongs in a LAYOUT effect: it runs before paint, so the jump
+   * to the top is never a visible frame of its own. Each screen keeps its own
+   * scroll position, and arriving halfway down a tab you have not opened is
+   * disorienting — mid-slide it also reads as a jump.
+   */
+  useLayoutEffect(() => {
+    if (leavingRef.current) window.scrollTo(0, 0)
+  }, [tab.value])
+
+  // Clearing it is the one part that can wait: it only drops the animation
+  // classes once the slide is over.
+  useEffect(() => {
+    if (!leavingRef.current) return
+    const id = setTimeout(() => {
+      leavingRef.current = null
+      forceRender((n) => n + 1)
+    }, TAB_ANIM_MS)
     return () => clearTimeout(id)
   }, [tab.value])
 
