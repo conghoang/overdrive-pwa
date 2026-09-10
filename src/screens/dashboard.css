@@ -293,8 +293,13 @@
 .gauge-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
 /* Icon beside the number, sharing its line — it identifies the ring without
    costing a row. Optically nudged down: the glyph's mass sits lower than the
-   digits' cap height, so true centring reads as too high. */
-.gauge-val-row { display: flex; align-items: center; gap: 7px; }
+   digits' cap height, so true centring reads as too high.
+
+   The gap is set from where the INK ends, not where the box does. Each icon
+   carries ~2px of empty viewBox on its right, so a 7px gap measured 9px to the
+   eye and the icon drifted away from the number it belongs to. 4px here lands
+   at ~6px optical, which is what actually reads as attached. */
+.gauge-val-row { display: flex; align-items: center; gap: 4px; }
 .gauge-ico { display: flex; margin-top: 2px; }
 .gauge-val { font-size: 31px; font-weight: 700; line-height: 1; }
 .gauge-val small { font-size: 15px; color: var(--muted); font-weight: 600; }
