@@ -27,25 +27,45 @@ export function setShowMap(on: boolean): void {
 }
 
 /*
- * Live-view fisheye correction, 0-100.
+ * Live-view fisheye correction, 0-100, stored PER CAMERA.
  *
- * null means "follow the car" — the camera screen then uses the car's own
- * recording.rectifyStrength. Storing null rather than resolving it at first run
- * means changing the setting on the car keeps carrying over, until the user
- * moves this slider and states a preference of their own.
+ * Each lens sits at a different angle behind a different piece of glass, so one
+ * number cannot suit them all — the front camera needs a different correction
+ * from the side ones, and the mosaic is four lenses at once. Keyed by view mode.
+ *
+ * A view with no entry follows the car's own recording.rectifyStrength, so a
+ * camera the user has never touched still starts somewhere sensible, and
+ * clearing an entry returns it to following the car.
  */
 const K_DEWARP = 'odpwa.dewarp'
-function readDewarp(): number | null {
-  const raw = localStorage.getItem(K_DEWARP)
-  if (raw == null) return null
-  const n = Number(raw)
-  return Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : null
+type DewarpMap = Record<string, number>
+
+function readDewarp(): DewarpMap {
+  try {
+    const raw = localStorage.getItem(K_DEWARP)
+    if (!raw) return {}
+    const o = JSON.parse(raw) as unknown
+    if (!o || typeof o !== 'object') return {}
+    const out: DewarpMap = {}
+    for (const [k, v] of Object.entries(o as Record<string, unknown>)) {
+      if (typeof v === 'number' && Number.isFinite(v)) out[k] = Math.max(0, Math.min(100, v))
+    }
+    return out
+  } catch {
+    return {} // corrupt or unreadable storage should not break the camera
+  }
 }
-export const dewarpStrength = signal<number | null>(readDewarp())
-export function setDewarpStrength(v: number | null): void {
-  dewarpStrength.value = v
-  if (v == null) localStorage.removeItem(K_DEWARP)
-  else localStorage.setItem(K_DEWARP, String(v))
+
+export const dewarpByView = signal<DewarpMap>(readDewarp())
+
+export function setDewarpFor(mode: number, v: number): void {
+  const next = { ...dewarpByView.value, [String(mode)]: Math.max(0, Math.min(100, v)) }
+  dewarpByView.value = next
+  try {
+    localStorage.setItem(K_DEWARP, JSON.stringify(next))
+  } catch {
+    /* not fatal: it still applies for this session */
+  }
 }
 
 // Optional user-supplied car photo (data URL), overriding the bundled default.

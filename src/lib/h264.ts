@@ -16,6 +16,8 @@ export interface PlayerHandle {
   stop(): void
   /** Change dewarp strength (0-100) without touching the stream. */
   setStrength(v: number): void
+  /** 1 for a single camera, 2 for the 2x2 mosaic. */
+  setTiles(n: number): void
 }
 
 /*
@@ -29,18 +31,30 @@ export interface PlayerHandle {
  * is applied on top, so the picture just crops. The BYD lenses are true ~180°
  * fisheyes with the image circle visible in frame, which is a different problem.
  *
- * This is the standard rectilinear unwrap for that case. For output radius u
- * (normalised so the CORNER is 1, not the edge — otherwise corners sample past
- * the source and smear against CLAMP_TO_EDGE):
+ * This is the rectilinear unwrap for that case, derived rather than guessed.
+ * An equidistant fisheye puts a ray at angle θ at radius rs = θ/B; a
+ * rectilinear projection puts the same ray at ro = tan θ / tan B. A fragment
+ * shader maps OUTPUT to SOURCE, so inverting gives
  *
- *     rs = rmax * tan(u * A) / tan(A)
+ *     rs = rmax * atan(u * tan A) / A
  *
- * A is the strength in radians. tan grows faster than linear, so mid radii
- * sample from further IN: the compressed periphery of a fisheye gets spread
- * out and straight lines straighten. As A -> 0 the ratio tends to u, so zero
- * is exact identity and no branch is needed for "off". Both ends are fixed
- * points, so the full image circle stays in frame — this straightens without
- * cropping, unlike OD's zoom-to-fill.
+ * with u normalised so the CORNER is 1, not the edge — normalising to the edge
+ * sends corners past the source, where CLAMP_TO_EDGE smears them.
+ *
+ * The direction matters and is easy to get backwards: this samples FURTHER OUT
+ * at mid radii, so source 0.66..1 is spread across the outer half of the frame.
+ * That is what un-squeezes a fisheye. The mirror form, tan(u·A)/tan(A), does
+ * the opposite — magnifies the centre and compresses the rim — which looks
+ * straighter only because it shows a narrower field, and reads as a plain zoom.
+ *
+ * As A -> 0 the ratio tends to u, so zero is exact identity and "off" needs no
+ * branch. u=1 is a fixed point, so the frame corners hold and nothing is
+ * cropped, unlike OD's zoom-to-fill.
+ *
+ * uTiles handles the mosaic view: it is a 2x2 of four separate cameras, so one
+ * radial correction across the whole frame would be meaningless — each lens has
+ * its own optical centre. With uTiles=2 the maths runs per tile, which is what
+ * OD's rectifyTile() does for the same reason.
  */
 const VERT = `attribute vec2 aPos;varying vec2 vUV;
 void main(){vUV=aPos*0.5+0.5;gl_Position=vec4(aPos,0.0,1.0);}`
@@ -48,10 +62,13 @@ void main(){vUV=aPos*0.5+0.5;gl_Position=vec4(aPos,0.0,1.0);}`
 const FRAG = `precision highp float;
 varying vec2 vUV;
 uniform sampler2D uTex;
-uniform float uA, uAspect;
+uniform float uA, uAspect, uTiles;
 void main(){
   vec2 t = vec2(vUV.x, 1.0 - vUV.y);
-  vec2 n = t * 2.0 - 1.0;
+  // Per-tile: which cell we are in, and the position inside it.
+  vec2 cell = floor(t * uTiles);
+  vec2 local = t * uTiles - cell;
+  vec2 n = local * 2.0 - 1.0;
   vec2 na = vec2(n.x, n.y * uAspect);
   float r = length(na);
   float rmax = sqrt(1.0 + uAspect * uAspect);
@@ -59,18 +76,24 @@ void main(){
   if (uA < 0.0001) {
     rs = r;
   } else {
-    rs = rmax * tan((r / rmax) * uA) / tan(uA);
+    rs = rmax * atan((r / rmax) * tan(uA)) / uA;
   }
   vec2 dir = r > 0.000001 ? na / r : vec2(0.0);
   vec2 sa = dir * rs;
   vec2 src = vec2(sa.x, sa.y / uAspect);
-  vec2 uv = src * 0.5 + 0.5;
+  vec2 localOut = src * 0.5 + 0.5;
+  // Keep every sample inside its own cell, so a corrected tile can never bleed
+  // into its neighbour.
+  localOut = clamp(localOut, 0.0, 1.0);
+  vec2 uv = (cell + localOut) / uTiles;
   gl_FragColor = texture2D(uTex, uv);
 }`
 
 interface Renderer {
   draw(frame: VideoFrame): void
   setStrength(v: number): void
+  /** 1 for a single camera, 2 for the 2x2 mosaic. */
+  setTiles(n: number): void
   destroy(): void
 }
 
@@ -113,11 +136,13 @@ function makeGlRenderer(canvas: HTMLCanvasElement, strength: number): Renderer |
 
   const uA = gl.getUniformLocation(prog, 'uA')
   const uAspect = gl.getUniformLocation(prog, 'uAspect')
+  const uTiles = gl.getUniformLocation(prog, 'uTiles')
   let a = 0
-  /** 0-100 -> 0..1.1 rad. Past ~1.1 the centre magnifies faster than the frame
-   *  can show and the middle of the picture goes soft. */
+  let tiles = 1
+  /** 0-100 -> 0..1.30 rad (~75°). Beyond that tan(A) runs away and the corners
+   *  stretch into mush faster than the middle gains anything. */
   const apply = (v: number) => {
-    a = (Math.max(0, Math.min(100, v)) / 100) * 1.1
+    a = (Math.max(0, Math.min(100, v)) / 100) * 1.3
   }
   apply(strength)
 
@@ -127,12 +152,14 @@ function makeGlRenderer(canvas: HTMLCanvasElement, strength: number): Renderer |
       gl.bindTexture(gl.TEXTURE_2D, tex)
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, frame)
       gl.uniform1f(uA, a)
+      gl.uniform1f(uTiles, tiles)
       // Per-tile aspect (height/width) — 0.75 for the 4:3 camera tiles OD
       // assumes, but taken from the frame so a different profile still lines up.
       gl.uniform1f(uAspect, canvas.height / Math.max(1, canvas.width))
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     },
     setStrength: apply,
+    setTiles(n: number) { tiles = n >= 2 ? 2 : 1 },
     destroy() {
       gl.deleteTexture(tex)
       gl.deleteBuffer(buf)
@@ -195,10 +222,12 @@ export function startPlayer(opts: {
   url: string
   canvas: HTMLCanvasElement
   strength?: number
+  tiles?: number
   onState: (s: PlayerState, detail?: string) => void
 }): PlayerHandle {
   const { url, canvas, onState } = opts
   let renderer = makeGlRenderer(canvas, opts.strength ?? 0)
+  renderer?.setTiles(opts.tiles ?? 1)
   // WebGL missing (or blocked) is not fatal: fall back to a plain 2D blit, which
   // simply cannot dewarp.
   const ctx = renderer ? null : canvas.getContext('2d')
@@ -332,7 +361,7 @@ export function startPlayer(opts: {
 
   if (!webCodecsSupported()) {
     onState('error', 'unsupported')
-    return { stop() {}, setStrength() {} }
+    return { stop() {}, setStrength() {}, setTiles() {} }
   }
 
   decoder = new VideoDecoder({
@@ -347,7 +376,7 @@ export function startPlayer(opts: {
     ws = new WebSocket(url)
   } catch {
     fail('connect failed')
-    return { stop() {}, setStrength() {} }
+    return { stop() {}, setStrength() {}, setTiles() {} }
   }
   ws.binaryType = 'arraybuffer'
   ws.onmessage = (e) => {
@@ -372,6 +401,9 @@ export function startPlayer(opts: {
     // Live: no stream restart, the next frame just renders with new coefficients.
     setStrength(v) {
       renderer?.setStrength(v)
+    },
+    setTiles(n) {
+      renderer?.setTiles(n)
     },
   }
 }

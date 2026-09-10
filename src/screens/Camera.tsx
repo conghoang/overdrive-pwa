@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'preact/hooks'
 import * as api from '../lib/api'
 import { CAMERA_VIEWS } from '../lib/api'
 import { connected } from '../lib/store'
-import { dewarpStrength, setDewarpStrength } from '../lib/settings'
+import { dewarpByView, setDewarpFor } from '../lib/settings'
 import { AppHeader } from '../components/AppHeader'
 import { t } from '../lib/i18n'
 import { IconApp, IconCamera } from '../components/icons'
@@ -36,7 +36,9 @@ export function Camera() {
   // Dewarp strength. The car's own recording.rectifyStrength is the starting
   // point; once the user moves the slider their value is kept instead.
   const [carRectify, setCarRectify] = useState(0)
-  const strength = dewarpStrength.value ?? carRectify
+  // Per camera: switching view brings that camera's own correction with it.
+  const strength = dewarpByView.value[String(view)] ?? carRectify
+  const tiles = view === 0 ? 2 : 1
   const [detail, setDetail] = useState<string | null>(null)
   const supported = webCodecsSupported()
   const base = api.getBaseUrl()
@@ -63,6 +65,13 @@ export function Camera() {
     strengthRef.current = strength
     playerRef.current?.setStrength(strength)
   }, [strength])
+
+  // The mosaic is four cameras in one frame, so the correction runs per tile.
+  const tilesRef = useRef(1)
+  useEffect(() => {
+    tilesRef.current = tiles
+    playerRef.current?.setTiles(tiles)
+  }, [tiles])
 
   async function pickQuality(id: string) {
     if (id === quality.current) return
@@ -105,6 +114,7 @@ export function Camera() {
         url: api.streamSocketUrl(),
         canvas: canvasRef.current,
         strength: strengthRef.current,
+        tiles: tilesRef.current,
         onState: (s, d) => {
           if (cancelled) return
           setState(s)
@@ -227,7 +237,7 @@ export function Camera() {
             style={{ ['--fill' as string]: `${strength}%` }}
             aria-label={t('cam.dewarp')}
             disabled={!connected.value || isDemo}
-            onInput={(e) => setDewarpStrength(Number((e.target as HTMLInputElement).value))}
+            onInput={(e) => setDewarpFor(view, Number((e.target as HTMLInputElement).value))}
           />
 
           {!!quality.options?.length && (
