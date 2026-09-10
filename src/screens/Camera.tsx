@@ -139,12 +139,19 @@ export function Camera() {
   const [visible, setVisible] = useState(!document.hidden)
   useEffect(() => {
     const sync = () => setVisible(!document.hidden)
+    /*
+     * pagehide must force false, not re-read document.hidden. The case it
+     * exists for is iOS skipping visibilitychange when the app is swiped away —
+     * and there document.hidden is still false, so sync() would compute
+     * setVisible(true) and stop nothing. Sharing the handler made the listener
+     * dead code in both directions.
+     */
+    const onHide = () => setVisible(false)
     document.addEventListener('visibilitychange', sync)
-    // iOS often skips visibilitychange when the app is swiped away; pagehide fires.
-    window.addEventListener('pagehide', sync)
+    window.addEventListener('pagehide', onHide)
     return () => {
       document.removeEventListener('visibilitychange', sync)
-      window.removeEventListener('pagehide', sync)
+      window.removeEventListener('pagehide', onHide)
     }
   }, [])
 

@@ -16,10 +16,14 @@ interface Props {
 const HOLD_MS = 900
 
 /**
- * Remote-action button. Tap to fire, or (when `hold`) press-and-hold with a
- * radial progress fill before it commits — for sensitive actions like unlock.
+ * Press-and-hold mechanics, shared so every surface that offers a dangerous
+ * action guards it the same way. A hold protected on one screen and a single
+ * tap for the same endpoint on another is worse than no guard at all — the
+ * owner learns to trust a confirmation that isn't always there.
+ *
+ * Returns the pointer handlers, the 0..1 progress for the fill, and `busy`.
  */
-export function ActionButton({ label, icon, hold, tone = 'default', disabled, onFire }: Props) {
+export function useHold(onFire: () => void | Promise<void>, hold: boolean, disabled: boolean) {
   const [busy, setBusy] = useState(false)
   const [progress, setProgress] = useState(0)
   const raf = useRef<number | null>(null)
@@ -37,6 +41,13 @@ export function ActionButton({ label, icon, hold, tone = 'default', disabled, on
     }
   }
 
+  function cancelHold() {
+    if (raf.current !== null) {
+      cancelAnimationFrame(raf.current)
+      raf.current = null
+    }
+  }
+
   function tick() {
     const elapsed = performance.now() - startTs.current
     const p = Math.min(1, elapsed / HOLD_MS)
@@ -45,16 +56,9 @@ export function ActionButton({ label, icon, hold, tone = 'default', disabled, on
       fired.current = true
       commitFeedback()
       cancelHold()
-      fire()
+      void fire()
     } else {
       raf.current = requestAnimationFrame(tick)
-    }
-  }
-
-  function cancelHold() {
-    if (raf.current !== null) {
-      cancelAnimationFrame(raf.current)
-      raf.current = null
     }
   }
 
@@ -84,15 +88,32 @@ export function ActionButton({ label, icon, hold, tone = 'default', disabled, on
     if (!fired.current) setProgress(0)
   }
 
+  return {
+    busy,
+    progress,
+    fire,
+    handlers: {
+      onClick: hold ? undefined : fire,
+      onPointerDown: onDown,
+      onPointerUp: onUp,
+      onPointerLeave: onUp,
+      onPointerCancel: onUp,
+    },
+  }
+}
+
+/**
+ * Remote-action button. Tap to fire, or (when `hold`) press-and-hold with a
+ * radial progress fill before it commits — for sensitive actions like unlock.
+ */
+export function ActionButton({ label, icon, hold, tone = 'default', disabled, onFire }: Props) {
+  const { busy, progress, handlers } = useHold(onFire, !!hold, !!disabled)
+
   return (
     <button
       class={`action tone-${tone}` + (busy ? ' busy' : '')}
       disabled={disabled || busy}
-      onClick={hold ? undefined : fire}
-      onPointerDown={onDown}
-      onPointerUp={onUp}
-      onPointerLeave={onUp}
-      onPointerCancel={onUp}
+      {...handlers}
     >
       {hold && progress > 0 && (
         <span class="action-fill" style={{ transform: `scaleX(${progress})` }} />

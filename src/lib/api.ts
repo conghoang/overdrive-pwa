@@ -31,7 +31,15 @@ export function clearAuth(): void { localStorage.removeItem(K_JWT) }
  * two settings that describe the person using the phone rather than the car
  * survive: language and theme.
  */
-const KEEP_ON_SIGN_OUT = new Set(['odpwa.lang', 'odpwa.theme'])
+const KEEP_ON_SIGN_OUT = new Set([
+  'odpwa.lang',
+  'odpwa.theme',
+  // Haptics and sound describe the phone's owner, not the car — and haptics
+  // defaults to ON, so wiping it silently turns vibration back on for someone
+  // who had deliberately switched it off.
+  'odpwa.haptics',
+  'odpwa.sound',
+])
 export function clearAll(): void {
   for (const key of Object.keys(localStorage)) {
     if (key.startsWith('odpwa.') && !KEEP_ON_SIGN_OUT.has(key)) localStorage.removeItem(key)
@@ -129,6 +137,23 @@ export async function login(baseUrlRaw: string, accessCode: string): Promise<Log
   return data
 }
 
+/*
+ * Every request gets a deadline.
+ *
+ * The car is reached through a tunnel that can stall a connection without
+ * closing it, and fetch has no timeout of its own — a stalled request hangs
+ * until the OS gives up, which can be minutes. That is not a slow request, it
+ * is a wedged one, and everything queued behind it stops: the telemetry poll
+ * never reschedules, and the camera's stream commands never send. Failing at
+ * 15 s turns all of that into an ordinary retry.
+ */
+const REQUEST_TIMEOUT_MS = 15_000
+function timeoutSignal(ms: number): { signal: AbortSignal; done: () => void } {
+  const ctl = new AbortController()
+  const id = setTimeout(() => ctl.abort(), ms)
+  return { signal: ctl.signal, done: () => clearTimeout(id) }
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const base = getBaseUrl()
   const jwt = getJwt()
@@ -140,14 +165,18 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   if (body !== undefined) headers['Content-Type'] = 'application/json'
 
   let res: Response
+  const t0 = timeoutSignal(REQUEST_TIMEOUT_MS)
   try {
     res = await fetch(base + path, {
       method,
       headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
+      signal: t0.signal,
     })
   } catch {
     throw new ApiError(t('err.network'), 0)
+  } finally {
+    t0.done()
   }
 
   if (res.status === 401) {

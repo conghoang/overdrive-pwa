@@ -1,12 +1,12 @@
 import type { JSX } from 'preact'
 import * as api from '../lib/api'
-import { ApiError } from '../lib/api'
+import { ApiError, AuthError } from '../lib/api'
 import type { ControlResult } from '../lib/types'
-import { connected, refresh } from '../lib/store'
+import { authLost, cloudConfigured, connected, refresh } from '../lib/store'
 import { toast, toastResult } from '../lib/toast'
 import { t } from '../lib/i18n'
-import { tapFeedback } from '../lib/haptics'
 import { wicarlink } from '../lib/settings'
+import { useHold } from './HoldButton'
 import { IconBolt, IconLock, IconTrunk, IconUnlock } from './icons'
 
 // 51DK commands (same as the WiCarlink buttons): fire an intent at the app.
@@ -31,27 +31,42 @@ function QuickBtn({
   icon,
   label,
   disabled,
-  onClick,
+  hold,
+  onFire,
 }: {
   icon: JSX.Element
   label: string
   disabled: boolean
-  onClick: () => void
+  /** Press-and-hold, for actions that physically open the car. */
+  hold?: boolean
+  onFire: () => void | Promise<void>
 }) {
+  const { busy, progress, handlers } = useHold(onFire, !!hold, disabled)
   return (
-    <button class="quick-btn" disabled={disabled} onClick={() => { tapFeedback(); onClick() }}>
+    <button class="quick-btn" disabled={disabled || busy} {...handlers}>
+      {hold && progress > 0 && (
+        <span class="quick-fill" style={{ transform: `scaleX(${progress})` }} />
+      )}
       <span class="quick-icon">{icon}</span>
       <span class="quick-label">{label}</span>
+      {hold && <span class="quick-hint">{t('ctrl.hold')}</span>}
     </button>
   )
 }
 
-/** Same wrapper as the 51DK path, for the car's own endpoints. */
+/**
+ * Same wrapper as the 51DK path, for the car's own endpoints.
+ *
+ * AuthError has to go to the store, not to a toast: it means the session is
+ * gone, and the app's answer to that is the sign-in screen, not an untranslated
+ * "Unauthorized" bubble over a dashboard that no longer works.
+ */
 async function run(fn: () => Promise<ControlResult>, ok: string) {
   try {
     toastResult(await fn(), ok)
   } catch (e) {
-    toast(e instanceof Error ? e.message : t('common.failed'), 'err')
+    if (e instanceof AuthError) authLost.value = true
+    else toast(e instanceof Error ? e.message : t('common.failed'), 'err')
   } finally {
     refresh()
   }
@@ -69,44 +84,55 @@ async function run(fn: () => Promise<ControlResult>, ok: string) {
  *
  * There is no native remote start, so that slot becomes Flash — the nearest
  * useful thing the car will actually do — rather than a button that cannot work.
+ *
+ * Unlock and Trunk are hold-to-fire here for the same reason they are on the
+ * Controls tab: they physically open the car, and this row sits directly under
+ * the car photo where a mis-swipe lands. The 51DK path keeps plain taps — those
+ * commands go to the kit's own app, which does its own confirmation.
  */
 export function QuickActions() {
   const disabled = !connected.value
   const wc51 = wicarlink.value
+  // Without the kit these are BYD Cloud endpoints. Controls hides the whole
+  // grid when the car has no cloud account; showing four buttons here that can
+  // only ever produce an error toast would contradict it.
+  if (!wc51 && cloudConfigured.value === false) return null
   return (
     <div class="quick-row">
       <QuickBtn
         icon={<IconLock size={22} />}
         label={t('ctrl.lock')}
         disabled={disabled}
-        onClick={() => (wc51 ? fire('lock', t('ctrl.lock')) : run(api.lock, t('ctrl.lock')))}
+        onFire={() => (wc51 ? fire('lock', t('ctrl.lock')) : run(api.lock, t('ctrl.lock')))}
       />
       <QuickBtn
         icon={<IconUnlock size={22} />}
         label={t('ctrl.unlock')}
         disabled={disabled}
-        onClick={() => (wc51 ? fire('unlock', t('ctrl.unlock')) : run(api.unlock, t('ctrl.unlock')))}
+        hold={!wc51}
+        onFire={() => (wc51 ? fire('unlock', t('ctrl.unlock')) : run(api.unlock, t('ctrl.unlock')))}
       />
       {wc51 ? (
         <QuickBtn
           icon={<IconBolt size={22} />}
           label={t('ctrl.start')}
           disabled={disabled}
-          onClick={() => fire('start', t('ctrl.start'))}
+          onFire={() => fire('start', t('ctrl.start'))}
         />
       ) : (
         <QuickBtn
           icon={<IconBolt size={22} />}
           label={t('ctrl.flash')}
           disabled={disabled}
-          onClick={() => run(api.flash, t('ctrl.flash'))}
+          onFire={() => run(api.flash, t('ctrl.flash'))}
         />
       )}
       <QuickBtn
         icon={<IconTrunk size={22} />}
         label={t('ctrl.trunk')}
         disabled={disabled}
-        onClick={() => (wc51 ? fire('trunk', t('ctrl.trunk')) : run(() => api.setTrunk('open'), t('ctrl.trunk')))}
+        hold={!wc51}
+        onFire={() => (wc51 ? fire('trunk', t('ctrl.trunk')) : run(() => api.setTrunk('open'), t('ctrl.trunk')))}
       />
     </div>
   )

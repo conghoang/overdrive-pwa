@@ -294,6 +294,18 @@ export function startPlayer(opts: {
   // WebGL missing (or blocked) is not fatal: fall back to a plain 2D blit, which
   // simply cannot dewarp.
   const ctx = renderer ? null : canvas.getContext('2d')
+  /*
+   * Both null means this canvas can no longer draw anything — the realistic
+   * path is a GPU context reclaimed while the app was backgrounded, where the
+   * cached probe still says WebGL is fine but this canvas's context is dead and
+   * has already spent its one context mode, so 2D returns null too. Without
+   * this, paint() would silently drop every frame and the screen would sit on
+   * "Connecting…" with the socket streaming and the car encoding.
+   */
+  if (!renderer && !ctx) {
+    onState('error', 'no_canvas')
+    return { stop() {}, setStrength() {}, setTiles() {} }
+  }
   let ws: WebSocket | null = null
   let decoder: VideoDecoder | null = null
   let sps: Uint8Array | null = null
