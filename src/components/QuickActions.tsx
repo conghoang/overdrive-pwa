@@ -92,11 +92,18 @@ async function run(fn: () => Promise<ControlResult>, ok: string) {
  */
 export function QuickActions() {
   const disabled = !connected.value
-  const wc51 = wicarlink.value
-  // Without the kit these are BYD Cloud endpoints. Controls hides the whole
-  // grid when the car has no cloud account; showing four buttons here that can
-  // only ever produce an error toast would contradict it.
-  if (!wc51 && cloudConfigured.value === false) return null
+  /*
+   * Which command set this row fires — it is never hidden.
+   *
+   * The kit's toggle decides when it is on. When it is off these are BYD Cloud
+   * endpoints, so a car with no cloud account has 51DK as the only route that
+   * can do anything — which is exactly what this row did for those users
+   * before. An earlier version hid the row entirely in that case, and since
+   * the toggle DEFAULTS to off, that silently deleted the card for everyone
+   * without a cloud account, including people whose kit worked fine. Losing a
+   * card you use is worse than a button that reports it could not run.
+   */
+  const wc51 = wicarlink.value || cloudConfigured.value === false
   return (
     <div class="quick-row">
       <QuickBtn
