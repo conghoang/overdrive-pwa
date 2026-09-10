@@ -288,15 +288,16 @@
 /* dual ring gauges */
 .gauges { display: flex; align-items: center; justify-content: space-around; gap: 12px; padding: 6px 0 2px; }
 .gauges.single { justify-content: center; }
-.gauge { position: relative; width: 132px; height: 132px; }
-.gauge-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.gauge-val { font-size: 30px; font-weight: 700; line-height: 1; }
+/* Ring, then its name underneath. Only the two numbers live in the circle. */
+.gauge { display: flex; flex-direction: column; align-items: center; gap: 9px; }
+.gauge-ring { position: relative; width: 132px; height: 132px; }
+.gauge-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+.gauge-val { font-size: 31px; font-weight: 700; line-height: 1; }
 .gauge-val small { font-size: 15px; color: var(--muted); font-weight: 600; }
-.gauge-label { color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 5px; }
-/* Range for this ring's energy source. Third line inside a 106px inner circle,
-   so it stays small and tight to the label — it supports the percentage above
-   it rather than competing with it. */
-.gauge-sub { font-size: 12px; font-weight: 600; margin-top: 3px; color: var(--muted); }
+/* Range this ring's energy is worth, paired with the percentage above it. */
+.gauge-sub { font-size: 13px; font-weight: 600; line-height: 1; color: var(--muted); }
 .gauge-sub .mono { color: var(--text); font-weight: 700; }
+/* Out of the circle: it has room to be readable here rather than squeezed. */
+.gauge-label { color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
 .gauges-range { text-align: center; margin-top: 12px; color: var(--muted); font-size: 14px; font-weight: 600; }
 .gauges-range .mono { color: var(--text); font-size: 18px; }
