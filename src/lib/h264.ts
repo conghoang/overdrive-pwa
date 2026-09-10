@@ -31,25 +31,27 @@ export interface PlayerHandle {
  * is applied on top, so the picture just crops. The BYD lenses are true ~180°
  * fisheyes with the image circle visible in frame, which is a different problem.
  *
- * This is the rectilinear unwrap for that case, derived rather than guessed.
- * An equidistant fisheye puts a ray at angle θ at radius rs = θ/B; a
- * rectilinear projection puts the same ray at ro = tan θ / tan B. A fragment
- * shader maps OUTPUT to SOURCE, so inverting gives
+ * The usable model is fisheye -> rectilinear WITH A CROP. An equidistant lens
+ * puts a ray at angle θ at radius θ/S, where S is the lens half-FOV (~90° for
+ * these). A rectilinear view of half-FOV F puts it at tanθ/tanF. Mapping output
+ * to source:
  *
- *     rs = rmax * atan(u * tan A) / A
+ *     rs = atan(r · tan F) / S       blended from identity by the slider
  *
- * with u normalised so the CORNER is 1, not the edge — normalising to the edge
- * sends corners past the source, where CLAMP_TO_EDGE smears them.
+ * F is deliberately smaller than S: a rectilinear rendering of the FULL 180°
+ * circle would need infinite stretch at the rim. Keeping everything is what the
+ * previous attempt tried, and it smeared the periphery into mush — worse than
+ * OD's mild zoom. Choosing F ≈ 55° spends the outer ~39% of the image circle to
+ * buy a view whose straight lines are actually straight.
  *
- * The direction matters and is easy to get backwards: this samples FURTHER OUT
- * at mid radii, so source 0.66..1 is spread across the outer half of the frame.
- * That is what un-squeezes a fisheye. The mirror form, tan(u·A)/tan(A), does
- * the opposite — magnifies the centre and compresses the rim — which looks
- * straighter only because it shows a narrower field, and reads as a plain zoom.
+ * Radius is measured aspect-weighted, so r = 1 at the left/right frame edge —
+ * which is where the image circle sits in these frames. Corners reach r ≈ 1.25
+ * and still map inside the circle, so nothing samples past the source.
  *
- * As A -> 0 the ratio tends to u, so zero is exact identity and "off" needs no
- * branch. u=1 is a fixed point, so the frame corners hold and nothing is
- * cropped, unlike OD's zoom-to-fill.
+ * Direction check, the thing that was backwards before: at r=0.5 this samples
+ * 0.395, so source 0..0.395 covers the inner half of the frame (1.27x) while
+ * source 0.395..0.611 covers the outer half (2.3x). The periphery is magnified
+ * MORE than the centre, which is what un-squeezes a fisheye.
  *
  * uTiles handles the mosaic view: it is a 2x2 of four separate cameras, so one
  * radial correction across the whole frame would be meaningless — each lens has
@@ -71,13 +73,11 @@ void main(){
   vec2 n = local * 2.0 - 1.0;
   vec2 na = vec2(n.x, n.y * uAspect);
   float r = length(na);
-  float rmax = sqrt(1.0 + uAspect * uAspect);
-  float rs;
-  if (uA < 0.0001) {
-    rs = r;
-  } else {
-    rs = rmax * atan((r / rmax) * tan(uA)) / uA;
-  }
+  // F = 55° output half-FOV, S = 90° source half-FOV.
+  const float F = 0.96;
+  const float S = 1.5708;
+  float rect = atan(r * tan(F)) / S;
+  float rs = mix(r, rect, uA);
   vec2 dir = r > 0.000001 ? na / r : vec2(0.0);
   vec2 sa = dir * rs;
   vec2 src = vec2(sa.x, sa.y / uAspect);
@@ -139,10 +139,9 @@ function makeGlRenderer(canvas: HTMLCanvasElement, strength: number): Renderer |
   const uTiles = gl.getUniformLocation(prog, 'uTiles')
   let a = 0
   let tiles = 1
-  /** 0-100 -> 0..1.30 rad (~75°). Beyond that tan(A) runs away and the corners
-   *  stretch into mush faster than the middle gains anything. */
+  /** 0-100 -> 0..1 blend between the raw frame and the rectified projection. */
   const apply = (v: number) => {
-    a = (Math.max(0, Math.min(100, v)) / 100) * 1.3
+    a = Math.max(0, Math.min(100, v)) / 100
   }
   apply(strength)
 
