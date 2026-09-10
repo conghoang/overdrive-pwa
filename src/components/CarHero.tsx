@@ -3,6 +3,7 @@ import { carPhoto } from '../lib/settings'
 import { chargeEtaMin, chargeTargetPct, odometer } from '../lib/store'
 import { distanceUnitLabel, fmtDistance, fmtEta, fmtNum, fmtOdo } from '../lib/format'
 import { t } from '../lib/i18n'
+import { effectiveGear } from '../lib/vehicle'
 import { IconBolt } from './icons'
 import { CarImage } from './CarImage'
 import type { StatusResponse } from '../lib/types'
@@ -24,7 +25,7 @@ export const DEFAULT_PHOTO = `${import.meta.env.BASE_URL}car/sealion6.webp`
 export function CarHero({ s }: { s: StatusResponse }) {
   const [imgOk, setImgOk] = useState(true)
   const unit = s.distanceUnit || 'km'
-  const gear = s.recordingStatus?.gear
+  const gear = effectiveGear(s)
   const charging = !!s.charging?.charging
   const power = s.charging?.chargingPowerKW ?? s.charging?.powerKw
   const photo = carPhoto.value || DEFAULT_PHOTO

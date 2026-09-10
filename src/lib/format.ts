@@ -1,4 +1,4 @@
-import { t as tr } from './i18n'
+import { lang, t as tr } from './i18n'
 import type { TyreCorner } from './types'
 
 export function fmtDistance(km: number | undefined | null, unit = 'km'): string {
@@ -11,7 +11,10 @@ export function fmtDistance(km: number | undefined | null, unit = 'km'): string 
 export function fmtOdo(km: number | null | undefined, unit = 'km'): string {
   if (km == null || Number.isNaN(km)) return '--'
   const v = unit === 'mi' ? km * 0.621371 : km
-  return Math.round(v).toLocaleString()
+  // Group by the APP's language, not the browser's. A bare toLocaleString()
+  // reads the phone's locale, so a Vietnamese UI on an en-US phone showed
+  // "42,350" where Vietnamese groups it "42.350".
+  return Math.round(v).toLocaleString(lang.value === 'vi' ? 'vi-VN' : 'en-US')
 }
 
 export function distanceUnitLabel(unit = 'km'): string {
@@ -58,7 +61,10 @@ export function fmtPressure(t: TyreCorner | undefined, unit = 'kpa'): string {
 /** Minutes → "2h 15m" / "45m". */
 export function fmtEta(min: number | undefined | null): string {
   if (!min || min <= 0) return ''
-  const h = Math.floor(min / 60)
-  const m = Math.round(min % 60)
+  // Round the TOTAL first. Rounding the remainder on its own has no way to
+  // carry, so 119.7 min came out as "1h 60m" and 59.6 as "60m".
+  const total = Math.round(min)
+  const h = Math.floor(total / 60)
+  const m = total % 60
   return h > 0 ? `${h}h ${m}m` : `${m}m`
 }

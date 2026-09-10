@@ -1,6 +1,7 @@
 import { connected, lastError, outsideTempC, pm25Inside, pm25Outside, status, vehicleState } from '../lib/store'
 import { fmtTemp, ago } from '../lib/format'
 import { t } from '../lib/i18n'
+import { effectiveGear } from '../lib/vehicle'
 import { carName, showMap } from '../lib/settings'
 import { MiniMap } from '../components/MiniMap'
 import { AppHeader } from '../components/AppHeader'
@@ -25,10 +26,22 @@ import {
 import type { WindowsState } from '../lib/types'
 import './dashboard.css'
 
-function windowsOpenCount(w: WindowsState | undefined): number {
-  if (!w) return 0
+/**
+ * How many windows are open, or null when the car hasn't said.
+ *
+ * Null matters. OverDrive reports -1 per corner for "no reading" and sends
+ * `windows: {}` when it has nothing at all, and counting those as zero printed
+ * a green "Closed" for a car whose driver window might be wide open — the same
+ * confident-lie shape the doors row already avoids by having an Unknown state.
+ * It also fires after `store` drops a stale vehicleState, where every other row
+ * correctly goes unknown.
+ */
+function windowsOpenCount(w: WindowsState | undefined): number | null {
+  if (!w) return null
   const vals = [w.lf, w.rf, w.lr, w.rr, w.sunroof, w.sunshade]
-  return vals.filter((v) => typeof v === 'number' && v > 0).length
+  const known = vals.filter((v) => typeof v === 'number' && v >= 0)
+  if (!known.length) return null
+  return known.filter((v) => (v as number) > 0).length
 }
 
 export function Dashboard() {
@@ -75,18 +88,7 @@ export function Dashboard() {
   const chargingNow = chargingPhase(s) === 'charging'
 
   const powerOn = !!s.acc
-  /*
-   * With the ignition off the car is in Park — a BYD shifts there on shutdown.
-   * /status does not enforce that: it returns RecordingModeManager.currentGear,
-   * which only updates when the gear monitor reports a change and is never
-   * reset on ACC off, so it can hold a stale driving gear. OD's own MQTT path
-   * forces P in this case; /status just omits the check.
-   *
-   * Tested against `=== false`, not falsy: a build that never sends `acc` leaves
-   * it undefined, and inventing a gear from missing data would be worse than
-   * showing what the car said.
-   */
-  const gear = s.acc === false ? 'P' : s.recordingStatus?.gear
+  const gear = effectiveGear(s)
   const rawKmh =
     s.gps?.canSpeedKmh != null ? s.gps.canSpeedKmh : s.gps?.speed != null ? s.gps.speed * 3.6 : null
   const speedUnit = unit === 'mi' ? 'mph' : 'km/h'
@@ -146,7 +148,10 @@ export function Dashboard() {
         <div class="card-title">{t('status.title')}</div>
         <div class="srow">
           <div class="srow-left">
-            {doorsLocked === 1 ? <IconLock size={20} /> : <IconUnlock size={20} />}
+            {/* Only draw the open padlock when the car actually said unlocked.
+                It is the at-a-glance signal, and showing it for "unknown"
+                claimed something the pill beside it was declining to claim. */}
+            {doorsLocked === 2 ? <IconUnlock size={20} /> : <IconLock size={20} />}
             <span class="srow-label">{t('status.doors')}</span>
           </div>
           {doorsLocked === 1 ? (
@@ -162,7 +167,9 @@ export function Dashboard() {
             <IconWindow size={20} />
             <span class="srow-label">{t('status.windows')}</span>
           </div>
-          {winOpen > 0 ? (
+          {winOpen == null ? (
+            <span class="pill">{t('common.unknown')}</span>
+          ) : winOpen > 0 ? (
             <span class="pill warn">{t('status.open_count', { n: winOpen })}</span>
           ) : (
             <span class="pill good">{t('status.closed')}</span>
