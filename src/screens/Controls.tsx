@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks'
+import { useEffect, useRef, useState } from 'preact/hooks'
 import * as api from '../lib/api'
 import { AuthError } from '../lib/api'
 import { authLost, cloudConfigured, connected, refresh, vehicleState } from '../lib/store'
@@ -25,6 +25,16 @@ import '../components/controls.css'
 
 const TEMP_MIN = 16
 const TEMP_MAX = 30
+/*
+ * How long the user's own taps outrank the car's reported setpoint.
+ *
+ * The dial arrives on a 5s poll, and the car takes a moment to apply a change.
+ * Without this the sequence "tap + to 25, poll returns the old 24" would snap
+ * the stepper backwards under the user's finger. After it elapses the car wins
+ * again — so a change the car never accepted is corrected rather than left
+ * showing a number only the phone believes.
+ */
+const SETPOINT_SETTLE_MS = 4000
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
@@ -68,7 +78,13 @@ async function runClimate(fn: () => Promise<ControlResult>, okMsg: string) {
 }
 
 export function Controls() {
+  /*
+   * Seeded at 22 only until the car speaks. The setpoint (climate.setpointDriver)
+   * arrived in OD v48; before that no client could read the dial, so this stayed
+   * at its hardcoded default and a car set to 24 showed 22 in the app forever.
+   */
   const [temp, setTemp] = useState(22)
+  const lastEditAt = useRef(0)
 
   // WiCarlink mode swaps only the top remote-action buttons for 51DK commands.
   const wc = wicarlink.value
@@ -76,10 +92,29 @@ export function Controls() {
   const vs = vehicleState.value
   const climateActive = !!(vs?.climate?.acOn || vs?.climate?.remoteClimateActive)
   const fanLevel = vs?.climate?.fanLevel
+  const carSetpoint = vs?.climate?.setpointDriver
+  /*
+   * Refuse a setpoint we cannot render honestly. The value is expressed in the
+   * head unit's display unit, and this stepper is labelled degC — so a
+   * Fahrenheit car (tempUnit 0) is left alone rather than shown as if its 75
+   * were Celsius. The range check also rejects sentinels.
+   */
+  const setpointUsable =
+    carSetpoint != null &&
+    vs?.climate?.tempUnit !== 0 &&
+    carSetpoint >= TEMP_MIN &&
+    carSetpoint <= TEMP_MAX
   const disabled = !connected.value
+
+  useEffect(() => {
+    if (!setpointUsable) return // absent while the car is off — keep the last known
+    if (Date.now() - lastEditAt.current < SETPOINT_SETTLE_MS) return
+    setTemp(carSetpoint as number)
+  }, [carSetpoint, setpointUsable])
 
   function changeTemp(delta: number) {
     const nt = Math.min(TEMP_MAX, Math.max(TEMP_MIN, temp + delta))
+    lastEditAt.current = Date.now() // this tap outranks the poll for a moment
     setTemp(nt)
     /*
      * runClimate, not run: setting the temperature IS a climate command, so it

@@ -85,9 +85,15 @@ export interface LightsState {
 export interface SeatsState { heat?: number[]; cool?: number[]; ventilatedSupported?: boolean; steeringHeat?: boolean }
 export interface ClimateState {
   acOn?: boolean
+  /** MEASURED cabin air. Only sent while the sensor is actually answering. */
   insideTempC?: number
   windMode?: number
   fanLevel?: number
+  /** The DIAL, not the measurement. Power-gated: absent while the car is off. */
+  setpointDriver?: number
+  setpointPassenger?: number
+  /** Unit the setpoint is expressed in: 1 = Celsius, 0 = Fahrenheit. */
+  tempUnit?: number
   remoteClimateActive?: boolean
 }
 export interface TyreCorner {
