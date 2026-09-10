@@ -267,7 +267,7 @@ export function Controls() {
       {wc ? (
         <WiCarlinkGrid />
       ) : cloudConfigured.value === false ? null : (
-        <div class="grid action-grid">
+        <div class="grid action-grid tight" style={{ ['--cols' as string]: 5 }}>
           <ActionButton
             label={t('ctrl.lock')}
             tone="accent"

@@ -141,9 +141,16 @@ export function WiCarlinkGrid() {
     }
   }
 
+  // Five or fewer read better as a single row; past that, wrap at four so the
+  // rows stay even rather than trailing an orphan.
+  const cols = cmds.length <= 5 ? cmds.length : 4
+
   return (
     <div>
-      <div class="grid action-grid">
+      <div
+        class={'grid action-grid' + (cols >= 5 ? ' tight' : '')}
+        style={{ ['--cols' as string]: cols }}
+      >
         {cmds.map((c) => {
           const Icon = iconFor(c.icon)
           return (

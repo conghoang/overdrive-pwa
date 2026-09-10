@@ -2,10 +2,20 @@
 /* Four across, so the whole remote-action set is one glance rather than a
    block that pushes the climate card off screen. Everything below is sized for
    the ~72-79px column that leaves on a phone. */
-/* The margin matters now the grid sits at the BOTTOM of the screen: it is not
-   a .card, so it never picked up the `.card + .card` rhythm and sat flush
-   against the card above it. */
-.action-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; }
+/* Column count comes from the caller, because it depends on how many buttons
+   there are: five or fewer fit one row, more wrap at four so the rows stay
+   even. The margin matters now the grid sits at the BOTTOM of the screen — it
+   is not a .card, so it never picked up the `.card + .card` rhythm and sat
+   flush against the card above it. */
+.action-grid {
+  grid-template-columns: repeat(var(--cols, 4), 1fr);
+  gap: 8px;
+  margin-top: 14px;
+}
+/* Five across leaves a ~59-65px column, tighter than the four-up case, so the
+   tile gives back what padding it can before the label has to shrink. */
+.action-grid.tight .action { padding: 12px 3px 10px; gap: 6px; min-height: 78px; }
+.action-grid.tight .action .action-label { font-size: 11px; }
 
 .action {
   position: relative;
