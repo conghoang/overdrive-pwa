@@ -193,6 +193,11 @@ export const IconAir = ({ size, class: c }: IconProps) =>
     c,
   )
 
+export const IconExpand = ({ size, class: c }: IconProps) =>
+  svg(<><path d="M4 9V4h5" /><path d="M20 15v5h-5" /><path d="M15 4h5v5" /><path d="M9 20H4v-5" /></>, size, c)
+export const IconClose = ({ size, class: c }: IconProps) =>
+  svg(<><path d="M6 6l12 12" /><path d="M18 6L6 18" /></>, size, c)
+
 export const IconMinus = ({ size, class: c }: IconProps) => svg(<path d="M5 12h14" />, size, c)
 export const IconPlus = ({ size, class: c }: IconProps) => svg(<><path d="M12 5v14" /><path d="M5 12h14" /></>, size, c)
 export const IconArrow = ({ size, class: c }: IconProps) => svg(<><path d="M5 12h14" /><path d="M13 6l6 6-6 6" /></>, size, c)

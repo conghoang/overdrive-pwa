@@ -5,7 +5,7 @@ import { connected } from '../lib/store'
 import { dewarpByView, setDewarpFor } from '../lib/settings'
 import { AppHeader } from '../components/AppHeader'
 import { t } from '../lib/i18n'
-import { IconApp, IconCamera } from '../components/icons'
+import { IconApp, IconCamera, IconClose, IconExpand } from '../components/icons'
 import { startPlayer, webCodecsSupported } from '../lib/h264'
 import type { PlayerHandle, PlayerState } from '../lib/h264'
 import './camera.css'
@@ -33,6 +33,7 @@ export function Camera() {
   // quality.current instead would reconnect once more on entry, when the
   // initial GET resolves and fills it in for the first time.
   const [restartAt, setRestartAt] = useState(0)
+  const [full, setFull] = useState(false)
   // Dewarp strength. The car's own recording.rectifyStrength is the starting
   // point; once the user moves the slider their value is kept instead.
   const [carRectify, setCarRectify] = useState(0)
@@ -134,6 +135,36 @@ export function Camera() {
     }
   }, [view, supported, isDemo, restartAt])
 
+  /*
+   * Fullscreen is CSS first, Fullscreen API second.
+   *
+   * iOS Safari only grants real fullscreen to <video> elements, and this is a
+   * <canvas> — requestFullscreen simply rejects there. So the overlay does the
+   * work everywhere, and the API is a bonus on Android/desktop where it also
+   * hides the browser chrome. Either way the canvas NODE is untouched: it only
+   * gets restyled, because tearing it down would take the WebGL context and the
+   * running stream with it.
+   */
+  function toggleFull() {
+    const next = !full
+    setFull(next)
+    try {
+      if (next) void document.documentElement.requestFullscreen?.()
+      else if (document.fullscreenElement) void document.exitFullscreen?.()
+    } catch {
+      /* overlay still applies */
+    }
+  }
+
+  // Escape or the system back gesture leaves fullscreen without telling us.
+  useEffect(() => {
+    const sync = () => {
+      if (!document.fullscreenElement && full) setFull(false)
+    }
+    document.addEventListener('fullscreenchange', sync)
+    return () => document.removeEventListener('fullscreenchange', sync)
+  }, [full])
+
   const label =
     state === 'live' ? t('cam.live')
     : state === 'connecting' ? t('cam.connecting')
@@ -150,9 +181,17 @@ export function Camera() {
         dot={state === 'live' ? 'ok' : state === 'error' ? 'bad' : 'wait'}
       />
 
-      <div class="card cam-card">
-        <div class="cam-stage">
+      <div class={'card cam-card' + (full ? ' full' : '')}>
+        <div class={'cam-stage' + (full ? ' full' : '')}>
           <canvas ref={canvasRef} class="cam-canvas" />
+          <button
+            class="cam-full"
+            title={t(full ? 'cam.exit_full' : 'cam.fullscreen')}
+            aria-label={t(full ? 'cam.exit_full' : 'cam.fullscreen')}
+            onClick={toggleFull}
+          >
+            {full ? <IconClose size={18} /> : <IconExpand size={18} />}
+          </button>
           {state !== 'live' && (
             <div class="cam-overlay">
               {state === 'connecting' && <div class="cam-spinner" />}
