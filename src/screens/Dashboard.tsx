@@ -75,7 +75,18 @@ export function Dashboard() {
   const chargingNow = chargingPhase(s) === 'charging'
 
   const powerOn = !!s.acc
-  const gear = s.recordingStatus?.gear
+  /*
+   * With the ignition off the car is in Park — a BYD shifts there on shutdown.
+   * /status does not enforce that: it returns RecordingModeManager.currentGear,
+   * which only updates when the gear monitor reports a change and is never
+   * reset on ACC off, so it can hold a stale driving gear. OD's own MQTT path
+   * forces P in this case; /status just omits the check.
+   *
+   * Tested against `=== false`, not falsy: a build that never sends `acc` leaves
+   * it undefined, and inventing a gear from missing data would be worse than
+   * showing what the car said.
+   */
+  const gear = s.acc === false ? 'P' : s.recordingStatus?.gear
   const rawKmh =
     s.gps?.canSpeedKmh != null ? s.gps.canSpeedKmh : s.gps?.speed != null ? s.gps.speed * 3.6 : null
   const speedUnit = unit === 'mi' ? 'mph' : 'km/h'
