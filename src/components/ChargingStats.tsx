@@ -5,8 +5,15 @@ import { IconArrow, IconPlug } from './icons'
 import type { ChargingOverview, ChargingSession } from '../lib/types'
 import './chargingstats.css'
 
-/** Windows the period chip cycles through. */
-const PERIODS = [7, 30] as const
+/*
+ * One window, deliberately.
+ *
+ * A longer history belongs in OverDrive's own charging page, which already has
+ * the filters, the per-session drill-in and the tariff editing. This card is
+ * the glance; the chip is the way through to the full thing rather than a
+ * second, worse history browser.
+ */
+const DAYS = 7
 
 /** Local midnight for a timestamp — the key the daily roll-up is bucketed by. */
 function dayKey(ms: number): number {
@@ -90,7 +97,7 @@ function latest(sessions: ChargingSession[] | undefined): ChargingSession | null
 }
 
 export function ChargingStats() {
-  const [days, setDays] = useState<number>(PERIODS[0])
+  const days = DAYS
   const [data, setData] = useState<ChargingOverview | null>(null)
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading')
 
@@ -103,6 +110,10 @@ export function ChargingStats() {
       .catch(() => { if (live) setState('error') })
     return () => { live = false }
   }, [days])
+
+  // Demo mode has no car to open, so the link is dropped rather than dangled.
+  const base = api.getBaseUrl()
+  const odUrl = /^https?:\/\//i.test(base) ? `${base}/charging.html` : null
 
   const summary = data?.summary
   const bars = buildBars(days, data)
@@ -141,13 +152,18 @@ export function ChargingStats() {
           <div class="cs-title">{t('data.charging')}</div>
           <div class="cs-sub">{t('data.last_days', { n: days })}</div>
         </div>
-        <button
-          class="cs-period"
-          onClick={() => setDays((d) => PERIODS[(PERIODS.indexOf(d as 7) + 1) % PERIODS.length])}
-          aria-label={t('data.change_period')}
-        >
-          {days}D <IconArrow size={14} />
-        </button>
+        {odUrl && (
+          <a
+            class="cs-period"
+            href={odUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={t('data.open_history')}
+            title={t('data.open_history')}
+          >
+            {days}D <IconArrow size={14} />
+          </a>
+        )}
       </div>
 
       {state === 'error' ? (

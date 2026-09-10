@@ -35,6 +35,7 @@
   font-size: 13px;
   font-weight: 700;
 }
+.cs-period { text-decoration: none; }
 .cs-period:active { transform: scale(0.94); }
 .cs-period svg { color: var(--muted); }
 
