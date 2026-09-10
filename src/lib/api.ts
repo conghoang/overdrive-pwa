@@ -9,7 +9,7 @@ import type {
   StatusResponse,
   VehicleState,
 } from './types'
-import { DEMO_BASE, DEMO_TOKEN, mockChargingOverview, mockStatus, mockTripConfig, mockTrips, mockVehicleState } from './mock'
+import { DEMO_BASE, DEMO_TOKEN } from './demo'
 import { t } from './i18n'
 
 // --- persisted config (entered once on the setup screen) ---
@@ -200,8 +200,20 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   return undefined as unknown as T
 }
 
+/*
+ * Demo fixtures are loaded on demand, not bundled into the app shell.
+ *
+ * They only ever run when the configured base URL is the demo one, so shipping
+ * them to everyone with a real car is dead weight in the first payload. The
+ * function was already async and already sleeps 180ms to imitate a car, so the
+ * import costs nothing anyone can perceive.
+ */
 async function demoResponse<T>(path: string): Promise<T> {
-  await new Promise((r) => setTimeout(r, 180))
+  const [mock] = await Promise.all([
+    import('./mock'),
+    new Promise((r) => setTimeout(r, 180)),
+  ])
+  const { mockChargingOverview, mockStatus, mockTripConfig, mockTrips, mockVehicleState } = mock
   if (path === '/status') return mockStatus() as unknown as T
   if (path === '/api/vehicle/state') return mockVehicleState() as unknown as T
   if (path === '/api/trips/config') return mockTripConfig() as unknown as T

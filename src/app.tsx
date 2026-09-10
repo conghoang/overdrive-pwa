@@ -2,43 +2,19 @@ import { signal } from '@preact/signals'
 import type { JSX } from 'preact'
 import { isConfigured } from './lib/api'
 import * as store from './lib/store'
-import { Setup } from './screens/Setup'
 import { Dashboard } from './screens/Dashboard'
-import { Controls } from './screens/Controls'
-import { Account } from './screens/Account'
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks'
+import { lazyScreen } from './lib/lazy'
 
-/**
- * Load a screen on first open only.
- *
- * Camera pulls in the H.264 / WebCodecs player and Data pulls in the charts —
- * neither belongs in the bundle of someone who never opens that tab. The two
- * tabs people use on every launch stay eager, so the app still paints straight
- * into the dashboard with no extra round-trip.
- *
- * Plain dynamic import rather than preact/compat's lazy + Suspense — that pair
- * threw "Cannot read properties of null (reading '__H')" here and rendered an
- * empty screen. Vite code-splits on the import() either way, so the only thing
- * lost is the Suspense boundary, which this replaces with a state flag.
+const SetupScreen = lazyScreen(() => import('./screens/Setup'), 'Setup')
+/*
+ * Only the first tab is guaranteed to be needed: opening the app always lands
+ * on the dashboard. Every other tab is a deliberate second action, so they are
+ * fetched when chosen. Controls brings the climate banner, the seat artwork and
+ * the 51DK grid with it, none of which anything else uses.
  */
-function lazyScreen<K extends string>(
-  load: () => Promise<Record<K, () => JSX.Element>>,
-  name: K,
-) {
-  return function LazyScreen() {
-    const [Comp, setComp] = useState<null | (() => JSX.Element)>(null)
-    useEffect(() => {
-      let live = true
-      // setComp(() => C) — the updater form, or React/Preact would CALL the
-      // component instead of storing it.
-      void load().then((m) => { if (live) setComp(() => m[name]) })
-      return () => { live = false }
-    }, [])
-    if (!Comp) return <div class="card"><div class="center-note">…</div></div>
-    return <Comp />
-  }
-}
-
+const ControlsTab = lazyScreen(() => import('./screens/Controls'), 'Controls')
+const AccountTab = lazyScreen(() => import('./screens/Account'), 'Account')
 const CameraTab = lazyScreen(() => import('./screens/Camera'), 'Camera')
 const DataTab = lazyScreen(() => import('./screens/Data'), 'Data')
 
@@ -68,10 +44,10 @@ const TAB_ANIM_MS = 260
 
 function renderTab(which: Tab, onSignOut: () => void) {
   if (which === 'dashboard') return <Dashboard />
-  if (which === 'controls') return <Controls />
+  if (which === 'controls') return <ControlsTab />
   if (which === 'camera') return <CameraTab />
   if (which === 'data') return <DataTab />
-  return <Account onSignOut={onSignOut} />
+  return <AccountTab onSignOut={onSignOut} />
 }
 
 export function App() {
@@ -128,7 +104,7 @@ export function App() {
   // Not set up yet, or the backend rejected our token → show the setup screen.
   if (!configured.value || store.authLost.value) {
     return (
-      <Setup
+      <SetupScreen
         onDone={() => {
           store.authLost.value = false
           configured.value = true

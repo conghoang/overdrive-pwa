@@ -1,28 +1,7 @@
 /* hero card */
 .hero { display: flex; flex-direction: column; align-items: center; padding: 26px 18px 22px; }
-.ring-wrap { position: relative; width: 208px; height: 208px; }
-.ring { display: block; }
-.ring-center {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-}
-.ring-value { font-size: 56px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
-.ring-unit { font-size: 22px; color: var(--muted); font-weight: 600; margin-left: 2px; }
-.ring-charging {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--success);
-  font-size: 13px;
-  font-weight: 600;
-}
-.ring-sub { color: var(--muted); font-size: 13px; font-weight: 600; }
-
+/* (the .ring-* rules that used to live here went with the SoC ring the hero
+   redesign replaced — nothing referenced them any more) */
 .hero-range {
   margin-top: 18px;
   display: flex;

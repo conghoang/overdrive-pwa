@@ -3,6 +3,7 @@ import { fmtEta, fmtNum } from '../lib/format'
 import { t } from '../lib/i18n'
 import { IconBolt, IconPlug } from './icons'
 import type { StatusResponse } from '../lib/types'
+import { chargingPhase } from '../lib/charging'
 import './charging.css'
 
 /**
@@ -106,18 +107,7 @@ const PCT_BASELINE = 152
 /** Cell divider lines across the top face, as fractions along its length. */
 const CELLS = [0.25, 0.5, 0.75]
 
-type Phase = 'charging' | 'full' | 'fault' | 'plugged'
 
-/** Exposed so the dashboard can place this card by phase without re-deriving it. */
-export function chargingPhase(s: StatusResponse): Phase | null {
-  const c = s.charging
-  if (!c) return null
-  if (c.fault) return 'fault'
-  if (c.charging) return 'charging'
-  if (c.full) return 'full'
-  if (c.plugged) return 'plugged'
-  return null
-}
 
 export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: boolean }) {
   const phase = chargingPhase(s)

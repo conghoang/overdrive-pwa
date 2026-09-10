@@ -3,10 +3,19 @@ import { fmtTemp, ago } from '../lib/format'
 import { t } from '../lib/i18n'
 import { effectiveGear } from '../lib/vehicle'
 import { carName, showMap } from '../lib/settings'
-import { MiniMap } from '../components/MiniMap'
 import { AppHeader } from '../components/AppHeader'
 import { CarHero } from '../components/CarHero'
-import { ChargingCard, chargingPhase } from '../components/ChargingCard'
+import { chargingPhase } from '../lib/charging'
+import { lazyScreen } from '../lib/lazy'
+import { MiniMapLazy } from '../components/MiniMapLazy'
+
+/*
+ * The charging card and its artwork only ever render while the car is plugged
+ * in, so they load then rather than riding in the app shell. It renders nothing
+ * until the chunk lands — for a card that is conditional anyway, a beat of
+ * empty space reads as "not charging yet", not as a loading state.
+ */
+const ChargingCard = lazyScreen(() => import('../components/ChargingCard'), 'ChargingCard', null)
 import { QuickActions } from '../components/QuickActions'
 import { EnergyGauges } from '../components/EnergyGauges'
 import { StatTile } from '../components/StatTile'
@@ -215,7 +224,7 @@ export function Dashboard() {
           </div>
 
           {showMap.value ? (
-            <MiniMap lat={s.gps.lat} lng={s.gps.lng} />
+            <MiniMapLazy lat={s.gps.lat} lng={s.gps.lng} />
           ) : (
             <>
               <div class="row" style={{ gap: '11px' }}>

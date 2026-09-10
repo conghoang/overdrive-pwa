@@ -6,7 +6,14 @@ import { useState } from 'preact/hooks'
 import { AppHeader } from '../components/AppHeader'
 import { DEFAULT_PHOTO } from '../components/CarHero'
 import { Switch } from '../components/Switch'
-import { WiCarlinkEditor } from '../components/WiCarlinkControls'
+import { lazyScreen } from '../lib/lazy'
+
+/*
+ * The 51DK editor is a whole second screen — drag-reorder, icon picker, two
+ * modals — reached from one button in Settings. Loading it on demand keeps it
+ * out of the app shell for everyone who never opens it.
+ */
+const WiCarlinkEditor = lazyScreen(() => import('../components/WiCarlinkEditor'), 'WiCarlinkEditor')
 import { carName, carPhoto, resetSettings, setCarName, setCarPhoto, setShowMap, setWicarlink, showMap, wicarlink } from '../lib/settings'
 import { fileToResizedDataUrl } from '../lib/image'
 import { toast } from '../lib/toast'

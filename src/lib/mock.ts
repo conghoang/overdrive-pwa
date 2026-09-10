@@ -2,8 +2,10 @@ import type { StatusResponse, VehicleState } from './types'
 
 // Demo/offline data so the UI can be previewed without pairing a real car.
 // Activated by entering the device token `demo` on the setup screen.
-export const DEMO_BASE = 'demo'
-export const DEMO_TOKEN = 'demo'
+// Re-exported so existing importers of ./mock keep working; the definitions
+// live in ./demo precisely so api.ts can reach them WITHOUT pulling this whole
+// fixture module into the app shell.
+export { DEMO_BASE, DEMO_TOKEN } from './demo'
 
 let soc = 68
 
