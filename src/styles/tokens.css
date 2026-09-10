@@ -33,6 +33,8 @@
   --surface-1: var(--d-surface-1);
   --surface-2: var(--d-surface-2);
   --surface-3: rgba(23, 42, 62, 0.82);
+  /* Opaque, for small floating readouts that must not show the card through. */
+  --tip-bg: #17293c;
   --surface-soft: rgba(255, 255, 255, 0.045);
   --surface-hover: rgba(255, 255, 255, 0.075);
 
@@ -132,6 +134,7 @@
   --surface-1: rgba(255, 255, 255, 0.97);
   --surface-2: rgba(255, 255, 255, 0.86);
   --surface-3: rgba(232, 238, 245, 0.9);
+  --tip-bg: #ffffff;
   --surface-soft: rgba(16, 42, 66, 0.05);
   --surface-hover: rgba(16, 42, 66, 0.09);
 

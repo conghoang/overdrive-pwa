@@ -84,6 +84,15 @@ function fmtMoney(v: number, currency: string): string {
   return `${Math.round(v).toLocaleString(locale)} ${currency}`
 }
 
+/** "Sat 5 Sep" — enough to identify the column without crowding it. */
+function fmtDayLabel(ms: number): string {
+  return new Intl.DateTimeFormat(lang.value === 'vi' ? 'vi-VN' : 'en-US', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  }).format(new Date(ms))
+}
+
 function fmtDuration(min: number): string {
   const h = Math.floor(min / 60)
   const m = Math.round(min % 60)
@@ -99,6 +108,28 @@ function latest(sessions: ChargingSession[] | undefined): ChargingSession | null
 export function ChargingStats() {
   const days = DAYS
   const [data, setData] = useState<ChargingOverview | null>(null)
+  /*
+   * Which column is showing its value. A hover on a pointer device, a tap on a
+   * touch one — the bars are a few pixels wide and the native `title` tooltip
+   * that used to carry this never appears on touch at all, so the number was
+   * simply unreachable on a phone.
+   */
+  const [active, setActive] = useState<number | null>(null)
+
+  /*
+   * Dismissal for touch, where there is no hover to end.
+   *
+   * A tap outside the bars closes the readout. Bound only while one is open so
+   * the app is not listening to every pointer event on every screen.
+   */
+  useEffect(() => {
+    if (active === null) return
+    const away = (e: PointerEvent) => {
+      if (!(e.target as HTMLElement)?.closest?.('.cs-bars')) setActive(null)
+    }
+    document.addEventListener('pointerdown', away)
+    return () => document.removeEventListener('pointerdown', away)
+  }, [active])
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading')
 
   useEffect(() => {
@@ -199,16 +230,60 @@ export function ChargingStats() {
               {ticks.map((v) => (
                 <div class="cs-grid" key={v} style={{ bottom: `${(v / top) * 100}%` }} />
               ))}
-              <div class="cs-bars">
-                {bars.map((b, i) => (
-                  <div class="cs-col" key={b.key}>
-                    <div
+              {/*
+                Mouse only. A touch pointer "leaves" the moment the finger
+                lifts, so an unguarded handler here wiped the value the tap had
+                just set — the readout was unreachable on a phone, which is the
+                whole reason it exists. Touch keeps it until another column is
+                tapped, since there is no hover to end it.
+              */}
+              <div
+                class="cs-bars"
+                onPointerLeave={(e) => { if (e.pointerType !== 'touch') setActive(null) }}
+              >
+                {bars.map((b, i) => {
+                  const h = Math.max(b.kwh > 0 ? 2 : 0, (b.kwh / top) * 100)
+                  return (
+                  <button
+                    class={'cs-col' + (active === i ? ' on' : '')}
+                    key={b.key}
+                    type="button"
+                    // The whole column is the target, not the bar — a 3px zero
+                    // bar is not something anyone can reliably hit.
+                    onPointerEnter={(e) => { if (e.pointerType !== 'touch') setActive(i) }}
+                    /*
+                     * Set, never toggle. On touch the browser fires focus
+                     * BEFORE click, so onFocus had already selected this column
+                     * and a toggle immediately deselected it again — the tap
+                     * appeared to do nothing at all. Tapping away closes it.
+                     */
+                    onClick={() => setActive(i)}
+                    onFocus={() => setActive(i)}
+                    onBlur={() => setActive(null)}
+                    aria-label={`${fmtDayLabel(b.key)}: ${fmtKwh(b.kwh)} kWh`}
+                  >
+                    {/* Anchored to the top of the BAR, not the column: at column
+                        height a tall bar's readout landed up in the totals row. */}
+                    {active === i && (
+                      <span
+                        class={
+                          'cs-tip' +
+                          (i === 0 ? ' at-start' : '') +
+                          (i === bars.length - 1 ? ' at-end' : '')
+                        }
+                        style={{ bottom: `calc(${h}% + 8px)` }}
+                      >
+                        <b>{estimated && b.kwh > 0 ? '≈ ' : ''}{fmtKwh(b.kwh)} kWh</b>
+                        <i>{fmtDayLabel(b.key)}</i>
+                      </span>
+                    )}
+                    <span
                       class={'cs-bar' + (i === bars.length - 1 ? ' now' : '') + (b.kwh > 0 ? '' : ' zero')}
-                      style={{ height: `${Math.max(b.kwh > 0 ? 2 : 0, (b.kwh / top) * 100)}%` }}
-                      title={`${fmtKwh(b.kwh)} kWh`}
+                      style={{ height: `${h}%` }}
                     />
-                  </div>
-                ))}
+                  </button>
+                  )
+                })}
               </div>
             </div>
             <div class="cs-unit" aria-hidden="true">kWh</div>

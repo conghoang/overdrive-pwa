@@ -103,7 +103,53 @@
   justify-content: space-between;
   gap: 4px;
 }
-.cs-col { flex: 1; height: 100%; display: flex; align-items: flex-end; justify-content: center; }
+/* A button, so it answers to tap, hover AND keyboard. Column-wide rather than
+   bar-wide: a 3px zero bar is not a hit target anyone can find. */
+.cs-col {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  position: relative;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  /* Stops a tap from being held as a text selection / callout on iOS. */
+  -webkit-tap-highlight-color: transparent;
+}
+.cs-col:focus-visible { outline: 2px solid var(--accent-strong); outline-offset: 2px; border-radius: 6px; }
+/* The selected column keeps its bar lit while the readout is up. */
+.cs-col.on .cs-bar { filter: brightness(1.18); }
+.cs-col.on .cs-bar.zero { background: var(--border-strong); }
+
+/* Value readout. Sits above the column, and flips to the inside edge on the
+   first and last so it cannot spill past the card. */
+.cs-tip {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 5px 9px;
+  border-radius: 9px;
+  /* Opaque. The surface tokens are all translucent, and the card content
+     showed straight through the readout — the totals line was legible behind
+     the number it was meant to be reporting. */
+  background: var(--tip-bg);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-float);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.cs-tip.at-start { left: 0; transform: none; }
+.cs-tip.at-end { left: auto; right: 0; transform: none; }
+.cs-tip b { font-size: 13px; font-weight: 700; color: var(--text); }
+.cs-tip i { font-style: normal; font-size: 10px; font-weight: 600; color: var(--muted); }
 .cs-bar {
   width: 62%;
   max-width: 18px;
