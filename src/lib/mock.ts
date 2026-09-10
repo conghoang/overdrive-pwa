@@ -49,3 +49,60 @@ export function mockVehicleState(): VehicleState {
     },
   }
 }
+
+/**
+ * Charging history for demo mode.
+ *
+ * Anchored to *today* rather than fixed dates, so the seven-day window always
+ * has something in it — and deliberately leaves two days empty, because the
+ * real API omits days with no sessions and the chart has to prove it fills
+ * those gaps itself.
+ */
+export function mockChargingOverview(days: number) {
+  const midnight = new Date()
+  midnight.setHours(0, 0, 0, 0)
+  const day = 86_400_000
+  const pattern = [4.6, 0, 7.2, 3.7, 9.6, 5.4, 11.8] // last entry = today
+  const daily = []
+  for (let i = 0; i < Math.min(days, pattern.length); i++) {
+    const kwh = pattern[pattern.length - 1 - i]
+    if (kwh <= 0) continue // as the car does: no session, no row
+    daily.push({
+      day: midnight.getTime() - i * day,
+      sessions: 1,
+      energy: kwh,
+      cost: Math.round(kwh * 4000),
+      incomplete: 0,
+      estimated: 1,
+    })
+  }
+  const energy = daily.reduce((a, d) => a + d.energy, 0)
+  return {
+    success: true,
+    summary: {
+      daily: daily.reverse(),
+      periodSessions: daily.length,
+      periodEnergyKwh: energy,
+      periodCost: Math.round(energy * 4000),
+      periodIncompleteSessions: 0,
+      periodEstimatedSessions: daily.length,
+      avgCostPerKwh: 4000,
+    },
+    sessions: [
+      {
+        id: 1,
+        startTime: Date.now() - 3.7 * 3600_000,
+        endTime: Date.now(),
+        inProgress: false,
+        startSoc: 20,
+        endSoc: 82,
+        energyAdded: 11.6,
+        durationMinutes: 222,
+        cost: 46400,
+        currency: '\u20ab',
+        isDc: false,
+        energySource: 'soc_estimate',
+      },
+    ],
+  }
+}

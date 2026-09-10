@@ -6,6 +6,7 @@ import { Setup } from './screens/Setup'
 import { Dashboard } from './screens/Dashboard'
 import { Controls } from './screens/Controls'
 import { Account } from './screens/Account'
+import { Data } from './screens/Data'
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks'
 
 /**
@@ -30,9 +31,9 @@ function CameraTab() {
 import { TabBar } from './components/TabBar'
 import { Toaster } from './components/Toaster'
 
-export type Tab = 'dashboard' | 'controls' | 'camera' | 'account'
+export type Tab = 'dashboard' | 'controls' | 'camera' | 'data' | 'account'
 
-const TAB_ORDER: Tab[] = ['dashboard', 'controls', 'camera', 'account']
+const TAB_ORDER: Tab[] = ['dashboard', 'controls', 'camera', 'data', 'account']
 
 const tab = signal<Tab>('dashboard')
 const configured = signal(isConfigured())
@@ -55,6 +56,7 @@ function renderTab(which: Tab, onSignOut: () => void) {
   if (which === 'dashboard') return <Dashboard />
   if (which === 'controls') return <Controls />
   if (which === 'camera') return <CameraTab />
+  if (which === 'data') return <Data />
   return <Account onSignOut={onSignOut} />
 }
 

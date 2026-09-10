@@ -1,6 +1,6 @@
 import type { JSX } from 'preact'
 import type { Tab } from '../app'
-import { IconCamera, IconGauge, IconGear, IconSliders } from './icons'
+import { IconCamera, IconChart, IconGauge, IconGear, IconSliders } from './icons'
 import { t } from '../lib/i18n'
 import { tapFeedback } from '../lib/haptics'
 import './TabBar.css'
@@ -9,6 +9,7 @@ const TABS: { id: Tab; key: string; icon: (p: { size?: number }) => JSX.Element 
   { id: 'dashboard', key: 'tab.vehicle', icon: IconGauge },
   { id: 'controls', key: 'tab.controls', icon: IconSliders },
   { id: 'camera', key: 'tab.camera', icon: IconCamera },
+  { id: 'data', key: 'tab.data', icon: IconChart },
   { id: 'account', key: 'tab.device', icon: IconGear },
 ]
 

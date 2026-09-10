@@ -1,4 +1,5 @@
 import type {
+  ChargingOverview,
   CloudStatus,
   ControlResult,
   LauncherSummary,
@@ -6,7 +7,7 @@ import type {
   StatusResponse,
   VehicleState,
 } from './types'
-import { DEMO_BASE, DEMO_TOKEN, mockStatus, mockVehicleState } from './mock'
+import { DEMO_BASE, DEMO_TOKEN, mockChargingOverview, mockStatus, mockVehicleState } from './mock'
 import { t } from './i18n'
 
 // --- persisted config (entered once on the setup screen) ---
@@ -201,6 +202,10 @@ async function demoResponse<T>(path: string): Promise<T> {
   await new Promise((r) => setTimeout(r, 180))
   if (path === '/status') return mockStatus() as unknown as T
   if (path === '/api/vehicle/state') return mockVehicleState() as unknown as T
+  if (path.startsWith('/api/charging/overview')) {
+    const days = Number(new URLSearchParams(path.split('?')[1] || '').get('days')) || 7
+    return mockChargingOverview(days) as unknown as T
+  }
   if (path === '/api/launcher/v1/summary')
     return { charging: { active: true, kw: 7.2, etaMin: 135, targetPct: 80 } } as unknown as T
   if (path === '/api/settings/unified') {
@@ -238,6 +243,17 @@ export const apiPost = <T>(path: string, body?: unknown): Promise<T> => request<
 export const getStatus = (): Promise<StatusResponse> => apiGet<StatusResponse>('/status')
 export const getVehicleState = (): Promise<VehicleState> => apiGet<VehicleState>('/api/vehicle/state')
 export const getCloudStatus = (): Promise<CloudStatus> => apiGet<CloudStatus>('/api/vehicle/cloud-status')
+/**
+ * Charging history for the Data tab.
+ *
+ * `days` is the window the car rolls up over; it also decides which sessions
+ * come back. Note the summary's `daily` array omits days with no charging
+ * rather than returning zeroes, so anything drawing a bar per day has to fill
+ * the gaps itself.
+ */
+export const getChargingOverview = (days: number): Promise<ChargingOverview> =>
+  apiGet<ChargingOverview>(`/api/charging/overview?days=${days}`)
+
 // Launcher summary — used for the charging time-to-full estimate (charging.etaMin).
 export const getSummary = (): Promise<LauncherSummary> => apiGet<LauncherSummary>('/api/launcher/v1/summary')
 

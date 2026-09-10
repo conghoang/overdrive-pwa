@@ -1,0 +1,178 @@
+/* Charging statistics — first card of the Data tab.
+   Every class here is cs-* on purpose: charging.css already owns the chg-*
+   namespace for the dashboard's charging card, and reusing .chg-stats made this
+   card inherit that one's flex row, laying the whole thing out sideways. */
+
+.cs-card { padding: 16px 16px 0; }
+
+/* header ------------------------------------------------------------------ */
+.cs-head { display: flex; align-items: center; gap: 12px; }
+.cs-badge {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-bright);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+}
+.cs-titles { flex: 1; min-width: 0; }
+.cs-title { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+.cs-sub { color: var(--muted); font-size: 13px; font-weight: 600; margin-top: 1px; }
+.cs-period {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+.cs-period:active { transform: scale(0.94); }
+.cs-period svg { color: var(--muted); }
+
+/* totals ------------------------------------------------------------------ */
+.cs-totals {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 9px;
+  margin: 14px 0 4px;
+}
+.cs-kwh { font-size: 30px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
+.cs-kwh-unit { font-size: 15px; font-weight: 600; color: var(--muted); }
+.cs-sessions { font-size: 13px; font-weight: 600; color: var(--muted); margin-left: 6px; }
+.cs-sessions b { color: var(--text); font-size: 15px; }
+/* Hairline separator between the session count and the money. */
+.cs-div {
+  width: 1px;
+  align-self: stretch;
+  min-height: 15px;
+  background: var(--border-soft);
+  margin: 0 3px;
+}
+.cs-cost { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+
+/* chart -------------------------------------------------------------------
+   A fixed-height plot with the axis beside it. Bars are percentage heights
+   against the same `top` the gridlines are placed with, so the two cannot
+   drift apart. */
+.cs-chart {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  grid-template-rows: 118px auto;
+  column-gap: 8px;
+  margin-top: 10px;
+}
+.cs-axis {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  /* Nudge so each number sits ON its gridline rather than above it. */
+  transform: translateY(-6px);
+  padding-top: 6px;
+}
+.cs-plot { grid-column: 2; grid-row: 1; position: relative; }
+.cs-grid {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border-soft);
+  opacity: 0.6;
+}
+.cs-bars {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 4px;
+}
+.cs-col { flex: 1; height: 100%; display: flex; align-items: flex-end; justify-content: center; }
+.cs-bar {
+  width: 62%;
+  max-width: 18px;
+  min-height: 2px;
+  border-radius: 5px 5px 3px 3px;
+  background: linear-gradient(180deg, var(--accent-bright), var(--accent));
+  transition: height 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+/* A day the car reported nothing for. Kept visible as a floor so the column
+   reads as "no charging", not as a missing bar. */
+.cs-bar.zero { background: var(--track-deep); min-height: 3px; border-radius: 3px; }
+/* Today: the one column still in progress, so it gets the emphasis. */
+.cs-bar.now {
+  background: linear-gradient(180deg, #7ef7d0, var(--accent-bright));
+  box-shadow: 0 0 14px var(--tab-glow);
+}
+.cs-unit {
+  grid-column: 1;
+  grid-row: 2;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-align: right;
+  padding-top: 4px;
+}
+.cs-labels {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  padding-top: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.cs-labels span { flex: 1; text-align: center; }
+
+/* last charge -------------------------------------------------------------
+   Full-bleed footer strip, so it reads as a separate row of the card. */
+.cs-last {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin: 14px -16px 0;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-soft);
+  background: var(--surface-2);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+.cs-last-k { font-size: 12px; font-weight: 600; color: var(--muted); }
+.cs-soc { display: inline-flex; align-items: center; gap: 6px; font-size: 17px; font-weight: 700; }
+.cs-soc i { font-style: normal; color: var(--muted); font-size: 15px; }
+.cs-last-right { display: inline-flex; align-items: center; gap: 9px; margin-left: auto; }
+.cs-last-meta { font-size: 12px; font-weight: 600; color: var(--muted); }
+.cs-flag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.cs-flag.done { color: var(--success); background: var(--success-soft); }
+.cs-flag.live { color: var(--accent-bright); background: var(--accent-soft); }
+
+.cs-empty { color: var(--muted); text-align: center; padding: 28px 0; font-size: 14px; }
+
+/* Narrow phones: the meta line stops competing with the badge for the row. */
+@media (max-width: 360px) {
+  .cs-last-right { margin-left: 0; }
+  .cs-chart { grid-template-columns: 26px 1fr; }
+}

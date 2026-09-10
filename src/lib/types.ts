@@ -177,3 +177,52 @@ export interface LoginResponse {
   expiresIn?: number
   error?: string
 }
+
+// --- /api/charging/overview ---
+/** One calendar day's roll-up. Days with no charging are OMITTED, not zero-filled. */
+export interface ChargingDay {
+  /** Local midnight, epoch ms. */
+  day: number
+  sessions?: number
+  energy?: number
+  cost?: number
+  /** Sessions that ended without a clean finish. */
+  incomplete?: number
+  /** Sessions whose energy was inferred from SoC rather than metered. */
+  estimated?: number
+}
+
+export interface ChargingSession {
+  id?: number
+  startTime?: number
+  endTime?: number
+  inProgress?: boolean
+  chargingNow?: boolean
+  startSoc?: number
+  endSoc?: number
+  energyAdded?: number
+  durationMinutes?: number
+  cost?: number
+  /** Symbol as the car formats it, e.g. "₫" — not a currency code. */
+  currency?: string
+  isDc?: boolean
+  rangeGained?: number
+  /** "soc_estimate" means energyAdded was inferred, not measured. */
+  energySource?: string
+}
+
+export interface ChargingSummary {
+  daily?: ChargingDay[]
+  periodSessions?: number
+  periodEnergyKwh?: number
+  periodCost?: number
+  periodIncompleteSessions?: number
+  periodEstimatedSessions?: number
+  avgCostPerKwh?: number
+}
+
+export interface ChargingOverview {
+  success?: boolean
+  summary?: ChargingSummary
+  sessions?: ChargingSession[]
+}

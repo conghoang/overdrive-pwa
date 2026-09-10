@@ -156,6 +156,10 @@ export const IconBattery = ({ size, class: c }: IconProps) =>
     c,
   )
 
+/* Bars of differing height — statistics, distinct from IconGauge's live dial. */
+export const IconChart = ({ size, class: c }: IconProps) =>
+  svg(<><path d="M4 20V10" /><path d="M10 20V4" /><path d="M16 20v-7" /><path d="M22 20H2" /></>, size, c)
+
 export const IconSnowSeat = ({ size, class: c }: IconProps) =>
   svg(<><path d="M6 4v7a3 3 0 0 0 3 3h4" /><path d="M18 8v10a2 2 0 0 1-2 2H9" /><path d="M9 17v.01" /></>, size, c)
 export const IconTrash = ({ size, class: c }: IconProps) =>
