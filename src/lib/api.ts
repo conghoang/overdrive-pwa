@@ -1,5 +1,7 @@
 import type {
   ChargingOverview,
+  TripConfig,
+  TripRow,
   CloudStatus,
   ControlResult,
   LauncherSummary,
@@ -7,7 +9,7 @@ import type {
   StatusResponse,
   VehicleState,
 } from './types'
-import { DEMO_BASE, DEMO_TOKEN, mockChargingOverview, mockStatus, mockVehicleState } from './mock'
+import { DEMO_BASE, DEMO_TOKEN, mockChargingOverview, mockStatus, mockTripConfig, mockTrips, mockVehicleState } from './mock'
 import { t } from './i18n'
 
 // --- persisted config (entered once on the setup screen) ---
@@ -202,6 +204,11 @@ async function demoResponse<T>(path: string): Promise<T> {
   await new Promise((r) => setTimeout(r, 180))
   if (path === '/status') return mockStatus() as unknown as T
   if (path === '/api/vehicle/state') return mockVehicleState() as unknown as T
+  if (path === '/api/trips/config') return mockTripConfig() as unknown as T
+  if (path.startsWith('/api/trips?')) {
+    const days = Number(new URLSearchParams(path.split('?')[1] || '').get('days')) || 7
+    return { success: true, trips: mockTrips(days) } as unknown as T
+  }
   if (path.startsWith('/api/charging/overview')) {
     const days = Number(new URLSearchParams(path.split('?')[1] || '').get('days')) || 7
     return mockChargingOverview(days) as unknown as T
@@ -243,6 +250,20 @@ export const apiPost = <T>(path: string, body?: unknown): Promise<T> => request<
 export const getStatus = (): Promise<StatusResponse> => apiGet<StatusResponse>('/status')
 export const getVehicleState = (): Promise<VehicleState> => apiGet<VehicleState>('/api/vehicle/state')
 export const getCloudStatus = (): Promise<CloudStatus> => apiGet<CloudStatus>('/api/vehicle/cloud-status')
+/** Trip recording settings — notably whether recording is on at all. */
+export const getTripConfig = (): Promise<TripConfig> => apiGet<TripConfig>('/api/trips/config')
+
+/**
+ * Trips in the last `days`.
+ *
+ * The limit is generous because the card buckets by day itself and a busy week
+ * can hold a lot of short hops; the server caps the window regardless.
+ */
+export async function getTrips(days: number, limit = 200): Promise<TripRow[]> {
+  const r = await apiGet<{ trips?: TripRow[] }>(`/api/trips?days=${days}&limit=${limit}`)
+  return r?.trips ?? []
+}
+
 /**
  * Charging history for the Data tab.
  *
@@ -300,8 +321,7 @@ export const closeAllWindows = (): Promise<ControlResult> => apiPost('/api/vehic
  * not distance per drivetrain, so those stay null until OverDrive exposes the
  * `mileage` block that BydVehicleData.toJson() already builds.
  */
-interface TripRow { odometerEndKm?: number }
-interface TripConfig { config?: { enabled?: boolean } }
+
 
 export interface Odometer { totalKm: number | null; evKm: number | null; hevKm: number | null }
 

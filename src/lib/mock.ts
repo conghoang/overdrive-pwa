@@ -106,3 +106,36 @@ export function mockChargingOverview(days: number) {
     ],
   }
 }
+
+/** Trip recording on, with a few days' driving — anchored to today. */
+export function mockTripConfig() {
+  return { success: true, config: { enabled: true, currency: '\u20ab', distanceUnit: 'km', isPhev: true } }
+}
+
+export function mockTrips(days: number) {
+  const midnight = new Date()
+  midnight.setHours(0, 0, 0, 0)
+  const day = 86_400_000
+  // [daysAgo, km] — two quiet days on purpose, so the zero-fill is exercised.
+  const plan: [number, number][] = [
+    [0, 12.4], [0, 5.1], [1, 18.9], [3, 7.6], [3, 22.3], [4, 9.2], [6, 15.5],
+  ]
+  return plan
+    .filter(([ago]) => ago < days)
+    .map(([ago, km], i) => {
+      const start = midnight.getTime() - ago * day + (8 + i) * 3600_000
+      const durationSeconds = Math.round((km / 24) * 3600)
+      return {
+        id: 100 + i,
+        startTime: start,
+        endTime: start + durationSeconds * 1000,
+        distanceKm: km,
+        durationSeconds,
+        avgSpeedKmh: 24,
+        energyUsedKwh: km * 0.16,
+        energyMetered: true,
+        tripCost: Math.round(km * 0.16 * 4000),
+        currency: '\u20ab',
+      }
+    })
+}

@@ -1,5 +1,6 @@
 import { AppHeader } from '../components/AppHeader'
 import { ChargingStats } from '../components/ChargingStats'
+import { TripStats } from '../components/TripStats'
 import { connected } from '../lib/store'
 import { t } from '../lib/i18n'
 
@@ -18,6 +19,8 @@ export function Data() {
         dot={connected.value ? 'ok' : 'wait'}
       />
       <ChargingStats />
+      {/* Renders nothing when trip recording is off — see TripStats. */}
+      <TripStats />
     </div>
   )
 }

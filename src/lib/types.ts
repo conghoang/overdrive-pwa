@@ -226,3 +226,32 @@ export interface ChargingOverview {
   summary?: ChargingSummary
   sessions?: ChargingSession[]
 }
+
+// --- /api/trips ---
+export interface TripConfig {
+  success?: boolean
+  config?: {
+    /** Trip recording. When false the stored rows are stale by definition. */
+    enabled?: boolean
+    currency?: string
+    distanceUnit?: string
+    electricityRate?: number
+    isPhev?: boolean
+  }
+}
+
+export interface TripRow {
+  id?: number
+  startTime?: number
+  endTime?: number
+  distanceKm?: number
+  durationSeconds?: number
+  avgSpeedKmh?: number
+  maxSpeedKmh?: number
+  odometerEndKm?: number
+  energyUsedKwh?: number
+  /** False when the energy figure was inferred rather than measured. */
+  energyMetered?: boolean
+  tripCost?: number
+  currency?: string
+}
