@@ -6,108 +6,63 @@ import type { StatusResponse } from '../lib/types'
 import { chargingPhase } from '../lib/charging'
 import './charging.css'
 
-/**
- * Charging card modelled on the BYD instrument cluster's charge screen: the car
- * as a wireframe outline, the traction pack drawn as an isometric slab that
- * fills green with the state of charge, and power / time-to-full underneath.
+/*
+ * The car is BYD's own artwork, lifted from the head unit rather than redrawn:
+ * res/drawable{,-night}-xhdpi/newenergy_flow_car_img_suv in com.byd.carsettings
+ * — the ghosted 3/4 outline its energy-flow screen shows while charging. BYD
+ * ships it per body style; the Sealion 6 is the SUV.
  *
- * Every value is live — SOC from /status, power from the charging block, and
- * time-to-full from the launcher summary (only polled while plugged in).
+ * BYD ships a day and a night file, but BOTH are pale strokes on transparency
+ * — its energy screen is dark in either theme, the day one merely brighter ink
+ * (mean alpha 7.6% vs 5.4%). So there is no dark-ink version to put on a white
+ * card, and this card still pins itself dark. The day file is the one used: on
+ * a dark ground its wheels and body lines read noticeably crisper.
  */
+const IMG = { w: 720, h: 636 }
+/** Taller than the image: the pack sits below the car, as it does on the cluster. */
+const STAGE = { w: IMG.w, h: 812 }
 
 /*
- * The car is an image, not a drawing: `public/car/side-wire.webp` is the
- * wireframe from the cluster's own charge screen, with its baked-in battery
- * slab and "41%" erased so this app can draw them live instead.
+ * The pack is BYD's artwork too, for the same reason the car is: a drawn slab
+ * beside a rendered car looked like two different apps.
  *
- * The frame keeps its own near-black ground in BOTH themes. Inverting it for
- * light mode was tried and looked like a bad photocopy: it is a photograph of
- * a screen, so inverting surfaces every blotch and turns the dark wheels into
- * pale ghosts. Instead the stage gets a dark inset panel on light backgrounds
- * — the image's feathered edges blend into it exactly as they do on the dark
- * card, and the artwork is seen as it was designed.
+ * BYD ships 21 fill levels as separate images. Shipping all of them would add
+ * ~292kB to the precache (globPatterns takes every webp) for a 5%-granular
+ * result, so only the empty and full frames ride along and the full one is
+ * clipped — continuous rather than stepped, and 29kB.
  *
- * The SVG coordinate space IS the image's pixel space (520x246), so the pack
- * coordinates below are read straight off the photo — no scaling math.
+ * The clip follows the slab's own diagonal. Measured off the 21 frames by
+ * fitting the fill edge per level, ignoring rows where the fill had already run
+ * into the slab's right edge: the boundary is x = C + 1.531*y in the image's
+ * own pixel space, with C sweeping -184 (empty) to 226 (full). Reproduces every
+ * authored frame to within 6px across a 385px slab.
  */
-const IMG = { w: 520, h: 246 }
-// The near wheels run right to the bottom edge of the frame, so a viewBox that
-// stopped at the image height sliced the flat off their rims. The stage is a
-// little taller than the image; the extra strip is transparent and the image's
-// own feather already fades into the card there, so nothing shows a seam.
-const STAGE = { w: IMG.w, h: 266 }
-
-// Pack geometry, matched to where the slab sat in the original frame. The slab
-// is isometric: the back edge is higher and shifted right of the front edge.
-// Measured off the cluster frame: a shallow skew and a thin extrusion, which
-// is what makes the cluster's slab read as a flat plate rather than a chunky
-// box. Halving dx (34 -> 20) does most of that work.
-const PACK = {
-  x0: 152, // front-left
-  x1: 347, // back-right
-  backY: 128,
-  frontY: 176,
-  dx: 20, // horizontal skew from front edge to back edge
-  depth: 10, // extruded thickness
-}
-const TOP_FACE = `${PACK.x0 + PACK.dx},${PACK.backY} ${PACK.x1},${PACK.backY} ${PACK.x1 - PACK.dx},${PACK.frontY} ${PACK.x0},${PACK.frontY}`
-const FRONT_FACE = `${PACK.x0},${PACK.frontY} ${PACK.x1 - PACK.dx},${PACK.frontY} ${PACK.x1 - PACK.dx},${PACK.frontY + PACK.depth} ${PACK.x0},${PACK.frontY + PACK.depth}`
-const RIGHT_FACE = `${PACK.x1 - PACK.dx},${PACK.frontY} ${PACK.x1},${PACK.backY} ${PACK.x1},${PACK.backY + PACK.depth} ${PACK.x1 - PACK.dx},${PACK.frontY + PACK.depth}`
-
-/**
- * The slab is a parallelogram, so the charge boundary has to run PARALLEL to
- * its side edges — a vertical cut would read as a rectangle laid over an
- * isometric box. SKEW is how far x moves per unit of y along those edges.
- */
-const SKEW = PACK.dx / (PACK.frontY - PACK.backY)
-/** How far the leading edge travels from empty to full. */
-const SPAN = PACK.x1 - PACK.x0 - PACK.dx
-const PAD = 26
+const SLAB_SRC = { w: 385, h: 275 } // the artwork's own coordinate space
+const SLAB_SKEW = 1.531
+const SLAB_C0 = -184
+const SLAB_C1 = 226
+/** Where the slab sits on the stage, under the car. */
+const SLAB = { x: 188, y: 596, w: 344 }
+const SLAB_H = (SLAB.w * SLAB_SRC.h) / SLAB_SRC.w
+const SLAB_SCALE = SLAB.w / SLAB_SRC.w
 
 /** Clip covering everything charged so far, cut on the slab's own diagonal. */
 function chargedClip(f: number): string {
-  const lead = PACK.x0 + SPAN * f // leading edge, measured at the front edge
-  const top = PACK.backY - PAD
-  const bot = PACK.frontY + PACK.depth + PAD
-  return [
-    [PACK.x0 - PAD, top],
-    [lead + PACK.dx + SKEW * PAD, top],
-    [lead, PACK.frontY],
-    [lead, bot],
-    [PACK.x0 - PAD, bot],
+  const c = SLAB_C0 + (SLAB_C1 - SLAB_C0) * f
+  const pad = 80
+  const local: [number, number][] = [
+    [-pad, -pad],
+    [c + SLAB_SKEW * -pad, -pad],
+    [c + SLAB_SKEW * (SLAB_SRC.h + pad), SLAB_SRC.h + pad],
+    [-pad, SLAB_SRC.h + pad],
   ]
-    .map((pt) => pt.join(','))
+  return local
+    .map(([x, y]) => `${SLAB.x + x * SLAB_SCALE},${SLAB.y + y * SLAB_SCALE}`)
     .join(' ')
 }
 
-/** Sweeping highlight, skewed to sit square on the slab like everything else. */
-const SHEEN_W = 62
-const SHEEN = [
-  [PACK.x0 - SHEEN_W + PACK.dx, PACK.backY - 6],
-  [PACK.x0 + PACK.dx, PACK.backY - 6],
-  [PACK.x0, PACK.frontY + PACK.depth + 6],
-  [PACK.x0 - SHEEN_W, PACK.frontY + PACK.depth + 6],
-]
-  .map((pt) => pt.join(','))
-  .join(' ')
-
-// Near-side wheels, measured off the image on a 10-unit grid rather than
-// eyeballed — the first pass sat ~16 units high, so the rims floated above the
-// discs. They sit almost black against a dark ground once the frame is toned,
-// so the app rims them to bring them back.
-const WHEELS = [
-  { cx: 97, cy: 204, r: 40 },
-  { cx: 390, cy: 205, r: 42 },
-]
-
-/** The SOC figure sits above the slab, overlapping its top face. */
-const PACK_CX = (PACK.x0 + PACK.x1) / 2
-const PCT_BASELINE = 152
-
-/** Cell divider lines across the top face, as fractions along its length. */
-const CELLS = [0.25, 0.5, 0.75]
-
-
+const PACK_CX = SLAB.x + SLAB.w / 2
+const PCT_BASELINE = SLAB.y + SLAB_H * 0.62
 
 export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: boolean }) {
   const phase = chargingPhase(s)
@@ -164,15 +119,6 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
             <stop offset="0.5" stop-color="#fff" stop-opacity="0.4" />
             <stop offset="1" stop-color="#fff" stop-opacity="0" />
           </linearGradient>
-          {/* The slab's own silhouette. The charge clip below is a padded
-              half-plane, so on its own it lets the sweeping light spill above
-              and below the block; nesting the two intersects them and keeps
-              the light strictly inside the green. */}
-          <clipPath id="chgSlab">
-            <polygon points={TOP_FACE} />
-            <polygon points={FRONT_FACE} />
-            <polygon points={RIGHT_FACE} />
-          </clipPath>
           <clipPath id="chgClip">
             {/* Grows with SOC along the slab's diagonal; clips all three faces. */}
             <polygon points={chargedClip(frac)} />
@@ -182,52 +128,30 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
           </filter>
         </defs>
 
-        <image href={`${import.meta.env.BASE_URL}car/side-wire.webp`} x="0" y="0" width={IMG.w} height={IMG.h} />
+        <image href={`${import.meta.env.BASE_URL}car/flow-car.webp`} x="0" y="0" width={IMG.w} height={IMG.h} />
 
-        {/* rim the near wheels so they read against the toned-down frame */}
-        {WHEELS.map((w) => (
-          <g key={w.cx}>
-            <circle cx={w.cx} cy={w.cy} r={w.r} class="chg-wheel-glow" filter="url(#chgGlow)" />
-            <circle cx={w.cx} cy={w.cy} r={w.r} class="chg-wheel-rim" />
-          </g>
-        ))}
-
-        {/* battery pack — empty shell, then the charged portion clipped over it */}
-        <g class="chg-pack-empty">
-          <polygon class="pf-right" points={RIGHT_FACE} />
-          <polygon class="pf-front" points={FRONT_FACE} />
-          <polygon class="pf-top" points={TOP_FACE} />
-        </g>
-        <g clip-path="url(#chgSlab)">
-        <g class="chg-pack-full" clip-path="url(#chgClip)">
-          <polygon class="pf-right" points={RIGHT_FACE} />
-          <polygon class="pf-front" points={FRONT_FACE} />
-          <polygon class="pf-top" points={TOP_FACE} fill="url(#chgFill)" />
-          {charging && (
-            <polygon class="chg-sheen" points={SHEEN} fill="url(#chgSheen)" />
-          )}
-        </g>
-        </g>
-
-        {/* cell dividers, drawn over both states so the grid never breaks */}
-        <g class="chg-cells">
-          {CELLS.map((f) => {
-            const xTop = PACK.x0 + PACK.dx + (PACK.x1 - PACK.x0 - PACK.dx) * f
-            const xBot = PACK.x0 + (PACK.x1 - PACK.x0 - PACK.dx) * f
-            return <line key={f} x1={xTop} y1={PACK.backY} x2={xBot} y2={PACK.frontY} />
-          })}
-          <line
-            x1={PACK.x0 + PACK.dx / 2}
-            y1={(PACK.backY + PACK.frontY) / 2}
-            x2={PACK.x1 - PACK.dx / 2}
-            y2={(PACK.backY + PACK.frontY) / 2}
+        {/*
+          Battery pack: BYD's own slab. The empty frame underneath, the full one
+          clipped over it — so the charge boundary is continuous instead of the
+          21 discrete levels BYD ships, and two images cover every state.
+        */}
+        <image
+          href={`${import.meta.env.BASE_URL}car/pack-empty.webp`}
+          x={SLAB.x}
+          y={SLAB.y}
+          width={SLAB.w}
+          height={SLAB_H}
+        />
+        <g clip-path="url(#chgClip)">
+          <image
+            href={`${import.meta.env.BASE_URL}car/pack-full.webp`}
+            x={SLAB.x}
+            y={SLAB.y}
+            width={SLAB.w}
+            height={SLAB_H}
           />
         </g>
 
-        {/* Matches the cluster: the DIGITS are centred on the pack and the "%"
-            hangs off to their right, rather than the whole string being
-            centred (which would push the number left of centre). Sits above
-            the slab, overlapping its top face, exactly as the original does. */}
         <text class="chg-num" x={PACK_CX} y={PCT_BASELINE} text-anchor="middle">
           {digits}
         </text>
