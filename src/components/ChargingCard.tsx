@@ -295,8 +295,8 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
           {/* Far edge dark, near edge lighter — BYD's direction, not the
               reverse this had. Sampled #0e5a1d -> #289646. */}
           <linearGradient id="chgFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#0e5a1d" />
-            <stop offset="1" stop-color="#2fa350" />
+            <stop offset="0" stop-color="var(--chg-fill-far)" />
+            <stop offset="1" stop-color="var(--chg-fill-near)" />
           </linearGradient>
           {/* Brushed-metal rim. Not a flat white line: a light-dark-light ramp
               across the edge is what reads as a machined casing rather than an
