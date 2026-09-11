@@ -92,12 +92,21 @@
   --seat-head: #2a3948;
   --wheel-normal: #9fb2c4;
   --wheel-muted: #5a6673;
-  /* Charging frame. These sit ON the frame, which is near-black in BOTH
-     themes, so they do not flip — only the panel behind it does. */
-  --chg-stage-bg: transparent;
+  /* Charging car. Drawn rather than photographed, so unlike the old frame these
+     DO flip with the theme — see the light block below. The greens are the one
+     exception: the cluster keeps the same green on both grounds, and so do we. */
+  /* Charge comets. Bright on the dark card; DARK on the light one, where a
+     near-white green simply disappeared against the panel. */
+  --chg-comet-head: #e8ffe4;
+  --chg-comet-mid: #9dff8f;
+  --chg-comet-tail: #7ef07a;
   --chg-wheel-glow: rgba(148, 200, 236, 0.22);
   --chg-wheel-rim: rgba(206, 232, 252, 0.42);
   --chg-num-fill: #fff;
+  /* The '%' is NOT the same colour as the digits. On the cluster's dark screen
+     it is white like them; on its light screen the digits stay white and the
+     '%' is black. Verified against photographs of both. */
+  --chg-unit-fill: #fff;
   --chg-num-stroke: rgba(4, 12, 20, 0.3);
 
   /* radii */
@@ -180,6 +189,16 @@
   --seat-head: #b3c3d4;
   --wheel-normal: #5f7386;
   --wheel-muted: #a9b7c4;
+
+  /* Charging car on a light ground. The cluster's own light theme draws the car
+     as a pale grey ghost — barely more than a suggestion — and keeps the pack
+     the same green, which is what these values reproduce. */
+  --chg-comet-head: #0d6b2e;
+  --chg-comet-mid: #1f8a52;
+  --chg-comet-tail: #46b86a;
+  --chg-num-fill: #ffffff;
+  --chg-unit-fill: #111418;
+  --chg-num-stroke: rgba(255, 255, 255, 0.6);
 
   --shadow-card: 0 10px 28px rgba(16, 42, 66, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.7);
   --shadow-float: 0 20px 54px rgba(16, 42, 66, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.8);

@@ -21,7 +21,11 @@
   letter-spacing: 0.01em;
   color: var(--text-secondary);
 }
-.chg-card.charging .chg-status { color: #7ee06a; }
+/* The design system's success colour, not a fixed green. The hardcoded
+   #7ee06a was picked when this card was pinned dark in both themes; on a white
+   card it fell far below readable contrast. --success is re-picked per theme
+   (#56d68c dark, #1f8a52 light), so it holds on either ground. */
+.chg-card.charging .chg-status { color: var(--success); }
 .chg-card.fault .chg-status { color: var(--danger); }
 
 /* The plug icon pulses only while current is actually flowing. */
@@ -34,25 +38,14 @@
 }
 
 /*
- * The whole card stays dark in light mode, not just the image.
+ * No light-mode special case any more.
  *
- * The cluster frame is a photograph with its own near-black ground; anything
- * else in the card sitting on white left it looking like a dark hole punched
- * in a white panel. Reusing the palette's own --d-* values rather than copying
- * literals means this cannot drift if the dark theme is retuned.
+ * The card used to be pinned dark in BOTH themes, because the car was a
+ * photograph carrying its own near-black ground and looked like a hole punched
+ * in a white panel. The car is transparent artwork now, so this is an ordinary
+ * card.
  */
-:root[data-theme='light'] .chg-card {
-  --surface-1: var(--d-surface-1);
-  --surface-2: var(--d-surface-2);
-  --border-soft: var(--d-border-soft);
-  --border-strong: var(--d-border-strong);
-  --text: var(--d-text);
-  --text-secondary: var(--d-text-secondary);
-  --muted: var(--d-muted);
-  /* Outer shadow suits the LIGHT page it is cast onto; the inset highlight is
-     the dark one, since it lands on a dark surface. */
-  --shadow-card: 0 12px 30px rgba(16, 42, 66, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-}
+.chg-car-img { opacity: 0.5; }
 
 .chg-stage {
   display: block;
@@ -66,63 +59,118 @@
 .chg-wheel-glow { fill: none; stroke: var(--chg-wheel-glow); stroke-width: 5; }
 .chg-wheel-rim { fill: none; stroke: var(--chg-wheel-rim); stroke-width: 1.2; }
 
-/* Pack faces. Sampled from the cluster, where the extruded edges are LIGHTER
-   than the top face, not darker — the slab is lit like a glowing plate rather
-   than shaded like a solid box. The uncharged remainder stays a clearly
-   visible muted green so it reads as the rest of the battery, not a void. */
+/* Pack faces, sampled from BYD's own battery artwork (the CarSetting
+   energy-flow battery, newenergy_flow_battery_level_0 and _20) rather than
+   guessed:
+
+     empty  top #383838 -> #636363, side #525252   (NEUTRAL grey, not tinted)
+     full   top #0e5a1d -> #289646, side #168539
+
+   Two things this corrects. The uncharged cells were a muted green, which made
+   the whole slab read as part-lit; BYD's are plain grey, so the charged part is
+   the only green on the pack. And the top face was lit bright-to-dark front to
+   back — theirs runs the other way, dark at the far edge and lighter toward the
+   viewer, which is what gives it the sense of a lit plate. */
 .chg-pack-empty polygon,
 .chg-pack-full polygon {
-  stroke: rgba(178, 232, 214, 0.3);
-  stroke-width: 1.1;
+  stroke: rgba(190, 205, 200, 0.22);
+  stroke-width: 1;
 }
-.chg-pack-empty .pf-top { fill: #3a5952; }
-.chg-pack-empty .pf-front { fill: #33514a; }
-.chg-pack-empty .pf-right { fill: #47645e; }
-.chg-pack-full .pf-front { fill: #55916a; }
-.chg-pack-full .pf-right { fill: #5ea56c; }
+/* fill comes from the element's own gradient attribute; only the
+   extruded edges are coloured here. */
+/* The uncharged cells: the pack's own green at ~0.11, so they read as tinted
+   glass with the car visible through them and the charged portion is the only
+   solid colour on the slab. Without this rule the polygon has no fill at all
+   and SVG defaults it to BLACK. */
+.chg-pack-empty .pf-top { fill: rgba(47, 163, 80, 0.11); }
+.chg-pack-empty .pf-front { fill: #cecab8; }
+.chg-pack-empty .pf-right { fill: #bab1a2; }
+.chg-pack-full .pf-front { fill: #d6d2c0; }
+.chg-pack-full .pf-right { fill: #c2b9aa; }
 
+/* Ribbing. Fine and low-contrast: on BYD's slab it is a texture you read as
+   cells, not a grid drawn over the top. Drawn over BOTH states so the ribs run
+   unbroken through the charge boundary, as they do on theirs — stopping them at
+   the fill line splits the slab into two different objects. */
 .chg-cells {
-  stroke: rgba(4, 18, 10, 0.35);
-  stroke-width: 1.1;
+  stroke: rgba(255, 255, 255, 0.14);
+  stroke-width: 0.7;
   fill: none;
 }
 
-/* SOC figure — light geometric weight like the cluster's, not a heavy UI bold.
-   Only a whisper of dark halo: the number sits mostly over the dark body, and
-   the original carries no outline at all. */
+/* The casing is the TRAY, not an outline.
+   Measured off the cluster: white pixels appear in exactly two places — the SOC
+   digits, and a band at the very bottom of the pack. There is no bright rim
+   around the top face, and the ~50px band on a 415px pack means the tray is
+   about 12% of the pack's height. So the extruded faces ARE the tray, and the
+   earlier 2.2px stroke around every polygon was simply the wrong object.
+   Sampled: lit face #cecab8, lower edge #bab1a2 — warm grey, not pure white. */
+.chg-rim path,
+.chg-rim polygon {
+  fill: none;
+  stroke: rgba(236, 240, 243, 0.5);
+  stroke-width: 0.8;
+  stroke-linejoin: round;
+}
+
+/* SOC figure — white with a soft drop shadow, as the cluster sets it. A stroked
+   outline was tried first and is the wrong effect entirely: it traces the glyph
+   at uniform width and reads as a sticker, where a shadow sits the number above
+   the pack. */
 .chg-num,
 .chg-unit {
   fill: var(--chg-num-fill);
   font-weight: 500;
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
-  paint-order: stroke;
-  stroke: var(--chg-num-stroke);
-  stroke-width: 3px;
-  stroke-linejoin: round;
+  filter: drop-shadow(0 2px 3px rgba(6, 16, 26, 0.55))
+    drop-shadow(0 0 8px rgba(6, 16, 26, 0.35));
 }
+/* The '%' takes its own colour: black on the cluster's light theme, white on
+   its dark one. The shadow suits white glyphs, so the black one drops it. */
+.chg-unit { fill: var(--chg-unit-fill); }
+:root[data-theme='light'] .chg-unit { filter: none; }
+
 .chg-num { font-size: 52px; }
 .chg-unit { font-size: 26px; font-weight: 500; }
 
-/* Charge sweeping through the pack — clipped to the charged portion, so it
-   reads as current flowing into what's already stored. */
-.chg-sheen { animation: chg-sweep 2.6s ease-in-out infinite; }
-@keyframes chg-sweep {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(276px); }
+/* Charge comets — they start beyond the pack's rear edge and fly forward into
+   the charged portion, where the clip cuts them off. The distance is generous
+   so a comet is always entering as another leaves. */
+.chg-comets rect {
+  fill: url(#chgComet);
+  animation: chg-comet 2.6s linear infinite;
 }
+@keyframes chg-comet {
+  /* starts beyond the tail, dies at the charge boundary */
+  0% { transform: translateX(430px); opacity: 0; }
+  8% { opacity: 0.9; }
+  85% { opacity: 1; }
+  100% { transform: translateX(-60px); opacity: 0; }
+}
+
 
 .chg-stats {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   margin-top: 6px;
   padding-top: 12px;
   border-top: 1px solid var(--border-soft);
 }
 .chg-stat { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+/* The middle column centres so the three read as a row of equals rather than
+   two edges with something adrift between them. */
+.chg-stat.mid { align-items: center; text-align: center; }
 .chg-stat.right { align-items: flex-end; text-align: right; }
+
+/* The clock column is the widest thing in the row once a locale adds AM/PM, and
+   in Vietnamese the header is long too. A slightly smaller value keeps it clear
+   of the card edge instead of running into the padding. */
+.chg-stat.right .chg-stat-value { font-size: 17px; }
+.chg-stat.right .chg-stat-head,
+.chg-stat.mid .chg-stat-head { letter-spacing: 0.04em; }
 .chg-stat-head {
   display: flex;
   align-items: center;
@@ -133,7 +181,7 @@
   letter-spacing: 0.05em;
 }
 .chg-stat-value {
-  font-size: 21px;
+  font-size: 19px;
   font-weight: 600;
   color: var(--text);
   font-variant-numeric: tabular-nums;
@@ -142,10 +190,11 @@
 .chg-stat-value small { font-size: 12px; font-weight: 500; color: var(--muted); }
 .chg-dash { color: var(--muted); }
 
+
 @media (prefers-reduced-motion: reduce) {
-  .chg-sheen,
+  .chg-comets rect,
   .chg-card.charging .chg-status svg {
     animation: none;
   }
-  .chg-sheen { opacity: 0; }
+  .chg-comets { opacity: 0; }
 }
