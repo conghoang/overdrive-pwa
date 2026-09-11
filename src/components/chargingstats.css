@@ -161,7 +161,11 @@
   min-height: 2px;
   border-radius: 5px 5px 3px 3px;
   background: linear-gradient(180deg, var(--accent-bright), var(--accent));
-  transition: height 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
+  /* Grows from the baseline on the compositor. Animating height instead makes
+     the browser re-lay-out the whole column strip on every frame; scaleY costs
+     nothing and looks identical because the bar is a solid rounded block. */
+  transform-origin: bottom;
+  transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 /* A day the car reported nothing for. Kept visible as a floor so the column
    reads as "no charging", not as a missing bar. */

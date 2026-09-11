@@ -214,7 +214,21 @@ export function StatChartCard({
                           (i === bars.length - 1 && b.value > 0 ? ' now' : '') +
                           (b.value > 0 ? '' : ' zero')
                         }
-                        style={{ height: `${h}%` }}
+                        /*
+                         * Bars grow with scaleY rather than height, so the
+                         * animation runs on the compositor instead of
+                         * re-laying-out the strip every frame.
+                         *
+                         * A zero day is the exception: its floor came from
+                         * min-height, and scaleY(0) would erase it — which is
+                         * exactly the "no charging" signal the block above
+                         * exists to preserve. It keeps a plain height instead.
+                         */
+                        style={
+                          b.value > 0
+                            ? { height: '100%', transform: `scaleY(${h / 100})` }
+                            : { height: '3px' }
+                        }
                       />
                     </button>
                   )

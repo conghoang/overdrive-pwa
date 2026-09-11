@@ -111,13 +111,6 @@
 .vital-off { color: var(--muted); }
 
 /* energy bars (battery + fuel for PHEV) */
-.energy-row { display: flex; flex-direction: column; gap: 15px; }
-.energy-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 7px; }
-.energy-head .lab { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text-secondary); }
-.energy-head .val { font-size: 13px; color: var(--muted); font-weight: 600; }
-.energy-head .val b { color: var(--text); }
-.energy-bar { height: 10px; border-radius: 999px; background: var(--track); overflow: hidden; }
-.energy-fill { height: 100%; border-radius: 999px; transition: width 0.5s ease; }
 
 /* tyres — top-view diagram with a reading at each wheel */
 .tyre-diagram {

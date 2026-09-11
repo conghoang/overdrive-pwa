@@ -36,7 +36,6 @@
   /* Opaque, for small floating readouts that must not show the card through. */
   --tip-bg: #17293c;
   --surface-soft: rgba(255, 255, 255, 0.045);
-  --surface-hover: rgba(255, 255, 255, 0.075);
 
   /* accent */
   --accent: #2dd4bf;
@@ -53,13 +52,13 @@
   /* semantic */
   --danger: #ff7c84;
   --success: #56d68c;
+  --success-soft: rgba(86, 214, 140, 0.14);
   --warning: #f3b45e;
   --info: #75a7ff;
 
   /* chart / metric palette */
   --m-teal: #35dfc1;
   --m-blue: #75a7ff;
-  --m-purple: #c084fc;
   --m-orange: #f6a23c;
 
   /* borders */
@@ -115,7 +114,6 @@
      it is white like them; on its light screen the digits stay white and the
      '%' is black. Verified against photographs of both. */
   --chg-unit-fill: #fff;
-  --chg-num-stroke: rgba(4, 12, 20, 0.3);
 
   /* radii */
   --radius-sm: 12px;
@@ -142,6 +140,13 @@
  * Light theme. Not an inversion — the accent and every semantic colour is
  * re-picked to hold contrast on a light ground, where the dark theme's bright
  * mint and coral would be close to illegible.
+ *
+ * accent, warning and success are set to the darkest shade that still reads as
+ * the same hue, because the previous values measured 3.40, 3.84 and 4.35 to 1
+ * against this theme's card surface — all under the 4.5 AA needs for body text.
+ * They are 4.63, 4.61 and 4.66 now. Check any change to them the same way: the
+ * comparison is against the COMPOSITED card, not the page background, since
+ * --surface-1 is translucent.
  */
 :root[data-theme='light'] {
   --app-bg: #eef2f7;
@@ -153,9 +158,8 @@
   --surface-3: rgba(232, 238, 245, 0.9);
   --tip-bg: #ffffff;
   --surface-soft: rgba(16, 42, 66, 0.05);
-  --surface-hover: rgba(16, 42, 66, 0.09);
 
-  --accent: #0f9c8b;
+  --accent: #0d8375;
   --accent-bright: #0c8375;
   --accent-strong: #0b7a6e;
   --accent-soft: rgba(15, 156, 139, 0.12);
@@ -166,13 +170,13 @@
   --muted: #64798a;
 
   --danger: #d33b47;
-  --success: #1f8a52;
-  --warning: #b4740f;
+  --success: #1e844f;
+  --success-soft: rgba(30, 132, 79, 0.12);
+  --warning: #a2680d;
   --info: #2f63cc;
 
   --m-teal: #0f9c8b;
   --m-blue: #2f63cc;
-  --m-purple: #7c3fc4;
   --m-orange: #c06a0c;
 
   --border-soft: rgba(16, 42, 66, 0.12);
@@ -210,7 +214,6 @@
   --chg-comet-tail: #46b86a;
   --chg-num-fill: #ffffff;
   --chg-unit-fill: #111418;
-  --chg-num-stroke: rgba(255, 255, 255, 0.6);
 
   --shadow-card: 0 10px 28px rgba(16, 42, 66, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.7);
   --shadow-float: 0 20px 54px rgba(16, 42, 66, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.8);

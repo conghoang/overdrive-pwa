@@ -17,6 +17,15 @@
   transition: background 0.18s ease, border-color 0.18s ease;
   flex: 0 0 auto;
 }
+/* The control is 50x30 by design, which is under the 44px minimum touch target.
+   A transparent overlay extends what the finger can hit without changing what
+   the eye sees. */
+.switch::before {
+  content: '';
+  position: absolute;
+  inset: -7px -4px;
+  border-radius: inherit;
+}
 .switch.on { background: var(--accent); border-color: var(--accent); }
 .switch-knob {
   position: absolute;

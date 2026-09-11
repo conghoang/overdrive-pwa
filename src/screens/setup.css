@@ -109,3 +109,10 @@
   font-weight: 500;
 }
 .setup .btn { margin-top: 24px; padding: 15px; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 9px; }
+
+/* The toast still appears and still draws the eye; it just does not slide.
+   Removing the animation outright would be fine too, but the fade keeps the
+   arrival legible for anyone scanning the screen. */
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+}
