@@ -1,8 +1,12 @@
 name: Deploy to GitHub Pages
 
+# GitHub Pages serves exactly ONE deployment per repository, so dev cannot have
+# a workflow of its own — it would replace production rather than sit beside it.
+# Instead either branch triggers this one run, which builds BOTH and ships them
+# as a single artifact: main at the site root, dev under /dev/.
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   workflow_dispatch:
 
 permissions:
@@ -18,15 +22,69 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # --- production, from main, into dist/ ---
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
       - run: npm ci
+      # Stamp each build with the sha it was actually built FROM. github.sha is
+      # the sha that triggered the run, which for a push to dev would label the
+      # production bundle with a commit that is not in it — and version.json is
+      # what the running app compares to decide it should reload.
+      - id: mainsha
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - run: npm run build
         env:
-          VITE_COMMIT: ${{ github.sha }}
+          VITE_COMMIT: ${{ steps.mainsha.outputs.sha }}
+      - name: Stash the production build
+        run: mv dist /tmp/site
+
+      # --- dev, from the dev branch, into dist/dev/ ---
+      #
+      # Deliberately non-fatal. A broken dev branch must never be able to hold
+      # up a production deploy, so the checkout is conditional on the branch
+      # existing and the build is allowed to fail; the step after it reports
+      # what actually happened rather than letting a miss pass silently.
+      - name: Check whether dev exists
+        id: devref
+        run: |
+          if git ls-remote --exit-code --heads origin dev >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::no dev branch — publishing production only"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.devref.outputs.exists == 'true'
+        with:
+          ref: dev
+          clean: true
+      - name: Build dev
+        id: devbuild
+        if: steps.devref.outputs.exists == 'true'
+        continue-on-error: true
+        run: |
+          npm ci
+          VITE_COMMIT="$(git rev-parse HEAD)" npm run build
+        env:
+          # Trailing slash matters: it is what vite.config's isDevSite keys off.
+          BASE_PATH: /overdrive-pwa/dev/
+      - name: Place dev under /dev/
+        if: steps.devref.outputs.exists == 'true'
+        run: |
+          if [ "${{ steps.devbuild.outcome }}" = "success" ]; then
+            mkdir -p /tmp/site/dev && cp -R dist/. /tmp/site/dev/
+            echo "::notice::dev published at /dev/"
+          else
+            echo "::warning::dev build FAILED — production shipped without it"
+          fi
+
+      - name: Restore the combined site
+        run: rm -rf dist && mv /tmp/site dist
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

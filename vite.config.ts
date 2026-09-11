@@ -11,6 +11,20 @@ declare const process: { env: Record<string, string | undefined> }
 // BASE_PATH=/ for root deploys (custom domain / user page / same-origin car).
 const base = process.env.BASE_PATH ?? '/overdrive-pwa/'
 
+/*
+ * The dev branch is published as a sub-site at <base>dev/ by the same workflow,
+ * so one Pages deployment carries both. Two consequences, handled below.
+ *
+ * 1. The production service worker's scope is the WHOLE of <base>, which
+ *    includes dev/. With navigateFallback set, it would answer a navigation to
+ *    the dev site with production's index.html — so anyone carrying the prod
+ *    PWA in their cache would silently get prod when they opened dev. The
+ *    denylist below keeps it off those URLs.
+ * 2. Installed, the two would be indistinguishable. The dev build takes a
+ *    suffixed name so they can be told apart on a home screen.
+ */
+const isDevSite = base.endsWith('/dev/')
+
 // Commit hash (from CI's GITHUB_SHA / VITE_COMMIT). Appended as a ?v= query to
 // the app's asset URLs so each deploy busts caches — without renaming files.
 const commit = (process.env.VITE_COMMIT || process.env.GITHUB_SHA || 'dev').slice(0, 7)
@@ -52,8 +66,8 @@ export default defineConfig({
       injectRegister: 'auto',
       includeAssets: ['icons/*.svg', 'icons/*.png', 'icons/favicon.ico'],
       manifest: {
-        name: 'BYD SL6 VN',
-        short_name: 'BYD SL6 VN',
+        name: isDevSite ? 'BYD SL6 VN (dev)' : 'BYD SL6 VN',
+        short_name: isDevSite ? 'SL6 dev' : 'BYD SL6 VN',
         description: 'Remote dashboard & controls for OverDrive',
         theme_color: '#071019',
         background_color: '#071019',
@@ -72,6 +86,9 @@ export default defineConfig({
       workbox: {
         // Never cache API calls — only the app shell. Telemetry must always be live.
         navigateFallback: 'index.html',
+        // See isDevSite above: without this the prod SW answers dev navigations
+        // with prod's shell. Empty on the dev build, which owns that path.
+        navigateFallbackDenylist: isDevSite ? [] : [/\/dev\//],
         globPatterns: ['**/*.{js,css,html,svg,webp,png,ico,woff2}'],
         // Match precached assets even with the ?v=<commit> cache-buster.
         ignoreURLParametersMatching: [/^v$/],
