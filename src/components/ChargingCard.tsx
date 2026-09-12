@@ -71,29 +71,26 @@ const VIEW = { x: 60, y: 70, w: 985, h: 420 }
  * which every by-eye pass missed.
  */
 const PACK = {
-  x0: 396, // front-left
-  x1: 641, // back-right
+  x0: 412, // front-left
+  x1: 657, // back-right
   backY: 306,
-  frontY: 355,
+  frontY: 371,
   dx: 34, // horizontal skew from front edge to back edge
-  depth: 30, // tray thickness
+  /*
+   * Tray thickness. 18% of the pack's height, which is prod's proportion
+   * (10 of 57). It was 30 of 79 — 38% — carried over from the sizing used for
+   * BYD's pack artwork, which made the slab look like a block rather than a
+   * floor panel.
+   */
+  depth: 14,
 }
+
 /*
- * The pack is BYD's own artwork: icon_module_common_charging_frame_00 (empty)
- * and _30 (full), from their phone app.
- *
- * They ship 31 baked frames, which would quantise the charge to ~3.2% steps.
- * Instead the empty frame is the base and the FULL frame is clipped over it —
- * their rendering, with the fill continuous and landing on the exact
- * percentage. Their sequence fills right-to-left; clipping from the left keeps
- * the direction the rest of this card uses.
+ * Cell ribbing across the top face. ~20 ribs, counted off BYD's CarSetting
+ * battery — the fine ribbing is most of what makes the slab read as a battery
+ * rather than a plain green box.
  */
-const PACK_IMG = {
-  x: PACK.x0,
-  y: PACK.backY,
-  w: PACK.x1 + PACK.dx - PACK.x0,
-  h: PACK.frontY + PACK.depth - PACK.backY,
-}
+const CELLS = Array.from({ length: 19 }, (_, i) => (i + 1) / 20)
 
 const TOP_FACE = `${PACK.x0 + PACK.dx},${PACK.backY} ${PACK.x1},${PACK.backY} ${PACK.x1 - PACK.dx},${PACK.frontY} ${PACK.x0},${PACK.frontY}`
 const FRONT_FACE = `${PACK.x0},${PACK.frontY} ${PACK.x1 - PACK.dx},${PACK.frontY} ${PACK.x1 - PACK.dx},${PACK.frontY + PACK.depth} ${PACK.x0},${PACK.frontY + PACK.depth}`
@@ -107,7 +104,12 @@ const RIGHT_FACE = `${PACK.x1 - PACK.dx},${PACK.frontY} ${PACK.x1},${PACK.backY}
  * slab's skew and came out +0.694 — leaning the opposite way to the artwork it
  * now cuts, so the green was visibly not parallel to the pack's edges.
  */
-const SKEW = -0.17
+/*
+ * The drawn slab is a parallelogram, so its charge boundary runs parallel to
+ * its side edges. (The -0.17 used while BYD's pack art was in place came from
+ * that artwork's edges; a drawn slab has its own.)
+ */
+const SKEW = PACK.dx / (PACK.frontY - PACK.backY)
 /*
  * The slab's corners are rounded, as on the cluster: a ~15px radius on its
  * 840px pack, which is ~5px at the size drawn here.
@@ -156,72 +158,46 @@ const SLAB_OUTLINE = roundedPath(
 
 
 /*
- * The charge boundary, as a line through the pack image.
+ * How far the leading edge travels, measured along the FRONT edge.
  *
- * Both clips are built from PACK_IMG rather than the old drawn-slab polygons,
- * so they follow the artwork's own box; the boundary is pivoted about the
- * pack's vertical centre so the skew splits evenly above and below.
+ * The drawn slab spans x0..x1 and its top face is pushed right by dx, so the
+ * boundary covers x1 - x0 - dx. While BYD's pack image was in place this was
+ * the image's full width (x1 + dx - x0) — 34px too far, which let the green run
+ * past the slab's right edge and read as over-full at every percentage.
  */
-/*
- * A skewed line cannot travel just the pack's width: at f=1 the boundary is
- * right + SKEW*(y-cy), which with a negative skew falls LEFT of the right edge
- * along the bottom — leaving the bottom-right corner of the pack uncovered and
- * showing the empty frame through it at 100%. The travel is widened by the
- * skew's reach at each end so full really means full, and empty really empty.
- */
-/** Width of the lit band drawn at the charge front. */
-const EDGE_W = 5
+const SPAN = PACK.x1 - PACK.x0 - PACK.dx
+const PAD = 40
 
-const SKEW_REACH = Math.abs(SKEW) * (PACK_IMG.h / 2)
-const EDGE_EPS = 2
-
-function boundaryX(f: number, y: number): number {
-  const cy = PACK_IMG.y + PACK_IMG.h / 2
-  const from = PACK_IMG.x - SKEW_REACH - EDGE_EPS
-  const travel = PACK_IMG.w + 2 * SKEW_REACH + 2 * EDGE_EPS
-  return from + travel * f + SKEW * (y - cy)
-}
-const CLIP_PAD = 40
-
-/** A narrow band straddling the charge front, on the same skewed line. */
-function edgeBand(f: number): string {
-  const top = PACK_IMG.y
-  const bot = PACK_IMG.y + PACK_IMG.h
-  const a = boundaryX(f, top)
-  const b = boundaryX(f, bot)
+/** Everything charged so far, cut on the slab's own diagonal. */
+function chargedClip(f: number): string {
+  const lead = PACK.x0 + SPAN * f
+  const top = PACK.backY - PAD
+  const bot = PACK.frontY + PACK.depth + PAD
   return [
-    [a - EDGE_W / 2, top],
-    [a + EDGE_W / 2, top],
-    [b + EDGE_W / 2, bot],
-    [b - EDGE_W / 2, bot],
+    [PACK.x0 - PAD, top],
+    [lead + PACK.dx + SKEW * PAD, top],
+    [lead, PACK.frontY],
+    [lead, bot],
+    [PACK.x0 - PAD, bot],
   ]
-    .map((p) => p.join(','))
+    .map((pt) => pt.join(','))
     .join(' ')
 }
 
-/** Everything charged so far — the cut, closed off to the left. */
-function chargedClip(f: number): string {
-  const top = PACK_IMG.y - CLIP_PAD
-  const bot = PACK_IMG.y + PACK_IMG.h + CLIP_PAD
-  return [
-    [PACK_IMG.x - CLIP_PAD, top],
-    [boundaryX(f, top), top],
-    [boundaryX(f, bot), bot],
-    [PACK_IMG.x - CLIP_PAD, bot],
-  ].map((p) => p.join(',')).join(' ')
-}
-
-/** The remainder — same cut, closed off to the right. Holds the comets. */
+/** The remainder — the same cut, closed off to the right. Holds the comets. */
 function restClip(f: number): string {
-  const top = PACK_IMG.y - CLIP_PAD
-  const bot = PACK_IMG.y + PACK_IMG.h + CLIP_PAD
-  const right = CAR_TAIL
+  const lead = PACK.x0 + SPAN * f
+  const top = PACK.backY - PAD
+  const bot = PACK.frontY + PACK.depth + PAD
   return [
-    [boundaryX(f, top), top],
-    [right, top],
-    [right, bot],
-    [boundaryX(f, bot), bot],
-  ].map((p) => p.join(',')).join(' ')
+    [lead + PACK.dx + SKEW * PAD, top],
+    [CAR_TAIL, top],
+    [CAR_TAIL, bot],
+    [lead, bot],
+    [lead, PACK.frontY],
+  ]
+    .map((pt) => pt.join(','))
+    .join(' ')
 }
 
 const COMETS = [
@@ -255,7 +231,15 @@ const COMET_W = 2.75
 const WHEELS: { cx: number; cy: number; r: number }[] = []
 
 /** The SOC figure sits above the slab, overlapping its top face. */
-const PACK_CX = (PACK.x0 + PACK.x1) / 2
+/*
+ * Centre of the slab's TOP edge, which is the edge the figure sits on.
+ *
+ * The slab is a parallelogram: its top edge runs x0+dx .. x1 while its front
+ * edge runs x0 .. x1-dx. Averaging x0 and x1 gives the bounding box's centre,
+ * which is 17px left of the top edge's — enough to read as misaligned against
+ * the edge the digits actually overlap.
+ */
+const PACK_CX = (PACK.x0 + PACK.dx + PACK.x1) / 2
 const PCT_BASELINE = 321
 
 
@@ -361,10 +345,6 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
             <stop offset="0.62" stop-color="#9fb0bb" />
             <stop offset="1" stop-color="#f2f6f9" />
           </linearGradient>
-          <linearGradient id="chgEmptyTop" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#4c4c4c" />
-            <stop offset="1" stop-color="#7a7a7a" />
-          </linearGradient>
           {/* The slab's own silhouette. The charge clip below is a padded
               half-plane, so on its own it lets the sweeping light spill above
               and below the block; nesting the two intersects them and keeps
@@ -389,22 +369,20 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
           <clipPath id="chgRest">
             <polygon points={restClip(frac)} />
           </clipPath>
+          <linearGradient id="chgFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="var(--chg-fill-far)" />
+            <stop offset="1" stop-color="var(--chg-fill-near)" />
+          </linearGradient>
+          {/* the slab's own silhouette, so the fill cannot spill past its faces */}
+          <clipPath id="chgSlab">
+            <polygon points={TOP_FACE} />
+            <polygon points={FRONT_FACE} />
+            <polygon points={RIGHT_FACE} />
+          </clipPath>
           <clipPath id="chgClip">
             {/* Grows with SOC along the slab's diagonal. */}
             <polygon points={chargedClip(frac)} />
           </clipPath>
-          <clipPath id="chgPackBox">
-            <rect x={PACK_IMG.x} y={PACK_IMG.y} width={PACK_IMG.w} height={PACK_IMG.h} />
-          </clipPath>
-          {/* The charge front. A hard clip leaves a stair-stepped edge with
-              nothing to say where it is filling to; a narrow lit band on the
-              same skewed line hides the cut and reads as the leading edge.
-              Brightest in the middle so it fades into the slab's own shading. */}
-          <linearGradient id="chgEdge" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#eaffe2" stop-opacity="0" />
-            <stop offset="0.45" stop-color="#f2fff0" stop-opacity="0.85" />
-            <stop offset="1" stop-color="#eaffe2" stop-opacity="0" />
-          </linearGradient>
           <filter id="chgGlow" x="-60%" y="-60%" width="220%" height="220%">
             <feGaussianBlur stdDeviation="3.4" />
           </filter>
@@ -427,33 +405,32 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
           </g>
         ))}
 
-        {/* BYD's empty slab, then their full one clipped to the charge. No ribs
-            or rim over it: the artwork carries its own bevel and shading, and
-            drawing on top only fights it. */}
-        <g class="chg-pack-img">
-          <image
-            href={`${import.meta.env.BASE_URL}car/pack-empty.webp`}
-            x={PACK_IMG.x}
-            y={PACK_IMG.y}
-            width={PACK_IMG.w}
-            height={PACK_IMG.h}
-            preserveAspectRatio="none"
-          />
-          <g clip-path="url(#chgClip)">
-            <image
-              href={`${import.meta.env.BASE_URL}car/pack-full.webp`}
-              x={PACK_IMG.x}
-              y={PACK_IMG.y}
-              width={PACK_IMG.w}
-              height={PACK_IMG.h}
-              preserveAspectRatio="none"
-            />
+        {/* battery pack — empty shell, then the charged portion clipped over
+            it, the whole assembly clipped by the rounded outline. Drawn rather
+            than BYD's own pack art: the drawing keeps the cell ribbing and the
+            grey uncharged cells this card is built around. */}
+        <g clip-path="url(#chgRound)">
+          <g class="chg-pack-empty">
+            <polygon class="pf-right" points={RIGHT_FACE} />
+            <polygon class="pf-front" points={FRONT_FACE} />
+            <polygon class="pf-top" points={TOP_FACE} />
           </g>
-          {frac > 0.02 && frac < 0.995 && (
-            <g clip-path="url(#chgPackBox)">
-              <polygon points={edgeBand(frac)} fill="url(#chgEdge)" />
+          <g clip-path="url(#chgSlab)">
+            <g class="chg-pack-full" clip-path="url(#chgClip)">
+              <polygon class="pf-right" points={RIGHT_FACE} />
+              <polygon class="pf-front" points={FRONT_FACE} />
+              <polygon class="pf-top" points={TOP_FACE} fill="url(#chgFill)" />
             </g>
-          )}
+          </g>
+
+          {/* cell dividers, over both states so the grid never breaks */}
+          <g class="chg-cells">
+            {CELLS.map((f) => {
+              const xTop = PACK.x0 + PACK.dx + (PACK.x1 - PACK.x0 - PACK.dx) * f
+              const xBot = PACK.x0 + (PACK.x1 - PACK.x0 - PACK.dx) * f
+              return <line key={f} x1={xTop} y1={PACK.backY} x2={xBot} y2={PACK.frontY} />
+            })}
+          </g>
         </g>
 
         {charging && (

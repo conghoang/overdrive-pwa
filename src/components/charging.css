@@ -45,13 +45,65 @@
  * in a white panel. The car is transparent artwork now, so this is an ordinary
  * card.
  */
-.chg-car-img { opacity: 0.85; }
+/* Dark mode only — the light rule below restores it to full. BYD's render is
+   made for their light-blue ground, so it sits too hot on a dark card. */
+.chg-car-img { opacity: 0.5; }
 
 /* BYD's pack art is drawn for their light-blue app background, so at full
    strength it punches out of a dark card. Easing it back settles it into the
    scene; light mode keeps it as drawn. */
-.chg-pack-img { opacity: 0.5; }
-:root[data-theme='light'] .chg-pack-img { opacity: 1; }
+/* The drawn slab is dimmed on dark the same way the artwork was: BYD's car is
+   made for a light ground, and a full-strength pack punches out of a dark card. */
+.chg-pack-empty, .chg-pack-full, .chg-cells { opacity: 0.92; }
+/* Pack faces, sampled from BYD's own battery artwork (the CarSetting
+   energy-flow battery, newenergy_flow_battery_level_0 and _20) rather than
+   guessed:
+
+     empty  top #383838 -> #636363, side #525252   (NEUTRAL grey, not tinted)
+     full   top #0e5a1d -> #289646, side #168539
+
+   Two things this corrects. The uncharged cells were a muted green, which made
+   the whole slab read as part-lit; BYD's are plain grey, so the charged part is
+   the only green on the pack. And the top face was lit bright-to-dark front to
+   back — theirs runs the other way, dark at the far edge and lighter toward the
+   viewer, which is what gives it the sense of a lit plate. */
+.chg-pack-empty polygon,
+.chg-pack-full polygon {
+  stroke: rgba(190, 205, 200, 0.22);
+  stroke-width: 1;
+}
+/* fill comes from the element's own gradient attribute; only the
+   extruded edges are coloured here. */
+/* The uncharged cells: the pack's own green at ~0.11, so they read as tinted
+   glass with the car visible through them and the charged portion is the only
+   solid colour on the slab. Without this rule the polygon has no fill at all
+   and SVG defaults it to BLACK. */
+
+/* Ribbing. Fine and low-contrast: on BYD's slab it is a texture you read as
+   cells, not a grid drawn over the top. Drawn over BOTH states so the ribs run
+   unbroken through the charge boundary, as they do on theirs — stopping them at
+   the fill line splits the slab into two different objects. */
+.chg-cells {
+  stroke: rgba(255, 255, 255, 0.14);
+  stroke-width: 0.7;
+  fill: none;
+}
+
+/* The casing is the TRAY, not an outline.
+   Measured off the cluster: white pixels appear in exactly two places — the SOC
+   digits, and a band at the very bottom of the pack. There is no bright rim
+   around the top face, and the ~50px band on a 415px pack means the tray is
+   about 12% of the pack's height. So the extruded faces ARE the tray, and the
+   earlier 2.2px stroke around every polygon was simply the wrong object.
+   Sampled: lit face #cecab8, lower edge #bab1a2 — warm grey, not pure white. */
+.chg-rim path,
+.chg-rim polygon {
+  fill: none;
+  stroke: rgba(236, 240, 243, 0.5);
+  stroke-width: 0.8;
+  stroke-linejoin: round;
+}
+
 
 /* The car is BYD's own art, drawn white-on-blue for their app; on a white card
    it vanishes. Light mode therefore tints the WHOLE card rather than a panel
@@ -91,18 +143,16 @@
    the only green on the pack. And the top face was lit bright-to-dark front to
    back — theirs runs the other way, dark at the far edge and lighter toward the
    viewer, which is what gives it the sense of a lit plate. */
-.chg-pack-empty polygon,
-.chg-pack-full polygon {
-  stroke: rgba(190, 205, 200, 0.22);
-  stroke-width: 1;
-}
 /* fill comes from the element's own gradient attribute; only the
    extruded edges are coloured here. */
 /* The uncharged cells: the pack's own green at ~0.11, so they read as tinted
    glass with the car visible through them and the charged portion is the only
    solid colour on the slab. Without this rule the polygon has no fill at all
    and SVG defaults it to BLACK. */
-.chg-pack-empty .pf-top { fill: rgba(47, 163, 80, 0.11); }
+/* The uncharged cells sit over a TRANSLUCENT car now, not an opaque card, so
+   the 0.11 tint that read fine on the old artwork disappeared completely
+   against the body behind it. */
+.chg-pack-empty .pf-top { fill: rgba(47, 163, 80, 0.26); }
 .chg-pack-empty .pf-front { fill: #cecab8; }
 .chg-pack-empty .pf-right { fill: #bab1a2; }
 .chg-pack-full .pf-front { fill: #d6d2c0; }
@@ -137,20 +187,29 @@
    outline was tried first and is the wrong effect entirely: it traces the glyph
    at uniform width and reads as a sticker, where a shadow sits the number above
    the pack. */
+/*
+ * text-shadow, not filter: drop-shadow.
+ *
+ * The '%' is a tspan inside the figure, and a filter applies to a whole element
+ * — it cannot be switched off for one tspan. text-shadow is an inherited text
+ * property, so the '%' can opt out of it on its own. Same look, one that can be
+ * addressed per-glyph.
+ */
 .chg-num,
 .chg-unit {
   fill: var(--chg-num-fill);
   font-weight: 500;
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
-  filter: drop-shadow(0 2px 3px rgba(6, 16, 26, 0.55))
-    drop-shadow(0 0 8px rgba(6, 16, 26, 0.35));
+  text-shadow: 0 2px 3px rgba(6, 16, 26, 0.55), 0 0 8px rgba(6, 16, 26, 0.35);
 }
 /* The '%' takes its own colour: black on the cluster's light theme, white on
-   its dark one. It is a tspan inside the figure now, so it inherits the
-   parent's shadow — a filter cannot be applied to a tspan on its own, which is
-   why there is no per-theme filter override here any more. */
+   its dark one. */
 .chg-unit { fill: var(--chg-unit-fill); }
+/* A shadow tuned for white glyphs sits under a BLACK one as grime, so light
+   mode drops it for the '%' only — the white digits still need theirs to hold
+   against the pale card. */
+:root[data-theme='light'] .chg-unit { text-shadow: none; }
 
 .chg-num { font-size: 64px; }
 .chg-unit { font-size: 32px; font-weight: 500; }

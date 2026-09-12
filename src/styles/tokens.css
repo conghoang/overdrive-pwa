@@ -104,9 +104,14 @@
 
   /* Charge comets. Bright on the dark card; DARK on the light one, where a
      near-white green simply disappeared against the panel. */
-  --chg-comet-head: #e8ffe4;
-  --chg-comet-mid: #9dff8f;
-  --chg-comet-tail: #7ef07a;
+  /* The comets ARE the charge arriving, so they take the fill's own green
+     rather than a second one. Pointed at the fill tokens so the two cannot
+     drift apart if the fill is ever retuned. Head is the near (brighter) stop
+     so it reads against the body; the tail fades to nothing, so its colour
+     barely matters. */
+  --chg-comet-head: var(--chg-fill-near);
+  --chg-comet-mid: var(--chg-fill-near);
+  --chg-comet-tail: var(--chg-fill-far);
   --chg-wheel-glow: rgba(148, 200, 236, 0.22);
   --chg-wheel-rim: rgba(206, 232, 252, 0.42);
   --chg-num-fill: #fff;
@@ -209,9 +214,11 @@
   --chg-fill-far: #43b84c;
   --chg-fill-near: #76dd70;
 
-  --chg-comet-head: #0d6b2e;
-  --chg-comet-mid: #1f8a52;
-  --chg-comet-tail: #46b86a;
+  /* Light mode heads with the FAR (darker) stop: on white the near green is
+     too pale to read. Same two tokens either way. */
+  --chg-comet-head: var(--chg-fill-far);
+  --chg-comet-mid: var(--chg-fill-far);
+  --chg-comet-tail: var(--chg-fill-near);
   --chg-num-fill: #ffffff;
   --chg-unit-fill: #111418;
 
