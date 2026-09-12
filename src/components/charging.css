@@ -47,12 +47,17 @@
  */
 .chg-car-img { opacity: 0.85; }
 
-/* The car is BYD's own art, drawn white-on-blue for their app. On our white
-   card it vanishes, so light mode gets the tinted panel it was designed
-   against — the same move BYD makes, rather than recolouring their artwork. */
-:root[data-theme='light'] .chg-stage {
-  background: linear-gradient(180deg, #dce7f4 0%, #eaf0f7 62%, #f2f6fa 100%);
-  border-radius: 18px;
+/* The car is BYD's own art, drawn white-on-blue for their app; on a white card
+   it vanishes. Light mode therefore tints the WHOLE card rather than a panel
+   behind the car — a tinted rectangle inside a white card reads as a separate
+   embedded box, which is not what the artwork sits in. The tint runs from the
+   blue the car was drawn against at the top to almost-white at the footer, so
+   the readouts keep their contrast. */
+:root[data-theme='light'] .chg-card {
+  background: linear-gradient(180deg, #d8e5f4 0%, #e6eef7 55%, #f4f7fb 100%);
+}
+:root[data-theme='light'] .chg-card .chg-stats {
+  border-top-color: rgba(16, 42, 66, 0.14);
 }
 :root[data-theme='light'] .chg-car-img { opacity: 1; }
 
