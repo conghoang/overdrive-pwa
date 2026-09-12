@@ -229,7 +229,7 @@ const WHEELS: { cx: number; cy: number; r: number }[] = []
 
 /** The SOC figure sits above the slab, overlapping its top face. */
 const PACK_CX = (PACK.x0 + PACK.x1) / 2
-const PCT_BASELINE = 300
+const PCT_BASELINE = 327
 
 
 

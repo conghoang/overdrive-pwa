@@ -151,8 +151,8 @@
 .chg-unit { fill: var(--chg-unit-fill); }
 :root[data-theme='light'] .chg-unit { filter: none; }
 
-.chg-num { font-size: 84px; }
-.chg-unit { font-size: 42px; font-weight: 500; }
+.chg-num { font-size: 64px; }
+.chg-unit { font-size: 32px; font-weight: 500; }
 
 /* Charge comets — they start beyond the pack's rear edge and fly forward into
    the charged portion, where the clip cuts them off. The distance is generous
