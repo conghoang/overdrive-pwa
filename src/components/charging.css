@@ -45,7 +45,16 @@
  * in a white panel. The car is transparent artwork now, so this is an ordinary
  * card.
  */
-.chg-car-img { opacity: 0.5; }
+.chg-car-img { opacity: 0.85; }
+
+/* The car is BYD's own art, drawn white-on-blue for their app. On our white
+   card it vanishes, so light mode gets the tinted panel it was designed
+   against — the same move BYD makes, rather than recolouring their artwork. */
+:root[data-theme='light'] .chg-stage {
+  background: linear-gradient(180deg, #dce7f4 0%, #eaf0f7 62%, #f2f6fa 100%);
+  border-radius: 18px;
+}
+:root[data-theme='light'] .chg-car-img { opacity: 1; }
 
 .chg-stage {
   display: block;
@@ -94,7 +103,7 @@
    the fill line splits the slab into two different objects. */
 .chg-cells {
   stroke: rgba(255, 255, 255, 0.14);
-  stroke-width: 0.7;
+  stroke-width: 1.1;
   fill: none;
 }
 
@@ -131,8 +140,8 @@
 .chg-unit { fill: var(--chg-unit-fill); }
 :root[data-theme='light'] .chg-unit { filter: none; }
 
-.chg-num { font-size: 52px; }
-.chg-unit { font-size: 26px; font-weight: 500; }
+.chg-num { font-size: 84px; }
+.chg-unit { font-size: 42px; font-weight: 500; }
 
 /* Charge comets — they start beyond the pack's rear edge and fly forward into
    the charged portion, where the clip cuts them off. The distance is generous

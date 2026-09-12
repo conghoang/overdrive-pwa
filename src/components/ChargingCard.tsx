@@ -33,8 +33,9 @@ import './charging.css'
  * below are read straight off it — no scaling math. The frame keeps a margin on
  * every side: an earlier cut aligned on the tyre line and clipped the roof.
  */
-const IMG = { w: 686, h: 375 }
-const STAGE = { w: IMG.w, h: IMG.h }
+const IMG = { w: 1125, h: 540 }
+/* The render carries a lot of empty canvas; frame the car itself. */
+const VIEW = { x: 60, y: 70, w: 985, h: 420 }
 
 /*
  * Pack geometry. Isometric: the back edge sits higher and right of the front.
@@ -47,8 +48,8 @@ const STAGE = { w: IMG.w, h: IMG.h }
  *   1. every slab pixel lies inside the car's silhouette, and
  *   2. no slab pixel falls in a wheel column.
  *
- * The wheels are discs: front centre (142,285) r52, rear (540,285) r54, from
- * their full width at x 90..194 and 487..594.
+ * The wheels are discs: front centre (245,385) r71, rear (825,385) r71,
+ * measured off this render's own dark tyre pixels.
  *
  * Two things this had to get right. Finding the wheels by "which columns reach
  * below the rocker" is wrong — a circle crossing a line is far wider than the
@@ -70,12 +71,12 @@ const STAGE = { w: IMG.w, h: IMG.h }
  * which every by-eye pass missed.
  */
 const PACK = {
-  x0: 220, // front-left
-  x1: 482, // back-right
-  backY: 190,
-  frontY: 247,
-  dx: 22, // horizontal skew from front edge to back edge
-  depth: 10, // tray thickness — 12% of the pack, measured off the cluster
+  x0: 332, // front-left
+  x1: 736, // back-right
+  backY: 336,
+  frontY: 412,
+  dx: 34, // horizontal skew from front edge to back edge
+  depth: 30, // tray thickness
 }
 const TOP_FACE = `${PACK.x0 + PACK.dx},${PACK.backY} ${PACK.x1},${PACK.backY} ${PACK.x1 - PACK.dx},${PACK.frontY} ${PACK.x0},${PACK.frontY}`
 const FRONT_FACE = `${PACK.x0},${PACK.frontY} ${PACK.x1 - PACK.dx},${PACK.frontY} ${PACK.x1 - PACK.dx},${PACK.frontY + PACK.depth} ${PACK.x0},${PACK.frontY + PACK.depth}`
@@ -97,7 +98,7 @@ const SKEW = PACK.dx / (PACK.frontY - PACK.backY)
  * clipped by its own OUTLINE — the hexagon around all three faces — with the
  * radius applied there, so only genuinely outer corners are affected.
  */
-const CORNER_R = 5
+const CORNER_R = 8
 
 /** Rounded path through a closed list of points. */
 function roundedPath(p: number[][], r: number): string {
@@ -209,8 +210,8 @@ const COMETS = [
   { t: 0.91, d: -0.35, dur: 2.95, len: 64 },
 ]
 /** Where the car's bodywork ends — the comets enter from here. */
-const CAR_TAIL = 664
-const COMET_W = 3.4
+const CAR_TAIL = 1040
+const COMET_W = 5.5
 
 
 // Near-side wheels, measured off the image on a 10-unit grid rather than
@@ -222,7 +223,7 @@ const WHEELS: { cx: number; cy: number; r: number }[] = []
 
 /** The SOC figure sits above the slab, overlapping its top face. */
 const PACK_CX = (PACK.x0 + PACK.x1) / 2
-const PCT_BASELINE = 203
+const PCT_BASELINE = 330
 
 /*
  * Cell ribbing across the top face.
@@ -290,7 +291,7 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
         <span>{label}</span>
       </div>
 
-      <svg class="chg-stage" viewBox={`0 0 ${STAGE.w} ${STAGE.h}`} role="img" aria-label={`${label}${pct != null ? ` ${pct}%` : ''}`}>
+      <svg class="chg-stage" viewBox={`${VIEW.x} ${VIEW.y} ${VIEW.w} ${VIEW.h}`} role="img" aria-label={`${label}${pct != null ? ` ${pct}%` : ''}`}>
         <defs>
           {/* Far edge dark, near edge lighter — BYD's direction, not the
               reverse this had. Sampled #0e5a1d -> #289646. */}
@@ -346,7 +347,7 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
 
         <image
           class="chg-car-img"
-          href={`${import.meta.env.BASE_URL}car/car-glass.webp`}
+          href={`${import.meta.env.BASE_URL}car/byd-car.webp`}
           x="0"
           y="0"
           width={IMG.w}
