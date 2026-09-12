@@ -210,6 +210,8 @@
 }
 .chg-stat-value small { font-size: 12px; font-weight: 500; color: var(--muted); }
 .chg-dash { color: var(--muted); }
+/* Marks a time-to-full we computed ourselves rather than one the car reported. */
+.chg-approx { color: var(--muted); margin-right: 2px; font-weight: 500; }
 
 
 @media (prefers-reduced-motion: reduce) {

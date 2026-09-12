@@ -62,6 +62,11 @@ let vsFails = 0
 // Charging estimate (minutes to full) + target %, fetched only while charging.
 export const chargeEtaMin = signal<number | null>(null)
 export const chargeTargetPct = signal<number | null>(null)
+/*
+ * Usable pack capacity (kWh), from the launcher summary. Only used to estimate
+ * a time-to-full when the car has not produced one yet — see ChargingCard.
+ */
+export const batteryKwh = signal<number | null>(null)
 export const lastError = signal<string | null>(null)
 /** Set when the backend rejects our JWT — the app drops back to the setup screen. */
 export const authLost = signal(false)
@@ -194,6 +199,8 @@ async function tick(): Promise<void> {
         if (active && wantCharge) {
           chargeEtaMin.value = sum.charging?.etaMin ?? null
           chargeTargetPct.value = sum.charging?.targetPct ?? null
+          const kwh = sum.battery?.usableKwh
+          if (typeof kwh === 'number' && kwh > 0) batteryKwh.value = kwh
         }
       } catch (e) {
         if (e instanceof AuthError) throw e
@@ -253,6 +260,7 @@ export function reset(): void {
   lastError.value = null
   chargeEtaMin.value = null
   chargeTargetPct.value = null
+  batteryKwh.value = null
   odometer.value = null
   localStorage.removeItem(K_ODO)
   outsideTempC.value = null

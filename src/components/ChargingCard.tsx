@@ -1,4 +1,4 @@
-import { chargeEtaMin, chargeTargetPct } from '../lib/store'
+import { batteryKwh, chargeEtaMin, chargeTargetPct } from '../lib/store'
 import { fmtEta, fmtNum } from '../lib/format'
 import { t } from '../lib/i18n'
 import { IconBolt, IconPlug } from './icons'
@@ -169,6 +169,9 @@ const SLAB_OUTLINE = roundedPath(
  * showing the empty frame through it at 100%. The travel is widened by the
  * skew's reach at each end so full really means full, and empty really empty.
  */
+/** Width of the lit band drawn at the charge front. */
+const EDGE_W = 5
+
 const SKEW_REACH = Math.abs(SKEW) * (PACK_IMG.h / 2)
 const EDGE_EPS = 2
 
@@ -179,6 +182,22 @@ function boundaryX(f: number, y: number): number {
   return from + travel * f + SKEW * (y - cy)
 }
 const CLIP_PAD = 40
+
+/** A narrow band straddling the charge front, on the same skewed line. */
+function edgeBand(f: number): string {
+  const top = PACK_IMG.y
+  const bot = PACK_IMG.y + PACK_IMG.h
+  const a = boundaryX(f, top)
+  const b = boundaryX(f, bot)
+  return [
+    [a - EDGE_W / 2, top],
+    [a + EDGE_W / 2, top],
+    [b + EDGE_W / 2, bot],
+    [b - EDGE_W / 2, bot],
+  ]
+    .map((p) => p.join(','))
+    .join(' ')
+}
 
 /** Everything charged so far — the cut, closed off to the left. */
 function chargedClip(f: number): string {
@@ -249,6 +268,28 @@ const PCT_BASELINE = 321
  * a remembered timestamp would keep counting down against a stale estimate, and
  * the car revises this figure as the rate changes.
  */
+/*
+ * Fallback time-to-full, for the window before the car produces its own.
+ *
+ * OverDrive's etaMin is latched from the vehicle's rest-time reading and from a
+ * recorded charging session, so early in a charge — or when the car reports the
+ * 255 "unavailable" sentinel — it stays null and the row showed only dashes
+ * while a perfectly good power reading sat next to it.
+ *
+ * kWh remaining / kW = hours. Deliberately NOT corrected for charging losses or
+ * the taper near full: this is a placeholder that the real figure replaces as
+ * soon as it arrives, and inventing a correction factor would make it look more
+ * authoritative than it is. It is always rendered with a "~" for that reason.
+ */
+function estimateEtaMin(pct: number, kw: number, kwh: number, targetPct: number | null): number | null {
+  const target = targetPct != null && targetPct > pct ? targetPct : 100
+  const remaining = ((target - pct) / 100) * kwh
+  if (remaining <= 0 || kw <= 0.1) return null
+  const min = Math.round((remaining / kw) * 60)
+  // beyond a day it is noise, not an estimate
+  return min > 0 && min < 24 * 60 ? min : null
+}
+
 function fullAt(etaMin: number): string {
   const d = new Date(Date.now() + etaMin * 60_000)
   return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
@@ -267,8 +308,15 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
   // The summary keeps reporting an estimate for as long as the cable is in, but
   // it only means anything while current is actually flowing — a full or faulted
   // pack has no "time to full".
-  const eta = charging ? chargeEtaMin.value : null
+  const reportedEta = charging ? chargeEtaMin.value : null
   const target = charging ? chargeTargetPct.value : null
+  // Fall back to our own arithmetic only while the car has not given us one.
+  const estimated =
+    reportedEta == null && charging && pct != null && power != null && batteryKwh.value != null
+      ? estimateEtaMin(pct, power, batteryKwh.value, target)
+      : null
+  const eta = reportedEta ?? estimated
+  const etaIsEstimate = reportedEta == null && estimated != null
   // At 100% both readouts are meaningless — nothing is flowing and there is no
   // time remaining — so the whole row goes rather than showing a pair of
   // dashes. The car can still report charging:true at 100%, so this keys off
@@ -342,9 +390,21 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
             <polygon points={restClip(frac)} />
           </clipPath>
           <clipPath id="chgClip">
-            {/* Grows with SOC along the slab's diagonal; clips all three faces. */}
+            {/* Grows with SOC along the slab's diagonal. */}
             <polygon points={chargedClip(frac)} />
           </clipPath>
+          <clipPath id="chgPackBox">
+            <rect x={PACK_IMG.x} y={PACK_IMG.y} width={PACK_IMG.w} height={PACK_IMG.h} />
+          </clipPath>
+          {/* The charge front. A hard clip leaves a stair-stepped edge with
+              nothing to say where it is filling to; a narrow lit band on the
+              same skewed line hides the cut and reads as the leading edge.
+              Brightest in the middle so it fades into the slab's own shading. */}
+          <linearGradient id="chgEdge" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#eaffe2" stop-opacity="0" />
+            <stop offset="0.45" stop-color="#f2fff0" stop-opacity="0.85" />
+            <stop offset="1" stop-color="#eaffe2" stop-opacity="0" />
+          </linearGradient>
           <filter id="chgGlow" x="-60%" y="-60%" width="220%" height="220%">
             <feGaussianBlur stdDeviation="3.4" />
           </filter>
@@ -389,6 +449,11 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
               preserveAspectRatio="none"
             />
           </g>
+          {frac > 0.02 && frac < 0.995 && (
+            <g clip-path="url(#chgPackBox)">
+              <polygon points={edgeBand(frac)} fill="url(#chgEdge)" />
+            </g>
+          )}
         </g>
 
         {charging && (
@@ -457,7 +522,16 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
               {target != null && target > 0 && target < 100 ? ` · ${target}%` : ''}
             </div>
             <div class="chg-stat-value mono">
-              {eta != null && eta > 0 ? fmtEta(eta) : <span class="chg-dash">--</span>}
+              {eta != null && eta > 0 ? (
+                <>
+                  {/* "~" marks our own arithmetic, so an estimate is never
+                      mistaken for the car's own figure. */}
+                  {etaIsEstimate && <span class="chg-approx">~</span>}
+                  {fmtEta(eta)}
+                </>
+              ) : (
+                <span class="chg-dash">--</span>
+              )}
             </div>
           </div>
           <div class="chg-stat right">

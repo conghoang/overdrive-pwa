@@ -150,6 +150,8 @@ export interface LauncherSummary {
     etaMin?: number | null
     targetPct?: number | null
   }
+  /** Usable pack capacity, used to estimate time-to-full before the car reports one. */
+  battery?: { usableKwh?: number | null; socPct?: number | null }
 }
 
 export interface CloudStatus {
