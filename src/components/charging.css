@@ -147,9 +147,10 @@
     drop-shadow(0 0 8px rgba(6, 16, 26, 0.35));
 }
 /* The '%' takes its own colour: black on the cluster's light theme, white on
-   its dark one. The shadow suits white glyphs, so the black one drops it. */
+   its dark one. It is a tspan inside the figure now, so it inherits the
+   parent's shadow — a filter cannot be applied to a tspan on its own, which is
+   why there is no per-theme filter override here any more. */
 .chg-unit { fill: var(--chg-unit-fill); }
-:root[data-theme='light'] .chg-unit { filter: none; }
 
 .chg-num { font-size: 64px; }
 .chg-unit { font-size: 32px; font-weight: 500; }

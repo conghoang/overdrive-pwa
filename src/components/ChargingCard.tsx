@@ -206,18 +206,26 @@ function restClip(f: number): string {
 }
 
 const COMETS = [
-  { t: 0.08, d: -0.10, dur: 2.30, len: 74 },
-  { t: 0.27, d: -1.45, dur: 3.05, len: 52 },
+  { t: 0.06, d: -0.10, dur: 2.30, len: 74 },
+  { t: 0.14, d: -1.95, dur: 2.75, len: 58 },
+  { t: 0.22, d: -1.45, dur: 3.05, len: 52 },
+  { t: 0.30, d: -0.48, dur: 2.40, len: 82 },
+  { t: 0.36, d: -2.35, dur: 2.90, len: 64 },
   { t: 0.41, d: -0.62, dur: 2.55, len: 88 },
+  { t: 0.47, d: -1.20, dur: 3.10, len: 56 },
   { t: 0.16, d: -2.10, dur: 2.85, len: 60 },
+  { t: 0.58, d: -0.28, dur: 2.45, len: 70 },
   { t: 0.63, d: -0.95, dur: 2.20, len: 80 },
+  { t: 0.69, d: -2.55, dur: 3.00, len: 54 },
+  { t: 0.74, d: -1.62, dur: 2.60, len: 76 },
   { t: 0.79, d: -1.85, dur: 3.20, len: 56 },
+  { t: 0.85, d: -0.74, dur: 2.35, len: 68 },
   { t: 0.52, d: -2.60, dur: 2.65, len: 70 },
   { t: 0.91, d: -0.35, dur: 2.95, len: 64 },
 ]
 /** Where the car's bodywork ends — the comets enter from here. */
 const CAR_TAIL = 1040
-const COMET_W = 5.5
+const COMET_W = 2.75
 
 
 // Near-side wheels, measured off the image on a 10-unit grid rather than
@@ -410,15 +418,22 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
           </g>
         )}
 
-        {/* Matches the cluster: the DIGITS are centred on the pack and the "%"
-            hangs off to their right, rather than the whole string being
-            centred (which would push the number left of centre). Sits above
-            the slab, overlapping its top face, exactly as the original does. */}
+        {/*
+          * One text run, so the browser positions the "%" from the digits'
+          * real advance width.
+          *
+          * It used to be a second <text> placed at a hand-computed offset
+          * (digits.length * 14 + 5), which is a guess at glyph width: it
+          * drifted whenever the font size changed and overlapped the digits
+          * outright at "100%". A tspan cannot drift — it flows.
+          *
+          * The trade-off is that the whole string centres on the pack rather
+          * than the digits alone, so the digits sit a few px left of centre.
+          * That is far less noticeable than a collision, and it is stable.
+          */}
         <text class="chg-num" x={PACK_CX} y={PCT_BASELINE} text-anchor="middle">
           {digits}
-        </text>
-        <text class="chg-unit" x={PACK_CX + digits.length * 14 + 5} y={PCT_BASELINE} text-anchor="start">
-          %
+          <tspan class="chg-unit">%</tspan>
         </text>
       </svg>
 
