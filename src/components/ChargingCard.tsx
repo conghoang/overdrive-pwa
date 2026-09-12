@@ -71,10 +71,10 @@ const VIEW = { x: 60, y: 70, w: 985, h: 420 }
  * which every by-eye pass missed.
  */
 const PACK = {
-  x0: 332, // front-left
-  x1: 736, // back-right
-  backY: 336,
-  frontY: 412,
+  x0: 412, // front-left
+  x1: 657, // back-right
+  backY: 306,
+  frontY: 355,
   dx: 34, // horizontal skew from front edge to back edge
   depth: 30, // tray thickness
 }
@@ -240,7 +240,7 @@ const WHEELS: { cx: number; cy: number; r: number }[] = []
 
 /** The SOC figure sits above the slab, overlapping its top face. */
 const PACK_CX = (PACK.x0 + PACK.x1) / 2
-const PCT_BASELINE = 330
+const PCT_BASELINE = 300
 
 
 
