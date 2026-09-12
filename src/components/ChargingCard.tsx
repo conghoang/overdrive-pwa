@@ -71,8 +71,8 @@ const VIEW = { x: 60, y: 70, w: 985, h: 420 }
  * which every by-eye pass missed.
  */
 const PACK = {
-  x0: 412, // front-left
-  x1: 657, // back-right
+  x0: 396, // front-left
+  x1: 641, // back-right
   backY: 306,
   frontY: 355,
   dx: 34, // horizontal skew from front edge to back edge
@@ -99,13 +99,15 @@ const TOP_FACE = `${PACK.x0 + PACK.dx},${PACK.backY} ${PACK.x1},${PACK.backY} ${
 const FRONT_FACE = `${PACK.x0},${PACK.frontY} ${PACK.x1 - PACK.dx},${PACK.frontY} ${PACK.x1 - PACK.dx},${PACK.frontY + PACK.depth} ${PACK.x0},${PACK.frontY + PACK.depth}`
 const RIGHT_FACE = `${PACK.x1 - PACK.dx},${PACK.frontY} ${PACK.x1},${PACK.backY} ${PACK.x1},${PACK.backY + PACK.depth} ${PACK.x1 - PACK.dx},${PACK.frontY + PACK.depth}`
 
-/**
- * The slab is a parallelogram, so the charge boundary has to run PARALLEL to
- * its side edges — a vertical cut would read as a rectangle laid over an
- * isometric box. SKEW is how far x moves per unit of y along those edges.
+/*
+ * How far the charge boundary shifts per unit of y.
+ *
+ * Measured off BYD's own mid-fill frames (24/26/28): their boundary runs at
+ * -0.17 in this card's space. The previous value was derived from the DRAWN
+ * slab's skew and came out +0.694 — leaning the opposite way to the artwork it
+ * now cuts, so the green was visibly not parallel to the pack's edges.
  */
-const SKEW = PACK.dx / (PACK.frontY - PACK.backY)
-/** How far the leading edge travels from empty to full. */
+const SKEW = -0.17
 /*
  * The slab's corners are rounded, as on the cluster: a ~15px radius on its
  * 840px pack, which is ~5px at the size drawn here.
@@ -152,70 +154,45 @@ const SLAB_OUTLINE = roundedPath(
   CORNER_R,
 )
 
-const SPAN = PACK.x1 - PACK.x0 - PACK.dx
-const PAD = 26
 
-/** Clip covering everything charged so far, cut on the slab's own diagonal. */
+/*
+ * The charge boundary, as a line through the pack image.
+ *
+ * Both clips are built from PACK_IMG rather than the old drawn-slab polygons,
+ * so they follow the artwork's own box; the boundary is pivoted about the
+ * pack's vertical centre so the skew splits evenly above and below.
+ */
+function boundaryX(f: number, y: number): number {
+  const cy = PACK_IMG.y + PACK_IMG.h / 2
+  return PACK_IMG.x + PACK_IMG.w * f + SKEW * (y - cy)
+}
+const CLIP_PAD = 40
+
+/** Everything charged so far — the cut, closed off to the left. */
 function chargedClip(f: number): string {
-  const lead = PACK.x0 + SPAN * f // leading edge, measured at the front edge
-  const top = PACK.backY - PAD
-  const bot = PACK.frontY + PACK.depth + PAD
+  const top = PACK_IMG.y - CLIP_PAD
+  const bot = PACK_IMG.y + PACK_IMG.h + CLIP_PAD
   return [
-    [PACK.x0 - PAD, top],
-    [lead + PACK.dx + SKEW * PAD, top],
-    [lead, PACK.frontY],
-    [lead, bot],
-    [PACK.x0 - PAD, bot],
-  ]
-    .map((pt) => pt.join(','))
-    .join(' ')
+    [PACK_IMG.x - CLIP_PAD, top],
+    [boundaryX(f, top), top],
+    [boundaryX(f, bot), bot],
+    [PACK_IMG.x - CLIP_PAD, bot],
+  ].map((p) => p.join(',')).join(' ')
 }
 
-/**
- * The UNCHARGED remainder — the same cut, closed off to the right instead.
- * The comets live in here, so they vanish exactly at the charge boundary rather
- * than crossing onto the green.
- */
+/** The remainder — same cut, closed off to the right. Holds the comets. */
 function restClip(f: number): string {
-  const lead = PACK.x0 + SPAN * f
-  const top = PACK.backY - PAD
-  const bot = PACK.frontY + PACK.depth + PAD
-  /*
-   * Out to the car's TAIL, not the pack's rear edge.
-   *
-   * The charge arrives from behind the vehicle, so the comets have to exist
-   * over the body before they reach the pack. Clipping this region to the pack
-   * meant they could only ever appear once already inside it, which read as
-   * charge spawning in the battery rather than flowing into it.
-   */
+  const top = PACK_IMG.y - CLIP_PAD
+  const bot = PACK_IMG.y + PACK_IMG.h + CLIP_PAD
   const right = CAR_TAIL
   return [
-    [lead + PACK.dx + SKEW * PAD, top],
+    [boundaryX(f, top), top],
     [right, top],
     [right, bot],
-    [lead, bot],
-    [lead, PACK.frontY],
-  ]
-    .map((pt) => pt.join(','))
-    .join(' ')
+    [boundaryX(f, bot), bot],
+  ].map((p) => p.join(',')).join(' ')
 }
 
-/*
- * Charge comets: streaks that fly forward out of the rear of the pack and die
- * at the charge boundary, as the cluster shows while current is flowing.
- *
- * One per cell row, each offset in time so they do not read as a single moving
- * bar. They are drawn along the pack's own diagonal so they travel with the
- * cells rather than across them.
- */
-/*
- * Eight, not five, and each travels only about the pack's own length.
- *
- * The first pass sent five comets across a 370px path while the uncharged
- * window at a typical charge is only ~85px wide, so each was visible for under
- * a quarter of its cycle and barely one showed at a time. Density is what makes
- * this read as a stream.
- */
 const COMETS = [
   { t: 0.08, d: -0.10, dur: 2.30, len: 74 },
   { t: 0.27, d: -1.45, dur: 3.05, len: 52 },
