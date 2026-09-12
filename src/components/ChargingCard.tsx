@@ -78,6 +78,23 @@ const PACK = {
   dx: 34, // horizontal skew from front edge to back edge
   depth: 30, // tray thickness
 }
+/*
+ * The pack is BYD's own artwork: icon_module_common_charging_frame_00 (empty)
+ * and _30 (full), from their phone app.
+ *
+ * They ship 31 baked frames, which would quantise the charge to ~3.2% steps.
+ * Instead the empty frame is the base and the FULL frame is clipped over it —
+ * their rendering, with the fill continuous and landing on the exact
+ * percentage. Their sequence fills right-to-left; clipping from the left keeps
+ * the direction the rest of this card uses.
+ */
+const PACK_IMG = {
+  x: PACK.x0,
+  y: PACK.backY,
+  w: PACK.x1 + PACK.dx - PACK.x0,
+  h: PACK.frontY + PACK.depth - PACK.backY,
+}
+
 const TOP_FACE = `${PACK.x0 + PACK.dx},${PACK.backY} ${PACK.x1},${PACK.backY} ${PACK.x1 - PACK.dx},${PACK.frontY} ${PACK.x0},${PACK.frontY}`
 const FRONT_FACE = `${PACK.x0},${PACK.frontY} ${PACK.x1 - PACK.dx},${PACK.frontY} ${PACK.x1 - PACK.dx},${PACK.frontY + PACK.depth} ${PACK.x0},${PACK.frontY + PACK.depth}`
 const RIGHT_FACE = `${PACK.x1 - PACK.dx},${PACK.frontY} ${PACK.x1},${PACK.backY} ${PACK.x1},${PACK.backY + PACK.depth} ${PACK.x1 - PACK.dx},${PACK.frontY + PACK.depth}`
@@ -225,15 +242,6 @@ const WHEELS: { cx: number; cy: number; r: number }[] = []
 const PACK_CX = (PACK.x0 + PACK.x1) / 2
 const PCT_BASELINE = 330
 
-/*
- * Cell ribbing across the top face.
- *
- * Counted off BYD's own battery (newenergy_flow_battery_level_*, CarSetting):
- * ~20 ribs across a 333px face, not the three dividers this had. The fine
- * ribbing is most of what makes their slab read as a battery rather than a
- * plain green box, so the count matters.
- */
-const CELLS = Array.from({ length: 19 }, (_, i) => (i + 1) / 20)
 
 
 
@@ -362,34 +370,28 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
           </g>
         ))}
 
-        {/* battery pack — empty shell, then the charged portion clipped over it.
-            The whole assembly is clipped by the rounded outline. */}
-        <g clip-path="url(#chgRound)">
-        <g class="chg-pack-empty">
-          <polygon class="pf-right" points={RIGHT_FACE} />
-          <polygon class="pf-front" points={FRONT_FACE} />
-          <polygon class="pf-top" points={TOP_FACE} />
-        </g>
-        <g clip-path="url(#chgSlab)">
-        <g class="chg-pack-full" clip-path="url(#chgClip)">
-          <polygon class="pf-right" points={RIGHT_FACE} />
-          <polygon class="pf-front" points={FRONT_FACE} />
-          <polygon class="pf-top" points={TOP_FACE} fill="url(#chgFill)" />
-        </g>
-        </g>
-
-        {/* cell dividers, drawn over both states so the grid never breaks */}
-        <g class="chg-cells">
-          {CELLS.map((f) => {
-            const xTop = PACK.x0 + PACK.dx + (PACK.x1 - PACK.x0 - PACK.dx) * f
-            const xBot = PACK.x0 + (PACK.x1 - PACK.x0 - PACK.dx) * f
-            return <line key={f} x1={xTop} y1={PACK.backY} x2={xBot} y2={PACK.frontY} />
-          })}
-          {/* No lengthwise centre line. This is a Blade pack: the cells run the
-              full width of the tray in one piece, so a line down the middle
-              would draw a split the battery does not have. */}
-        </g>
-
+        {/* BYD's empty slab, then their full one clipped to the charge. No ribs
+            or rim over it: the artwork carries its own bevel and shading, and
+            drawing on top only fights it. */}
+        <g class="chg-pack-img">
+          <image
+            href={`${import.meta.env.BASE_URL}car/pack-empty.webp`}
+            x={PACK_IMG.x}
+            y={PACK_IMG.y}
+            width={PACK_IMG.w}
+            height={PACK_IMG.h}
+            preserveAspectRatio="none"
+          />
+          <g clip-path="url(#chgClip)">
+            <image
+              href={`${import.meta.env.BASE_URL}car/pack-full.webp`}
+              x={PACK_IMG.x}
+              y={PACK_IMG.y}
+              width={PACK_IMG.w}
+              height={PACK_IMG.h}
+              preserveAspectRatio="none"
+            />
+          </g>
         </g>
 
         {charging && (
@@ -419,14 +421,6 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
           </g>
         )}
 
-        {/* A hairline where the faces meet, so the tray reads as a separate
-            piece from the cells. The tray itself is the extruded faces. */}
-        <g class="chg-rim">
-          {/* the outline follows the rounded silhouette; the inner edge where
-              cells meet tray stays straight, because it is a real crease */}
-          <path d={SLAB_OUTLINE} />
-          <polygon points={FRONT_FACE} />
-        </g>
         {/* Matches the cluster: the DIGITS are centred on the pack and the "%"
             hangs off to their right, rather than the whole string being
             centred (which would push the number left of centre). Sits above

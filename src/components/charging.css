@@ -47,6 +47,12 @@
  */
 .chg-car-img { opacity: 0.85; }
 
+/* BYD's pack art is drawn for their light-blue app background, so at full
+   strength it punches out of a dark card. Easing it back settles it into the
+   scene; light mode keeps it as drawn. */
+.chg-pack-img { opacity: 0.72; }
+:root[data-theme='light'] .chg-pack-img { opacity: 1; }
+
 /* The car is BYD's own art, drawn white-on-blue for their app; on a white card
    it vanishes. Light mode therefore tints the WHOLE card rather than a panel
    behind the car — a tinted rectangle inside a white card reads as a separate
