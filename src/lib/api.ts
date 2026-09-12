@@ -226,7 +226,12 @@ async function demoResponse<T>(path: string): Promise<T> {
     return mockChargingOverview(days) as unknown as T
   }
   if (path === '/api/launcher/v1/summary')
-    return { charging: { active: true, kw: 7.2, etaMin: 135, targetPct: 80 } } as unknown as T
+    return {
+      charging: { active: true, kw: 7.2, etaMin: 135, targetPct: 80 },
+      // Real cars report this; demo carries it too so the time-to-full
+      // estimate path is exercised rather than silently untested.
+      battery: { usableKwh: 18.3, socPct: 68 },
+    } as unknown as T
   if (path === '/api/settings/unified') {
     return { config: { recording: { rectifyStrength: 80 } } } as unknown as T
   }

@@ -1,4 +1,4 @@
-import { chargeEtaMin, chargeTargetPct } from '../lib/store'
+import { batteryKwh, chargeEtaMin, chargeTargetPct } from '../lib/store'
 import { fmtEta, fmtNum } from '../lib/format'
 import { t } from '../lib/i18n'
 import { IconBolt, IconPlug } from './icons'
@@ -33,8 +33,9 @@ import './charging.css'
  * below are read straight off it — no scaling math. The frame keeps a margin on
  * every side: an earlier cut aligned on the tyre line and clipped the roof.
  */
-const IMG = { w: 686, h: 375 }
-const STAGE = { w: IMG.w, h: IMG.h }
+const IMG = { w: 1125, h: 540 }
+/* The render carries a lot of empty canvas; frame the car itself. */
+const VIEW = { x: 60, y: 70, w: 985, h: 420 }
 
 /*
  * Pack geometry. Isometric: the back edge sits higher and right of the front.
@@ -47,8 +48,8 @@ const STAGE = { w: IMG.w, h: IMG.h }
  *   1. every slab pixel lies inside the car's silhouette, and
  *   2. no slab pixel falls in a wheel column.
  *
- * The wheels are discs: front centre (142,285) r52, rear (540,285) r54, from
- * their full width at x 90..194 and 487..594.
+ * The wheels are discs: front centre (245,385) r71, rear (825,385) r71,
+ * measured off this render's own dark tyre pixels.
  *
  * Two things this had to get right. Finding the wheels by "which columns reach
  * below the rocker" is wrong — a circle crossing a line is far wider than the
@@ -70,24 +71,45 @@ const STAGE = { w: IMG.w, h: IMG.h }
  * which every by-eye pass missed.
  */
 const PACK = {
-  x0: 220, // front-left
-  x1: 482, // back-right
-  backY: 190,
-  frontY: 247,
-  dx: 22, // horizontal skew from front edge to back edge
-  depth: 10, // tray thickness — 12% of the pack, measured off the cluster
+  x0: 412, // front-left
+  x1: 657, // back-right
+  backY: 306,
+  frontY: 371,
+  dx: 34, // horizontal skew from front edge to back edge
+  /*
+   * Tray thickness. 18% of the pack's height, which is prod's proportion
+   * (10 of 57). It was 30 of 79 — 38% — carried over from the sizing used for
+   * BYD's pack artwork, which made the slab look like a block rather than a
+   * floor panel.
+   */
+  depth: 14,
 }
+
+/*
+ * Cell ribbing across the top face. ~20 ribs, counted off BYD's CarSetting
+ * battery — the fine ribbing is most of what makes the slab read as a battery
+ * rather than a plain green box.
+ */
+const CELLS = Array.from({ length: 19 }, (_, i) => (i + 1) / 20)
+
 const TOP_FACE = `${PACK.x0 + PACK.dx},${PACK.backY} ${PACK.x1},${PACK.backY} ${PACK.x1 - PACK.dx},${PACK.frontY} ${PACK.x0},${PACK.frontY}`
 const FRONT_FACE = `${PACK.x0},${PACK.frontY} ${PACK.x1 - PACK.dx},${PACK.frontY} ${PACK.x1 - PACK.dx},${PACK.frontY + PACK.depth} ${PACK.x0},${PACK.frontY + PACK.depth}`
 const RIGHT_FACE = `${PACK.x1 - PACK.dx},${PACK.frontY} ${PACK.x1},${PACK.backY} ${PACK.x1},${PACK.backY + PACK.depth} ${PACK.x1 - PACK.dx},${PACK.frontY + PACK.depth}`
 
-/**
- * The slab is a parallelogram, so the charge boundary has to run PARALLEL to
- * its side edges — a vertical cut would read as a rectangle laid over an
- * isometric box. SKEW is how far x moves per unit of y along those edges.
+/*
+ * How far the charge boundary shifts per unit of y.
+ *
+ * Measured off BYD's own mid-fill frames (24/26/28): their boundary runs at
+ * -0.17 in this card's space. The previous value was derived from the DRAWN
+ * slab's skew and came out +0.694 — leaning the opposite way to the artwork it
+ * now cuts, so the green was visibly not parallel to the pack's edges.
+ */
+/*
+ * The drawn slab is a parallelogram, so its charge boundary runs parallel to
+ * its side edges. (The -0.17 used while BYD's pack art was in place came from
+ * that artwork's edges; a drawn slab has its own.)
  */
 const SKEW = PACK.dx / (PACK.frontY - PACK.backY)
-/** How far the leading edge travels from empty to full. */
 /*
  * The slab's corners are rounded, as on the cluster: a ~15px radius on its
  * 840px pack, which is ~5px at the size drawn here.
@@ -97,7 +119,7 @@ const SKEW = PACK.dx / (PACK.frontY - PACK.backY)
  * clipped by its own OUTLINE — the hexagon around all three faces — with the
  * radius applied there, so only genuinely outer corners are affected.
  */
-const CORNER_R = 5
+const CORNER_R = 8
 
 /** Rounded path through a closed list of points. */
 function roundedPath(p: number[][], r: number): string {
@@ -134,12 +156,21 @@ const SLAB_OUTLINE = roundedPath(
   CORNER_R,
 )
 
-const SPAN = PACK.x1 - PACK.x0 - PACK.dx
-const PAD = 26
 
-/** Clip covering everything charged so far, cut on the slab's own diagonal. */
+/*
+ * How far the leading edge travels, measured along the FRONT edge.
+ *
+ * The drawn slab spans x0..x1 and its top face is pushed right by dx, so the
+ * boundary covers x1 - x0 - dx. While BYD's pack image was in place this was
+ * the image's full width (x1 + dx - x0) — 34px too far, which let the green run
+ * past the slab's right edge and read as over-full at every percentage.
+ */
+const SPAN = PACK.x1 - PACK.x0 - PACK.dx
+const PAD = 40
+
+/** Everything charged so far, cut on the slab's own diagonal. */
 function chargedClip(f: number): string {
-  const lead = PACK.x0 + SPAN * f // leading edge, measured at the front edge
+  const lead = PACK.x0 + SPAN * f
   const top = PACK.backY - PAD
   const bot = PACK.frontY + PACK.depth + PAD
   return [
@@ -153,28 +184,15 @@ function chargedClip(f: number): string {
     .join(' ')
 }
 
-/**
- * The UNCHARGED remainder — the same cut, closed off to the right instead.
- * The comets live in here, so they vanish exactly at the charge boundary rather
- * than crossing onto the green.
- */
+/** The remainder — the same cut, closed off to the right. Holds the comets. */
 function restClip(f: number): string {
   const lead = PACK.x0 + SPAN * f
   const top = PACK.backY - PAD
   const bot = PACK.frontY + PACK.depth + PAD
-  /*
-   * Out to the car's TAIL, not the pack's rear edge.
-   *
-   * The charge arrives from behind the vehicle, so the comets have to exist
-   * over the body before they reach the pack. Clipping this region to the pack
-   * meant they could only ever appear once already inside it, which read as
-   * charge spawning in the battery rather than flowing into it.
-   */
-  const right = CAR_TAIL
   return [
     [lead + PACK.dx + SKEW * PAD, top],
-    [right, top],
-    [right, bot],
+    [CAR_TAIL, top],
+    [CAR_TAIL, bot],
     [lead, bot],
     [lead, PACK.frontY],
   ]
@@ -182,35 +200,27 @@ function restClip(f: number): string {
     .join(' ')
 }
 
-/*
- * Charge comets: streaks that fly forward out of the rear of the pack and die
- * at the charge boundary, as the cluster shows while current is flowing.
- *
- * One per cell row, each offset in time so they do not read as a single moving
- * bar. They are drawn along the pack's own diagonal so they travel with the
- * cells rather than across them.
- */
-/*
- * Eight, not five, and each travels only about the pack's own length.
- *
- * The first pass sent five comets across a 370px path while the uncharged
- * window at a typical charge is only ~85px wide, so each was visible for under
- * a quarter of its cycle and barely one showed at a time. Density is what makes
- * this read as a stream.
- */
 const COMETS = [
-  { t: 0.08, d: -0.10, dur: 2.30, len: 74 },
-  { t: 0.27, d: -1.45, dur: 3.05, len: 52 },
+  { t: 0.06, d: -0.10, dur: 2.30, len: 74 },
+  { t: 0.14, d: -1.95, dur: 2.75, len: 58 },
+  { t: 0.22, d: -1.45, dur: 3.05, len: 52 },
+  { t: 0.30, d: -0.48, dur: 2.40, len: 82 },
+  { t: 0.36, d: -2.35, dur: 2.90, len: 64 },
   { t: 0.41, d: -0.62, dur: 2.55, len: 88 },
+  { t: 0.47, d: -1.20, dur: 3.10, len: 56 },
   { t: 0.16, d: -2.10, dur: 2.85, len: 60 },
+  { t: 0.58, d: -0.28, dur: 2.45, len: 70 },
   { t: 0.63, d: -0.95, dur: 2.20, len: 80 },
+  { t: 0.69, d: -2.55, dur: 3.00, len: 54 },
+  { t: 0.74, d: -1.62, dur: 2.60, len: 76 },
   { t: 0.79, d: -1.85, dur: 3.20, len: 56 },
+  { t: 0.85, d: -0.74, dur: 2.35, len: 68 },
   { t: 0.52, d: -2.60, dur: 2.65, len: 70 },
   { t: 0.91, d: -0.35, dur: 2.95, len: 64 },
 ]
 /** Where the car's bodywork ends — the comets enter from here. */
-const CAR_TAIL = 664
-const COMET_W = 3.4
+const CAR_TAIL = 1040
+const COMET_W = 2.75
 
 
 // Near-side wheels, measured off the image on a 10-unit grid rather than
@@ -221,18 +231,17 @@ const COMET_W = 3.4
 const WHEELS: { cx: number; cy: number; r: number }[] = []
 
 /** The SOC figure sits above the slab, overlapping its top face. */
-const PACK_CX = (PACK.x0 + PACK.x1) / 2
-const PCT_BASELINE = 203
-
 /*
- * Cell ribbing across the top face.
+ * Centre of the slab's TOP edge, which is the edge the figure sits on.
  *
- * Counted off BYD's own battery (newenergy_flow_battery_level_*, CarSetting):
- * ~20 ribs across a 333px face, not the three dividers this had. The fine
- * ribbing is most of what makes their slab read as a battery rather than a
- * plain green box, so the count matters.
+ * The slab is a parallelogram: its top edge runs x0+dx .. x1 while its front
+ * edge runs x0 .. x1-dx. Averaging x0 and x1 gives the bounding box's centre,
+ * which is 17px left of the top edge's — enough to read as misaligned against
+ * the edge the digits actually overlap.
  */
-const CELLS = Array.from({ length: 19 }, (_, i) => (i + 1) / 20)
+const PACK_CX = (PACK.x0 + PACK.dx + PACK.x1) / 2
+const PCT_BASELINE = 321
+
 
 
 
@@ -243,6 +252,28 @@ const CELLS = Array.from({ length: 19 }, (_, i) => (i + 1) / 20)
  * a remembered timestamp would keep counting down against a stale estimate, and
  * the car revises this figure as the rate changes.
  */
+/*
+ * Fallback time-to-full, for the window before the car produces its own.
+ *
+ * OverDrive's etaMin is latched from the vehicle's rest-time reading and from a
+ * recorded charging session, so early in a charge — or when the car reports the
+ * 255 "unavailable" sentinel — it stays null and the row showed only dashes
+ * while a perfectly good power reading sat next to it.
+ *
+ * kWh remaining / kW = hours. Deliberately NOT corrected for charging losses or
+ * the taper near full: this is a placeholder that the real figure replaces as
+ * soon as it arrives, and inventing a correction factor would make it look more
+ * authoritative than it is. It is always rendered with a "~" for that reason.
+ */
+function estimateEtaMin(pct: number, kw: number, kwh: number, targetPct: number | null): number | null {
+  const target = targetPct != null && targetPct > pct ? targetPct : 100
+  const remaining = ((target - pct) / 100) * kwh
+  if (remaining <= 0 || kw <= 0.1) return null
+  const min = Math.round((remaining / kw) * 60)
+  // beyond a day it is noise, not an estimate
+  return min > 0 && min < 24 * 60 ? min : null
+}
+
 function fullAt(etaMin: number): string {
   const d = new Date(Date.now() + etaMin * 60_000)
   return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
@@ -261,8 +292,15 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
   // The summary keeps reporting an estimate for as long as the cable is in, but
   // it only means anything while current is actually flowing — a full or faulted
   // pack has no "time to full".
-  const eta = charging ? chargeEtaMin.value : null
+  const reportedEta = charging ? chargeEtaMin.value : null
   const target = charging ? chargeTargetPct.value : null
+  // Fall back to our own arithmetic only while the car has not given us one.
+  const estimated =
+    reportedEta == null && charging && pct != null && power != null && batteryKwh.value != null
+      ? estimateEtaMin(pct, power, batteryKwh.value, target)
+      : null
+  const eta = reportedEta ?? estimated
+  const etaIsEstimate = reportedEta == null && estimated != null
   // At 100% both readouts are meaningless — nothing is flowing and there is no
   // time remaining — so the whole row goes rather than showing a pair of
   // dashes. The car can still report charging:true at 100%, so this keys off
@@ -290,7 +328,7 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
         <span>{label}</span>
       </div>
 
-      <svg class="chg-stage" viewBox={`0 0 ${STAGE.w} ${STAGE.h}`} role="img" aria-label={`${label}${pct != null ? ` ${pct}%` : ''}`}>
+      <svg class="chg-stage" viewBox={`${VIEW.x} ${VIEW.y} ${VIEW.w} ${VIEW.h}`} role="img" aria-label={`${label}${pct != null ? ` ${pct}%` : ''}`}>
         <defs>
           {/* Far edge dark, near edge lighter — BYD's direction, not the
               reverse this had. Sampled #0e5a1d -> #289646. */}
@@ -306,10 +344,6 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
             <stop offset="0.45" stop-color="#e8eef2" />
             <stop offset="0.62" stop-color="#9fb0bb" />
             <stop offset="1" stop-color="#f2f6f9" />
-          </linearGradient>
-          <linearGradient id="chgEmptyTop" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#4c4c4c" />
-            <stop offset="1" stop-color="#7a7a7a" />
           </linearGradient>
           {/* The slab's own silhouette. The charge clip below is a padded
               half-plane, so on its own it lets the sweeping light spill above
@@ -335,8 +369,18 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
           <clipPath id="chgRest">
             <polygon points={restClip(frac)} />
           </clipPath>
+          <linearGradient id="chgFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="var(--chg-fill-far)" />
+            <stop offset="1" stop-color="var(--chg-fill-near)" />
+          </linearGradient>
+          {/* the slab's own silhouette, so the fill cannot spill past its faces */}
+          <clipPath id="chgSlab">
+            <polygon points={TOP_FACE} />
+            <polygon points={FRONT_FACE} />
+            <polygon points={RIGHT_FACE} />
+          </clipPath>
           <clipPath id="chgClip">
-            {/* Grows with SOC along the slab's diagonal; clips all three faces. */}
+            {/* Grows with SOC along the slab's diagonal. */}
             <polygon points={chargedClip(frac)} />
           </clipPath>
           <filter id="chgGlow" x="-60%" y="-60%" width="220%" height="220%">
@@ -346,7 +390,7 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
 
         <image
           class="chg-car-img"
-          href={`${import.meta.env.BASE_URL}car/car-glass.webp`}
+          href={`${import.meta.env.BASE_URL}car/byd-car.webp`}
           x="0"
           y="0"
           width={IMG.w}
@@ -361,34 +405,32 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
           </g>
         ))}
 
-        {/* battery pack — empty shell, then the charged portion clipped over it.
-            The whole assembly is clipped by the rounded outline. */}
+        {/* battery pack — empty shell, then the charged portion clipped over
+            it, the whole assembly clipped by the rounded outline. Drawn rather
+            than BYD's own pack art: the drawing keeps the cell ribbing and the
+            grey uncharged cells this card is built around. */}
         <g clip-path="url(#chgRound)">
-        <g class="chg-pack-empty">
-          <polygon class="pf-right" points={RIGHT_FACE} />
-          <polygon class="pf-front" points={FRONT_FACE} />
-          <polygon class="pf-top" points={TOP_FACE} />
-        </g>
-        <g clip-path="url(#chgSlab)">
-        <g class="chg-pack-full" clip-path="url(#chgClip)">
-          <polygon class="pf-right" points={RIGHT_FACE} />
-          <polygon class="pf-front" points={FRONT_FACE} />
-          <polygon class="pf-top" points={TOP_FACE} fill="url(#chgFill)" />
-        </g>
-        </g>
+          <g class="chg-pack-empty">
+            <polygon class="pf-right" points={RIGHT_FACE} />
+            <polygon class="pf-front" points={FRONT_FACE} />
+            <polygon class="pf-top" points={TOP_FACE} />
+          </g>
+          <g clip-path="url(#chgSlab)">
+            <g class="chg-pack-full" clip-path="url(#chgClip)">
+              <polygon class="pf-right" points={RIGHT_FACE} />
+              <polygon class="pf-front" points={FRONT_FACE} />
+              <polygon class="pf-top" points={TOP_FACE} fill="url(#chgFill)" />
+            </g>
+          </g>
 
-        {/* cell dividers, drawn over both states so the grid never breaks */}
-        <g class="chg-cells">
-          {CELLS.map((f) => {
-            const xTop = PACK.x0 + PACK.dx + (PACK.x1 - PACK.x0 - PACK.dx) * f
-            const xBot = PACK.x0 + (PACK.x1 - PACK.x0 - PACK.dx) * f
-            return <line key={f} x1={xTop} y1={PACK.backY} x2={xBot} y2={PACK.frontY} />
-          })}
-          {/* No lengthwise centre line. This is a Blade pack: the cells run the
-              full width of the tray in one piece, so a line down the middle
-              would draw a split the battery does not have. */}
-        </g>
-
+          {/* cell dividers, over both states so the grid never breaks */}
+          <g class="chg-cells">
+            {CELLS.map((f) => {
+              const xTop = PACK.x0 + PACK.dx + (PACK.x1 - PACK.x0 - PACK.dx) * f
+              const xBot = PACK.x0 + (PACK.x1 - PACK.x0 - PACK.dx) * f
+              return <line key={f} x1={xTop} y1={PACK.backY} x2={xBot} y2={PACK.frontY} />
+            })}
+          </g>
         </g>
 
         {charging && (
@@ -418,23 +460,22 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
           </g>
         )}
 
-        {/* A hairline where the faces meet, so the tray reads as a separate
-            piece from the cells. The tray itself is the extruded faces. */}
-        <g class="chg-rim">
-          {/* the outline follows the rounded silhouette; the inner edge where
-              cells meet tray stays straight, because it is a real crease */}
-          <path d={SLAB_OUTLINE} />
-          <polygon points={FRONT_FACE} />
-        </g>
-        {/* Matches the cluster: the DIGITS are centred on the pack and the "%"
-            hangs off to their right, rather than the whole string being
-            centred (which would push the number left of centre). Sits above
-            the slab, overlapping its top face, exactly as the original does. */}
+        {/*
+          * One text run, so the browser positions the "%" from the digits'
+          * real advance width.
+          *
+          * It used to be a second <text> placed at a hand-computed offset
+          * (digits.length * 14 + 5), which is a guess at glyph width: it
+          * drifted whenever the font size changed and overlapped the digits
+          * outright at "100%". A tspan cannot drift — it flows.
+          *
+          * The trade-off is that the whole string centres on the pack rather
+          * than the digits alone, so the digits sit a few px left of centre.
+          * That is far less noticeable than a collision, and it is stable.
+          */}
         <text class="chg-num" x={PACK_CX} y={PCT_BASELINE} text-anchor="middle">
           {digits}
-        </text>
-        <text class="chg-unit" x={PACK_CX + digits.length * 14 + 5} y={PCT_BASELINE} text-anchor="start">
-          %
+          <tspan class="chg-unit">%</tspan>
         </text>
       </svg>
 
@@ -458,7 +499,16 @@ export function ChargingCard({ s, atTop = false }: { s: StatusResponse; atTop?: 
               {target != null && target > 0 && target < 100 ? ` · ${target}%` : ''}
             </div>
             <div class="chg-stat-value mono">
-              {eta != null && eta > 0 ? fmtEta(eta) : <span class="chg-dash">--</span>}
+              {eta != null && eta > 0 ? (
+                <>
+                  {/* "~" marks our own arithmetic, so an estimate is never
+                      mistaken for the car's own figure. */}
+                  {etaIsEstimate && <span class="chg-approx">~</span>}
+                  {fmtEta(eta)}
+                </>
+              ) : (
+                <span class="chg-dash">--</span>
+              )}
             </div>
           </div>
           <div class="chg-stat right">

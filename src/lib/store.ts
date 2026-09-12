@@ -62,6 +62,24 @@ let vsFails = 0
 // Charging estimate (minutes to full) + target %, fetched only while charging.
 export const chargeEtaMin = signal<number | null>(null)
 export const chargeTargetPct = signal<number | null>(null)
+/*
+ * Usable pack capacity (kWh), from the launcher summary. Only used to estimate
+ * a time-to-full when the car has not produced one yet — see ChargingCard.
+ */
+/*
+ * Remembered across launches.
+ *
+ * Capacity is a fixed property of the car, and it arrives on the same endpoint
+ * as etaMin — so if that endpoint fails or is missing on an older OverDrive,
+ * BOTH go null and the estimate that exists to cover a missing etaMin cannot
+ * run either. Caching it means one successful reading, ever, is enough.
+ */
+const K_KWH = 'odpwa.kwh'
+function readCachedKwh(): number | null {
+  const v = Number(localStorage.getItem(K_KWH))
+  return isFinite(v) && v > 0 ? v : null
+}
+export const batteryKwh = signal<number | null>(readCachedKwh())
 export const lastError = signal<string | null>(null)
 /** Set when the backend rejects our JWT — the app drops back to the setup screen. */
 export const authLost = signal(false)
@@ -180,24 +198,58 @@ async function tick(): Promise<void> {
        */
       if (active && ++vsFails >= 3) vehicleState.value = null
     }
-    // One /summary per tick. Both the env window and charging read from it, and
-    // when they coincided this fired the same request twice a minute.
+    /*
+     * One /summary per tick, fire-and-forget like the odometer above.
+     *
+     * It used to be awaited here. getSummary carries a 15s timeout, so a single
+     * hanging request stalled the WHOLE poll for that long — the next tick is
+     * only scheduled after this function returns, so a slow supplementary call
+     * froze SOC, power and door state along with it. The ETA is nice to have;
+     * telemetry is not.
+     *
+     * There is no explicit retry, and none is needed: the poll comes round every
+     * 5s while the cable is in, so each tick IS the retry. A failed attempt
+     * leaves the previous values in place rather than blanking them.
+     */
     if (active && (wantEnv || wantCharge)) {
-      try {
-        const sum = await getSummary()
-        if (active && wantEnv) {
-          const num = (v: unknown) => (typeof v === 'number' ? v : null)
-          outsideTempC.value = num(sum.env?.tempC)
-          pm25Inside.value = num(sum.air?.pm25Inside)
-          pm25Outside.value = num(sum.air?.pm25Outside)
-        }
-        if (active && wantCharge) {
-          chargeEtaMin.value = sum.charging?.etaMin ?? null
-          chargeTargetPct.value = sum.charging?.targetPct ?? null
-        }
-      } catch (e) {
-        if (e instanceof AuthError) throw e
-      }
+      const forEnv = wantEnv
+      const forCharge = wantCharge
+      void getSummary()
+        .then((sum) => {
+          if (!active) return
+          if (forEnv) {
+            const num = (v: unknown) => (typeof v === 'number' ? v : null)
+            outsideTempC.value = num(sum.env?.tempC)
+            pm25Inside.value = num(sum.air?.pm25Inside)
+            pm25Outside.value = num(sum.air?.pm25Outside)
+          }
+          if (forCharge) {
+            chargeEtaMin.value = sum.charging?.etaMin ?? null
+            chargeTargetPct.value = sum.charging?.targetPct ?? null
+            const kwh = sum.battery?.usableKwh
+            if (typeof kwh === 'number' && kwh > 0) {
+              batteryKwh.value = kwh
+              try {
+                localStorage.setItem(K_KWH, String(kwh))
+              } catch { /* private mode / quota */ }
+            }
+          }
+        })
+        .catch((e) => {
+          if (e instanceof AuthError) {
+            /*
+             * Detached from the tick's own try/catch now, so a rejected JWT has
+             * to be acted on here — rethrowing would only produce an unhandled
+             * rejection and leave the app polling a car that has signed it out.
+             */
+            authLost.value = true
+            stop()
+            return
+          }
+          // A 404 on an older OverDrive looks exactly like a car with no ETA
+          // yet; this line is the only way to tell them apart from a phone.
+          console.warn('summary poll failed:', e instanceof Error ? e.message : e)
+        })
     }
     if (active && !wantCharge) {
       chargeEtaMin.value = null
@@ -253,6 +305,8 @@ export function reset(): void {
   lastError.value = null
   chargeEtaMin.value = null
   chargeTargetPct.value = null
+  batteryKwh.value = null
+  localStorage.removeItem(K_KWH)
   odometer.value = null
   localStorage.removeItem(K_ODO)
   outsideTempC.value = null
