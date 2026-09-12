@@ -162,9 +162,21 @@ const SLAB_OUTLINE = roundedPath(
  * so they follow the artwork's own box; the boundary is pivoted about the
  * pack's vertical centre so the skew splits evenly above and below.
  */
+/*
+ * A skewed line cannot travel just the pack's width: at f=1 the boundary is
+ * right + SKEW*(y-cy), which with a negative skew falls LEFT of the right edge
+ * along the bottom — leaving the bottom-right corner of the pack uncovered and
+ * showing the empty frame through it at 100%. The travel is widened by the
+ * skew's reach at each end so full really means full, and empty really empty.
+ */
+const SKEW_REACH = Math.abs(SKEW) * (PACK_IMG.h / 2)
+const EDGE_EPS = 2
+
 function boundaryX(f: number, y: number): number {
   const cy = PACK_IMG.y + PACK_IMG.h / 2
-  return PACK_IMG.x + PACK_IMG.w * f + SKEW * (y - cy)
+  const from = PACK_IMG.x - SKEW_REACH - EDGE_EPS
+  const travel = PACK_IMG.w + 2 * SKEW_REACH + 2 * EDGE_EPS
+  return from + travel * f + SKEW * (y - cy)
 }
 const CLIP_PAD = 40
 
