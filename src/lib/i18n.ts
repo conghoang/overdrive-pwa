@@ -395,7 +395,7 @@ const VI: Record<string, string> = {
   'chg.plugged': 'Đã cắm sạc, chưa sạc',
   'chg.full': 'Đã sạc đầy',
   'chg.fault': 'Lỗi sạc',
-  'chg.power': 'Công suất hiện tại',
+  'chg.power': 'Công suất',
   'chg.eta': 'Thời gian sạc đầy',
   'chg.full_at': 'Đầy lúc',
   'chg.eta_short': 'Còn lại',
