@@ -18,6 +18,22 @@ import '../components/controls.css'
 
 const TEMP_MIN = 16
 const TEMP_MAX = 30
+
+/*
+ * AUTO is hidden because the car refuses the command, not because we stopped wanting it.
+ *
+ * OverDrive drives AC auto mode through the feature id Ac.AUTO_MODE_SET. That field does not
+ * exist on Di 3.0 — every field of BYDAutoFeatureIds$Ac is AC_-prefixed there and none of them
+ * is an auto-mode write — so the lookup silently falls back to a literal belonging to another
+ * trim, the HAL rejects it, and the button only ever produced "the car rejected the command
+ * over the direct connection". Temperature and fan are unaffected: their ids happen to be
+ * correct, which is why only this one control fails.
+ *
+ * The backend fix is a paired write of AC_CTRL_MODE_SET + AC_CTRL_SOURCE_SET (verified accepted
+ * by the car). Flip this to true once an OverDrive carrying that fix is installed — the handler
+ * below is deliberately left intact so re-enabling is a one-word change.
+ */
+const AUTO_MODE_SUPPORTED = false
 /*
  * How long the user's own taps outrank the car's reported setpoint.
  *
@@ -207,9 +223,11 @@ export function Controls() {
         </div>
 
         <div class="climate-fan">
-          <button class="btn climate-auto" disabled={disabled} onClick={() => run(() => api.setClimateAuto(true), t('ctrl.auto_mode'))}>
-            {t('ctrl.auto')}
-          </button>
+          {AUTO_MODE_SUPPORTED && (
+            <button class="btn climate-auto" disabled={disabled} onClick={() => run(() => api.setClimateAuto(true), t('ctrl.auto_mode'))}>
+              {t('ctrl.auto')}
+            </button>
+          )}
           {/* A row of seven bars whose only difference is colour. Without the
               radio semantics a screen reader hears seven identical buttons and
               cannot tell which level is set — and neither can anyone reading
