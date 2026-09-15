@@ -20,20 +20,16 @@ const TEMP_MIN = 16
 const TEMP_MAX = 30
 
 /*
- * AUTO is hidden because the car refuses the command, not because we stopped wanting it.
+ * AC AUTO. This was hidden for a while because OverDrive drove auto mode through the feature id
+ * Ac.AUTO_MODE_SET, which does not exist on Di 3.0 — the lookup fell back to another trim's
+ * literal, the HAL rejected it, and the button only ever produced "the car rejected the command
+ * over the direct connection".
  *
- * OverDrive drives AC auto mode through the feature id Ac.AUTO_MODE_SET. That field does not
- * exist on Di 3.0 — every field of BYDAutoFeatureIds$Ac is AC_-prefixed there and none of them
- * is an auto-mode write — so the lookup silently falls back to a literal belonging to another
- * trim, the HAL rejects it, and the button only ever produced "the car rejected the command
- * over the direct connection". Temperature and fan are unaffected: their ids happen to be
- * correct, which is why only this one control fails.
- *
- * The backend fix is a paired write of AC_CTRL_MODE_SET + AC_CTRL_SOURCE_SET (verified accepted
- * by the car). Flip this to true once an OverDrive carrying that fix is installed — the handler
- * below is deliberately left intact so re-enabling is a one-word change.
+ * Re-enabled: OverDrive now writes the paired AC_CTRL_MODE_SET + AC_CTRL_SOURCE_SET registers
+ * (verified accepted by the car; the write flips the AC panel between auto and manual), and that
+ * fix is deployed in the installed build.
  */
-const AUTO_MODE_SUPPORTED = false
+const AUTO_MODE_SUPPORTED = true
 /*
  * How long the user's own taps outrank the car's reported setpoint.
  *
