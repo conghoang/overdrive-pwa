@@ -40,7 +40,7 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
     const file = (e.target as HTMLInputElement).files?.[0]
     if (!file) return
     try {
-      setCarPhoto(await fileToResizedDataUrl(file, 1100))
+      setCarPhoto(await fileToResizedDataUrl(file))
     } catch (err) {
       const quota = err instanceof Error && /quota/i.test(err.name + err.message)
       toast(quota ? t('account.photo_big') : t('account.photo_err'), 'err')
