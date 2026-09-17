@@ -15,7 +15,7 @@ import { lazyScreen } from '../lib/lazy'
  */
 const WiCarlinkEditor = lazyScreen(() => import('../components/WiCarlinkEditor'), 'WiCarlinkEditor')
 import { carName, carPhoto, resetSettings, setCarName, setCarPhoto, setShowMap, setWicarlink, showMap, wicarlink } from '../lib/settings'
-import { fileToResizedDataUrl } from '../lib/image'
+import { fileToResizedBlob } from '../lib/image'
 import { toast } from '../lib/toast'
 import { lang, setLang, t } from '../lib/i18n'
 import { hapticsEnabled, hapticsSupported, setHapticsEnabled, tapFeedback } from '../lib/haptics'
@@ -40,7 +40,7 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
     const file = (e.target as HTMLInputElement).files?.[0]
     if (!file) return
     try {
-      setCarPhoto(await fileToResizedDataUrl(file))
+      await setCarPhoto(await fileToResizedBlob(file))
     } catch (err) {
       const quota = err instanceof Error && /quota/i.test(err.name + err.message)
       toast(quota ? t('account.photo_big') : t('account.photo_err'), 'err')
@@ -66,7 +66,7 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
             {t('dev.change_photo')}
             <input type="file" accept="image/*" style={{ display: 'none' }} onChange={pickPhoto} />
           </label>
-          <button class="btn" disabled={!carPhoto.value} onClick={() => setCarPhoto(null)}>
+          <button class="btn" disabled={!carPhoto.value} onClick={() => void setCarPhoto(null)}>
             {t('dev.use_default')}
           </button>
         </div>

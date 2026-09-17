@@ -1,4 +1,5 @@
 import { signal } from '@preact/signals'
+import { idbDel, idbGet, idbSet } from './idb'
 
 // Local-only settings, persisted in localStorage (not sent to the car).
 
@@ -68,15 +69,58 @@ export function setDewarpFor(mode: number, v: number): void {
   }
 }
 
-// Optional user-supplied car photo (data URL), overriding the bundled default.
-const K_CARPHOTO = 'odpwa.carPhoto'
-export const carPhoto = signal<string | null>(localStorage.getItem(K_CARPHOTO))
-export function setCarPhoto(dataUrl: string | null): void {
-  // Persist first — if localStorage throws (quota), the signal stays unchanged
-  // so the UI never shows a photo that wasn't actually saved.
-  if (dataUrl) localStorage.setItem(K_CARPHOTO, dataUrl)
-  else localStorage.removeItem(K_CARPHOTO)
-  carPhoto.value = dataUrl
+/*
+ * Optional user-supplied car photo, overriding the bundled default.
+ *
+ * The blob lives in IndexedDB (bytes, ~no practical size limit); the signal
+ * carries an object URL for <img src>. It was a data URL in localStorage,
+ * which capped the photo at a few MB once base64 inflation and UTF-16 storage
+ * were counted — initCarPhoto() migrates any leftover.
+ */
+const K_CARPHOTO = 'odpwa.carPhoto' // legacy localStorage key (migrated away)
+const IDB_CARPHOTO = 'carPhoto'
+export const carPhoto = signal<string | null>(null)
+
+/** Swap in a new object URL, releasing the previous one so blobs aren't leaked. */
+function setPhotoUrl(next: string | null): void {
+  const prev = carPhoto.value
+  carPhoto.value = next
+  if (prev && prev.startsWith('blob:')) URL.revokeObjectURL(prev)
+}
+
+export async function setCarPhoto(blob: Blob | null): Promise<void> {
+  // Persist first — if the write fails, the signal stays unchanged so the UI
+  // never shows a photo that wasn't actually saved.
+  if (blob) await idbSet(IDB_CARPHOTO, blob)
+  else await idbDel(IDB_CARPHOTO)
+  setPhotoUrl(blob ? URL.createObjectURL(blob) : null)
+}
+
+/**
+ * Load the stored photo (and migrate a legacy data URL into IndexedDB).
+ * Async, so the first paint uses the bundled default and swaps in once ready.
+ */
+export async function initCarPhoto(): Promise<void> {
+  try {
+    const legacy = localStorage.getItem(K_CARPHOTO)
+    if (legacy) {
+      try {
+        // Convert and store BEFORE dropping the old copy, so a failure here
+        // can't lose the user's photo — it just stays for the next attempt.
+        const blob = await (await fetch(legacy)).blob()
+        await idbSet(IDB_CARPHOTO, blob)
+        localStorage.removeItem(K_CARPHOTO)
+      } catch { /* keep the legacy value; retry on the next launch */ }
+    }
+    const blob = await idbGet<Blob>(IDB_CARPHOTO)
+    if (blob) setPhotoUrl(URL.createObjectURL(blob))
+    else if (legacy) setPhotoUrl(legacy) // migration failed; a data URL still renders
+  } catch {
+    // Private mode / IDB unavailable: fall back to the legacy value if there is
+    // one, otherwise the bundled default photo.
+    const legacy = localStorage.getItem(K_CARPHOTO)
+    if (legacy) setPhotoUrl(legacy)
+  }
 }
 
 export function setWicarlink(on: boolean): void {
@@ -170,7 +214,11 @@ export function resetCommands(): void {
  * until the page happens to reload.
  */
 export function resetSettings(): void {
-  carPhoto.value = null
+  // The photo is a real picture of the car, plate and all — clearAll() only
+  // empties localStorage, so delete the IndexedDB copy here too or signing out
+  // on a sold/borrowed phone leaves it behind.
+  setPhotoUrl(null)
+  void idbDel(IDB_CARPHOTO).catch(() => {})
   carName.value = ''
   showMap.value = false
   wicarlink.value = false

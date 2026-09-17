@@ -1,27 +1,21 @@
 /**
- * Cap for a stored data URL, in STRING LENGTH.
- *
- * localStorage quotas are ~5 MB, but browsers store strings as UTF-16, so a
- * character costs ~2 bytes — the real ceiling is ~2.6M chars, not 5M. 2M leaves
- * room for the JWT and the rest of the odpwa.* settings. (The old 3.5M guard was
- * above the actual quota, so an oversized image threw a raw QuotaExceededError
- * from setItem instead of being caught and re-encoded here.)
- */
-const MAX_DATA_URL_CHARS = 2_000_000
-
-/**
- * Read an image File, downscale to `maxW`, and return a compact data URL.
+ * Read an image File, downscale to `maxW`, and return an encoded Blob.
  *
  * Prefers WebP — it keeps transparency AND is the smallest of the three, so a
  * PNG car render with a see-through background survives intact instead of
- * flattening to black (the old JPEG path had no alpha). Browsers that can't
- * encode WebP (notably Safari, which silently hands back a PNG for an
- * unsupported type) fall back to PNG when transparent / JPEG when opaque.
+ * flattening to black (a JPEG has no alpha channel, so transparent pixels keep
+ * their RGB and come out as black). Browsers that can't encode WebP (notably
+ * Safari) silently hand back a PNG rather than failing, so the result type is
+ * checked and re-encoded explicitly: PNG when transparent, JPEG when opaque —
+ * PNG for an opaque photo measured ~8x larger with nothing to preserve.
  *
  * `maxW` default 800 suits the app: the photo renders at most 380 CSS px
  * (hero) / 300 px (settings), so 800 stays crisp at 2–3× DPR without bloat.
+ *
+ * Returns a Blob, not a data URL: it goes to IndexedDB, which stores bytes
+ * directly — no base64 inflation and no localStorage quota to dance around.
  */
-export function fileToResizedDataUrl(file: File, maxW = 800): Promise<string> {
+export function fileToResizedBlob(file: File, maxW = 800): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file)
     const img = new Image()
@@ -45,34 +39,16 @@ export function fileToResizedDataUrl(file: File, maxW = 800): Promise<string> {
         }
       } catch { /* local file → never tainted; ignore */ }
 
-      // WebP first: keeps alpha and is smallest. If the browser can't encode it
-      // it silently returns a PNG, so verify the result really is WebP; if not,
-      // pick PNG (transparent) or JPEG (opaque) explicitly.
-      let out = canvas.toDataURL('image/webp', 0.85)
-      if (!out.startsWith('data:image/webp')) {
-        out = hasAlpha
-          ? canvas.toDataURL('image/png')
-          : canvas.toDataURL('image/jpeg', 0.82)
-      }
+      const done = (blob: Blob | null) =>
+        blob ? resolve(blob) : reject(new Error('encode failed'))
 
-      // A transparent PNG fallback can be large (measured: ~410k chars for a car
-      // render, ~1.1M for a photo). If it would blow the storage budget, flatten
-      // onto white (destination-over paints behind the car) and fall back to
-      // JPEG — white, not black.
-      if (hasAlpha && out.length > MAX_DATA_URL_CHARS) {
-        ctx.globalCompositeOperation = 'destination-over'
-        ctx.fillStyle = '#ffffff'
-        ctx.fillRect(0, 0, canvas.width, canvas.height)
-        ctx.globalCompositeOperation = 'source-over'
-        out = canvas.toDataURL('image/jpeg', 0.82)
-      }
-
-      if (out.length > MAX_DATA_URL_CHARS) {
-        const err = new Error('QuotaExceeded: image too large')
-        err.name = 'QuotaExceededError'
-        return reject(err)
-      }
-      resolve(out)
+      canvas.toBlob((webp) => {
+        // Unsupported type → the browser encodes PNG instead of erroring, so
+        // trust the resulting type rather than the type we asked for.
+        if (webp && webp.type === 'image/webp') return done(webp)
+        if (hasAlpha) return canvas.toBlob(done, 'image/png')
+        canvas.toBlob(done, 'image/jpeg', 0.82)
+      }, 'image/webp', 0.85)
     }
     img.onerror = () => {
       URL.revokeObjectURL(url)
