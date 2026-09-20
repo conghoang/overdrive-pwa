@@ -14,8 +14,6 @@
 
 /* tiles */
 .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-/* An odd final tile spans the full width instead of leaving a half-row gap. */
-.tiles > .tile:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .tile {
   background: var(--surface-1);
   border: 1px solid var(--border-soft);
@@ -27,6 +25,11 @@
 .tile-value { font-size: 22px; font-weight: 700; }
 .tile-unit { font-size: 13px; color: var(--muted); font-weight: 600; }
 .tile-label { color: var(--muted); font-size: 12px; font-weight: 600; margin-top: 2px; }
+/* Two stats (electric · fuel) in one tile. */
+.tile-dual { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.tile-dual b { font-size: 18px; font-weight: 700; }
+.tile-dual small { font-size: 12px; color: var(--muted); font-weight: 600; }
+.tile-dual .dual-sep { color: var(--muted); font-weight: 700; }
 
 /* status rows */
 .srow { display: flex; align-items: center; justify-content: space-between; padding: 11px 0; }

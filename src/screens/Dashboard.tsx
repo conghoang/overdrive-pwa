@@ -20,7 +20,7 @@ import { QuickActions } from '../components/QuickActions'
 import { EnergyGauges } from '../components/EnergyGauges'
 import { StatTile } from '../components/StatTile'
 import { Tyres } from '../components/Tyres'
-import { IconAir, IconBolt, IconFuel, IconLock, IconMapOpen, IconPin, IconThermo, IconUnlock, IconWifi, IconWind, IconWindow } from '../components/icons'
+import { IconAir, IconBolt, IconLock, IconMapOpen, IconPin, IconThermo, IconUnlock, IconWifi, IconWind, IconWindow } from '../components/icons'
 import type { WindowsState } from '../lib/types'
 import './dashboard.css'
 
@@ -257,20 +257,16 @@ export function Dashboard() {
           {available:false, isStale:true} most of the time, so it was usually a
           stale number or a dash — and it is not something you act on anyway. */}
       <div class="tiles" style={{ marginTop: '14px' }}>
-        <StatTile
-          icon={<IconBolt size={20} />}
-          label={t('tile.efficiency')}
-          value={efficiency}
-          unit="kWh/100km"
-          accent="var(--m-teal)"
-        />
-        <StatTile
-          icon={<IconFuel size={20} />}
-          label={t('tile.fuel_cons')}
-          value={fuelCons}
-          unit="L/100km"
-          accent="var(--m-orange)"
-        />
+        {/* Consumption: electric (kWh/100km) and fuel (L/100km) in one tile. */}
+        <div class="tile">
+          <div class="tile-icon" style={{ color: 'var(--m-teal)' }}><IconBolt size={20} /></div>
+          <div class="tile-dual mono">
+            <span><b>{efficiency}</b> <small>kWh</small></span>
+            <span class="dual-sep">·</span>
+            <span><b>{fuelCons}</b> <small>L</small></span>
+          </div>
+          <div class="tile-label">{t('tile.efficiency')}</div>
+        </div>
         <StatTile icon={<IconThermo size={20} />} label={tempLabel} value={fmtTemp(tempValue)} accent="var(--m-orange)" />
         <StatTile
           icon={<IconAir size={20} />}
