@@ -232,3 +232,8 @@
   .cs-last-right { margin-left: 0; }
   .cs-chart { grid-template-columns: 26px 1fr; }
 }
+
+/* Loading skeleton for the chart card */
+.cs-skel { padding-top: 8px; }
+.cs-skel-bars { display: flex; align-items: flex-end; gap: 8px; height: 128px; margin-top: 18px; }
+.cs-skel-bars .sk { flex: 1; border-radius: 6px 6px 2px 2px; }

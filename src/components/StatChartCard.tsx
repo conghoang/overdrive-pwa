@@ -152,7 +152,14 @@ export function StatChartCard({
         ) : null}
       </div>
 
-      {state === 'error' ? (
+      {state === 'loading' ? (
+        <div class="cs-skel">
+          <div class="sk" style={{ height: '22px', width: '58%' }} />
+          <div class="cs-skel-bars">
+            {[40, 62, 28, 82, 52, 70, 46].map((h, i) => <div class="sk" key={i} style={{ height: `${h}%` }} />)}
+          </div>
+        </div>
+      ) : state === 'error' ? (
         <div class="cs-empty">{emptyText}</div>
       ) : (
         <>

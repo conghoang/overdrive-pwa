@@ -17,6 +17,23 @@ function dayLabel(dayMs: number): string {
   return new Date(dayMs).toLocaleDateString(loc(), { weekday: 'short', day: 'numeric', month: 'short' })
 }
 
+/** Shimmering placeholders shaped like the real grouped rows. */
+function Skeleton() {
+  const row = (k: number) => (
+    <div class="skel-row" key={k}>
+      <div class="skel-top"><span class="sk sk-time" /><span class="sk sk-dist" /></div>
+      <div class="skel-chips"><span class="sk sk-chip" /><span class="sk sk-chip" /></div>
+    </div>
+  )
+  const group = (g: number, rows: number) => (
+    <section class="hist-group" key={g}>
+      <div class="hist-day"><span class="sk sk-day" /></div>
+      <div class="trip-list">{Array.from({ length: rows }, (_, i) => row(g * 10 + i))}</div>
+    </section>
+  )
+  return <>{group(0, 3)}{group(1, 2)}</>
+}
+
 export interface HistoryListProps<T> {
   title: string
   onBack: () => void
@@ -80,7 +97,7 @@ export function HistoryList<T>(props: HistoryListProps<T>) {
         </div>
       </div>
 
-      {state === 'loading' && <div class="card center-note">{t('common.loading_vehicle')}</div>}
+      {state === 'loading' && <Skeleton />}
       {state === 'error' && <div class="card center-note">{emptyText}</div>}
       {state === 'ready' && groups.length === 0 && <div class="card center-note">{emptyText}</div>}
       {state === 'ready' && groups.map((g) => (

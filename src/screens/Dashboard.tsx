@@ -47,13 +47,21 @@ export function Dashboard() {
   const vs = vehicleState.value
 
   if (!s) {
+    // Skeleton shaped like the dashboard, so the first load reads as "coming up"
+    // rather than an empty error card. The header still carries the real status.
     return (
       <div class="screen">
-        <AppHeader title={carName.value || t('tab.vehicle')} sub={connected.value ? t('common.live') : t('common.reconnecting')} dot={connected.value ? 'ok' : 'wait'} />
-        <div class="card">
-          <div class="center-note">
-            {connected.value ? t('common.loading_vehicle') : lastError.value || t('common.connecting_car')}
-          </div>
+        <AppHeader
+          title={carName.value || t('tab.vehicle')}
+          sub={connected.value ? t('common.loading_vehicle') : lastError.value || t('common.connecting_car')}
+          dot="wait"
+        />
+        <div class="sk sk-card" style={{ height: '150px' }} />
+        <div class="sk sk-card" style={{ height: '58px' }} />
+        <div class="sk sk-card" style={{ height: '96px' }} />
+        <div class="sk sk-card" style={{ height: '150px' }} />
+        <div class="tiles" style={{ marginTop: '14px' }}>
+          {[0, 1, 2, 3].map((i) => <div key={i} class="sk" style={{ height: '92px', borderRadius: 'var(--radius-md)' }} />)}
         </div>
       </div>
     )
