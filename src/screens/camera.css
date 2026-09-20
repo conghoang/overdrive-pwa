@@ -11,7 +11,9 @@
 .cam-screen > .cam-card { flex: 1 1 auto; min-height: 0; display: flex; }
 .cam-screen > .cam-card > .cam-stage { flex: 1 1 auto; min-height: 0; aspect-ratio: auto; }
 @media (min-width: 1000px) {
-  .cam-screen { display: block; min-height: 0; }
+  /* Single column, centred — this screen is a video with its controls under it,
+     not a set of cards to flow into two columns like the other tabs. */
+  .cam-screen { display: block; min-height: 0; column-count: 1; max-width: 600px; margin-inline: auto; }
   .cam-screen > .cam-card { display: block; }
   .cam-screen > .cam-card > .cam-stage { aspect-ratio: 4 / 3; }
 }
@@ -101,40 +103,42 @@
 @keyframes cam-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 .cam-stage.full .cam-live { top: calc(var(--safe-top) + 10px); left: calc(env(safe-area-inset-left, 0px) + 12px); }
 
-/* View switch overlaid on the video: quick-switch while watching. */
-.cam-views {
-  position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 2;
-  display: flex; gap: 6px; padding: 5px; border-radius: 14px;
-  background: rgba(8, 14, 22, 0.5); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-.cam-stage.full .cam-views { bottom: calc(var(--safe-bottom) + 12px); }
-.cam-view {
-  flex: 1; min-width: 0; border: 0; background: none; cursor: pointer;
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-  padding: 8px 2px; border-radius: 10px;
-  color: #cdd9e6; font: inherit; font-size: 12px; font-weight: 700;
-}
-.cam-view svg { width: 16px; height: 16px; }
-.cam-view.on { background: var(--accent); color: #04211c; }
-.cam-view:disabled { opacity: 0.5; }
-
 /* Controls card below the video. */
 .cam-controls { margin-top: 12px; padding: 15px 16px; }
+
+/* View switch — a segmented row in the controls (never over the video). */
+.cam-views {
+  display: flex; gap: 4px; padding: 4px; margin-bottom: 16px;
+  background: var(--surface-2); border-radius: 14px;
+}
+.cam-view {
+  flex: 1; min-width: 0; border: 0; background: none; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 10px 2px; border-radius: 10px;
+  color: var(--muted); font: inherit; font-size: 12px; font-weight: 700;
+}
+.cam-view svg { width: 20px; height: 20px; }
+.cam-view.on { background: var(--accent); color: #04211c; box-shadow: var(--shadow-card); }
+.cam-view:disabled { opacity: 0.5; }
+
 .cam-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .cam-row + .cam-row { margin-top: 16px; }
 .cam-row-block { display: block; }
 .cam-k { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
 .cam-k b { color: var(--accent-bright); margin-left: 6px; font-variant-numeric: tabular-nums; }
 
-.cam-seg { display: inline-flex; gap: 3px; background: var(--surface-2); border-radius: 999px; padding: 3px; }
-.cam-seg button {
-  border: 0; background: none; cursor: pointer; font: inherit;
-  color: var(--muted); font-size: 12.5px; font-weight: 700;
-  padding: 6px 12px; border-radius: 999px; font-variant-numeric: tabular-nums;
+/* Quality: native dropdown — the car offers 7 named tiers (three share 960p),
+   too many and ambiguous for pills. */
+.cam-select {
+  appearance: none; -webkit-appearance: none;
+  background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--border-strong); border-radius: 10px;
+  padding: 8px 30px 8px 12px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 15px) 53%, calc(100% - 10px) 53%;
+  background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
 }
-.cam-seg button.on { background: var(--surface-1); color: var(--accent-bright); box-shadow: var(--shadow-card); }
-.cam-seg button:disabled { opacity: 0.5; }
+.cam-select:disabled { opacity: 0.5; }
 
 .cam-dewarp-slider { height: 6px; margin-top: 10px; }
 .cam-dewarp-slider::-webkit-slider-thumb { width: 20px; height: 20px; border-width: 3px; }

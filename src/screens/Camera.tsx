@@ -69,13 +69,13 @@ function CamIcon({ mode }: { mode: number }): JSX.Element {
     )
   }
   const edge =
-    mode === 1 ? <rect x="8" y="3.2" width="8" height="2.6" rx="1.1" fill="currentColor" stroke="none" />
-    : mode === 2 ? <rect x="18.2" y="8" width="2.6" height="8" rx="1.1" fill="currentColor" stroke="none" />
-    : mode === 3 ? <rect x="8" y="18.2" width="8" height="2.6" rx="1.1" fill="currentColor" stroke="none" />
-    : <rect x="3.2" y="8" width="2.6" height="8" rx="1.1" fill="currentColor" stroke="none" />
+    mode === 1 ? <rect x="7" y="2.6" width="10" height="3.2" rx="1.4" fill="currentColor" stroke="none" />
+    : mode === 2 ? <rect x="18.2" y="7" width="3.2" height="10" rx="1.4" fill="currentColor" stroke="none" />
+    : mode === 3 ? <rect x="7" y="18.2" width="10" height="3.2" rx="1.4" fill="currentColor" stroke="none" />
+    : <rect x="2.6" y="7" width="3.2" height="10" rx="1.4" fill="currentColor" stroke="none" />
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width={1.6}>
-      <rect x="6" y="6" width="12" height="12" rx="3" />{edge}
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width={1.8}>
+      <rect x="6.5" y="6.5" width="11" height="11" rx="3" />{edge}
     </svg>
   )
 }
@@ -311,41 +311,40 @@ export function Camera() {
               )}
             </div>
           )}
-          <div class="cam-views">
-            {CAMERA_VIEWS.map((v) => (
-              <button
-                key={v.mode}
-                class={'cam-view' + (v.mode === view ? ' on' : '')}
-                disabled={!connected.value || isDemo || !supported}
-                aria-pressed={v.mode === view}
-                aria-label={t(v.key)}
-                onClick={() => setView(v.mode)}
-              >
-                <CamIcon mode={v.mode} />
-                {t(v.key)}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
-      {/* Controls below the video; camera switching lives on the feed above. */}
+      {/* Controls below the video — one column, no overlap on the feed. */}
       <div class="card cam-controls">
+        <div class="cam-views">
+          {CAMERA_VIEWS.map((v) => (
+            <button
+              key={v.mode}
+              class={'cam-view' + (v.mode === view ? ' on' : '')}
+              disabled={!connected.value || isDemo || !supported}
+              aria-pressed={v.mode === view}
+              aria-label={t(v.key)}
+              onClick={() => setView(v.mode)}
+            >
+              <CamIcon mode={v.mode} />
+              {t(v.key)}
+            </button>
+          ))}
+        </div>
+
         {!!quality.options?.length && (
           <div class="cam-row">
             <span class="cam-k">{t('cam.quality')}</span>
-            <div class="cam-seg">
+            <select
+              class="cam-select"
+              value={quality.current ?? ''}
+              disabled={!connected.value || isDemo}
+              onChange={(e) => void pickQuality((e.target as HTMLSelectElement).value)}
+            >
               {quality.options.map((o) => (
-                <button
-                  key={o.id}
-                  class={o.id === quality.current ? 'on' : undefined}
-                  disabled={!connected.value || isDemo}
-                  onClick={() => void pickQuality(o.id)}
-                >
-                  {o.height ? `${o.height}p` : o.id}
-                </button>
+                <option key={o.id} value={o.id}>{o.name || (o.height ? `${o.height}p` : o.id)}</option>
               ))}
-            </div>
+            </select>
           </div>
         )}
 
