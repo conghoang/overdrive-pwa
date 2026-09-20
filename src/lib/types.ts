@@ -211,8 +211,13 @@ export interface ChargingSession {
   currency?: string
   isDc?: boolean
   rangeGained?: number
+  /** Average / peak charging power over the session, kW. */
+  avgPower?: number
+  peakPower?: number
   /** "soc_estimate" means energyAdded was inferred, not measured. */
   energySource?: string
+  /** True when energyAdded was inferred rather than metered. */
+  isEstimated?: boolean
 }
 
 export interface ChargingSummary {

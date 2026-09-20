@@ -29,7 +29,7 @@ const Chevron = () => (
 /** One trip: a tight summary that expands (animated) to labelled stat cells. */
 export function TripCard({ trip }: { trip: TripRow }) {
   const [open, setOpen] = useState(false)
-  const { date, time } = whenLabel(trip.startTime)
+  const { time } = whenLabel(trip.startTime)
   const km = trip.distanceKm
   const elec = per100(trip.energyUsedKwh, km)
   const fuel = per100(trip.litresUsed, km)
@@ -51,8 +51,7 @@ export function TripCard({ trip }: { trip: TripRow }) {
   const summary = (
     <>
       <div class="trip-when">
-        <span class="trip-date">{date}</span>
-        <span class="trip-time">{time}</span>
+        <span class="trip-date">{time}</span>
       </div>
       <div class="trip-right">
         <div class="trip-dist mono"><b>{fmtDec(km, km != null && km >= 100 ? 0 : 1)}</b><small>km</small></div>
