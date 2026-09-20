@@ -1,21 +1,11 @@
-/* Live camera view */
-/* Let the video take the height the controls do not need, instead of leaving
-   a third of the screen empty under them. Column layout only on narrow
-   screens; the wide layout flows these cards into columns, where a stretching
-   card would fight it. */
-.cam-screen {
-  display: flex;
-  flex-direction: column;
-  min-height: calc(100dvh - var(--safe-top) - var(--tabbar-h) - var(--safe-bottom) - 46px);
-}
-.cam-screen > .cam-card { flex: 1 1 auto; min-height: 0; display: flex; }
-.cam-screen > .cam-card > .cam-stage { flex: 1 1 auto; min-height: 0; aspect-ratio: auto; }
+/* Live camera view.
+   The stage is sized to the stream's 4:3 ratio, NOT stretched to fill the
+   screen — filling only letterboxed the 4:3 feed with big black bars top and
+   bottom, wasting most of the card. Controls sit directly beneath. */
 @media (min-width: 1000px) {
-  /* Single column, centred — this screen is a video with its controls under it,
-     not a set of cards to flow into two columns like the other tabs. */
-  .cam-screen { display: block; min-height: 0; column-count: 1; max-width: 600px; margin-inline: auto; }
-  .cam-screen > .cam-card { display: block; }
-  .cam-screen > .cam-card > .cam-stage { aspect-ratio: 4 / 3; }
+  /* Single column, centred — a video with its controls under it, not a set of
+     cards to flow into two columns like the other tabs. */
+  .cam-screen { column-count: 1; max-width: 600px; margin-inline: auto; }
 }
 
 .cam-card { padding: 10px; }
@@ -113,11 +103,11 @@
 }
 .cam-view {
   flex: 1; min-width: 0; border: 0; background: none; cursor: pointer;
-  display: flex; flex-direction: column; align-items: center; gap: 5px;
-  padding: 10px 2px; border-radius: 10px;
-  color: var(--muted); font: inherit; font-size: 12px; font-weight: 700;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 8px 2px; border-radius: 10px;
+  color: var(--muted); font: inherit; font-size: 11.5px; font-weight: 700;
 }
-.cam-view svg { width: 20px; height: 20px; }
+.cam-view svg { width: 19px; height: 19px; }
 .cam-view.on { background: var(--accent); color: #04211c; box-shadow: var(--shadow-card); }
 .cam-view:disabled { opacity: 0.5; }
 
