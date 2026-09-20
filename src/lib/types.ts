@@ -252,12 +252,19 @@ export interface TripRow {
   durationSeconds?: number
   avgSpeedKmh?: number
   maxSpeedKmh?: number
+  odometerStartKm?: number
   odometerEndKm?: number
   energyUsedKwh?: number
   /** False when the energy figure was inferred rather than measured. */
   energyMetered?: boolean
   /** Litres of fuel burned on the trip (PHEV); 0 on a pure-EV drive. */
   litresUsed?: number
+  /** State of charge (%) at the trip's start/end. */
+  socStart?: number
+  socEnd?: number
+  /** Fuel tank level (%) at the trip's start/end (PHEV). */
+  fuelPctStart?: number
+  fuelPctEnd?: number
   tripCost?: number
   currency?: string
 }

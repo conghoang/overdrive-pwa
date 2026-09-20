@@ -1,0 +1,61 @@
+.tl-back {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; margin-right: 4px;
+  background: var(--surface-1); border: 1px solid var(--border-soft);
+  border-radius: 50%; color: var(--text-primary); cursor: pointer;
+}
+.tl-back:active { transform: scale(0.94); }
+
+.trip-list { display: flex; flex-direction: column; gap: 10px; }
+
+.trip {
+  background: var(--surface-1);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.trip.open { border-color: var(--m-teal); }
+
+/* Summary row: when | distance+meta | consumption chips */
+.trip-main {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: 'when right' 'chips chips';
+  align-items: center; gap: 4px 12px;
+  width: 100%; padding: 13px 15px;
+  background: none; border: 0; text-align: left; cursor: pointer; color: inherit;
+}
+.trip-when { grid-area: when; display: flex; flex-direction: column; }
+.trip-date { font-weight: 700; font-size: 15px; }
+.trip-time { color: var(--muted); font-size: 12px; }
+.trip-right { grid-area: right; text-align: right; }
+.trip-dist { font-size: 17px; }
+.trip-dist b { color: var(--m-teal); font-weight: 700; }
+.trip-sub { color: var(--muted); font-size: 12px; margin-top: 1px; }
+
+.trip-chips { grid-area: chips; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.tchip {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 3px 8px; border-radius: 999px;
+  background: var(--surface-2, rgba(127, 127, 127, 0.12));
+  font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.tchip i { font-style: normal; color: var(--muted); font-weight: 600; font-size: 11px; }
+.tchip svg { color: var(--m-teal); }
+.tchip.soc { color: var(--m-orange); }
+.tchip.soc.up { color: var(--success); }
+
+/* Expanded detail */
+.trip-detail {
+  border-top: 1px solid var(--border-soft);
+  padding: 10px 15px 13px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px;
+}
+.td-row { display: flex; justify-content: space-between; gap: 8px; min-width: 0; }
+.td-k { color: var(--muted); font-size: 12px; font-weight: 600; }
+.td-v { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 360px) {
+  .trip-detail { grid-template-columns: 1fr; }
+}

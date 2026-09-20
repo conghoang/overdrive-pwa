@@ -210,6 +210,9 @@
   padding: 12px 16px;
   border-top: 1px solid var(--border-soft);
 }
+.cs-last-btn { background: none; border: 0; border-top: 1px solid var(--border-soft); font: inherit; color: inherit; cursor: pointer; }
+.cs-last-btn:active { background: var(--surface-2, rgba(127, 127, 127, 0.08)); }
+.cs-details { display: inline-flex; align-items: center; gap: 3px; margin-left: auto; color: var(--m-teal); font-size: 12px; font-weight: 700; }
 .cs-last-k { font-size: 12px; font-weight: 600; color: var(--muted); }
 .cs-soc { display: inline-flex; align-items: center; gap: 6px; font-size: 17px; font-weight: 700; }
 .cs-soc i { font-style: normal; color: var(--muted); font-size: 15px; }

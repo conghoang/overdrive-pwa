@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks'
 import * as api from '../lib/api'
 import { t } from '../lib/i18n'
-import { IconCar } from './icons-extra'
+import { IconCar, IconNext } from './icons-extra'
 import {
   buildWindow,
   dayKey,
@@ -42,7 +42,7 @@ function fmtKm(v: number): string {
   return v >= 100 ? String(Math.round(v)) : v.toFixed(1)
 }
 
-export function TripStats() {
+export function TripStats({ onOpenDetails }: { onOpenDetails?: () => void }) {
   const [cfg, setCfg] = useState<TripConfig | null>(null)
   // Seeded from the last visit, so the card opens on real distances.
   const [trips, setTrips] = useState<TripRow[] | null>(() => readCache(CACHE_KEY, revive))
@@ -141,25 +141,18 @@ export function TripStats() {
       }
       footer={
         last ? (
-          <div class="cs-last">
+          <button class="cs-last cs-last-btn" type="button" onClick={onOpenDetails}>
             <span class="cs-last-k">{t('data.last_trip')}</span>
             <span class="cs-soc">
               <b>{fmtKm(last.distanceKm ?? 0)}</b>
               <i>km</i>
             </span>
-            <span class="cs-last-right">
-              <span class="cs-last-meta">
-                {last.durationSeconds ? fmtDuration(last.durationSeconds / 60) : ''}
-                {last.avgSpeedKmh != null ? ` · ${Math.round(last.avgSpeedKmh)} km/h` : ''}
-              </span>
-              {last.energyUsedKwh != null && (
-                <span class="cs-flag done">
-                  {metered ? '' : '≈ '}
-                  {last.energyUsedKwh.toFixed(1)} kWh
-                </span>
-              )}
+            <span class="cs-last-meta">
+              {last.durationSeconds ? fmtDuration(last.durationSeconds / 60) : ''}
+              {last.energyUsedKwh != null ? ` · ${metered ? '' : '≈ '}${last.energyUsedKwh.toFixed(1)} kWh` : ''}
             </span>
-          </div>
+            <span class="cs-details">{t('data.details')} <IconNext size={14} /></span>
+          </button>
         ) : null
       }
     />
