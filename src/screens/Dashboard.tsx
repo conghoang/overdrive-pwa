@@ -1,4 +1,4 @@
-import { connected, consumptionWhPerKm, lastError, outsideTempC, pm25Inside, pm25Outside, status, vehicleState } from '../lib/store'
+import { connected, consumptionWhPerKm, lastError, odometer, outsideTempC, pm25Inside, pm25Outside, status, vehicleState } from '../lib/store'
 import { fmtTemp, ago } from '../lib/format'
 import { t } from '../lib/i18n'
 import { effectiveGear } from '../lib/vehicle'
@@ -20,7 +20,7 @@ import { QuickActions } from '../components/QuickActions'
 import { EnergyGauges } from '../components/EnergyGauges'
 import { StatTile } from '../components/StatTile'
 import { Tyres } from '../components/Tyres'
-import { IconAir, IconBolt, IconLock, IconMapOpen, IconPin, IconThermo, IconUnlock, IconWifi, IconWind, IconWindow } from '../components/icons'
+import { IconAir, IconBolt, IconFuel, IconLock, IconMapOpen, IconPin, IconThermo, IconUnlock, IconWifi, IconWind, IconWindow } from '../components/icons'
 import type { WindowsState } from '../lib/types'
 import './dashboard.css'
 
@@ -68,6 +68,10 @@ export function Dashboard() {
    */
   const wh = consumptionWhPerKm.value
   const efficiency = wh == null ? '--' : (wh / 10).toFixed(1) // Wh/km → kWh/100km
+  // Fuel consumption of the latest trip (PHEV), L/100km — computed in getOdometer
+  // from the same trip fetch. 0.0 on a pure-EV drive; "--" when not reported.
+  const fuelL = odometer.value?.fuelLPer100
+  const fuelCons = fuelL == null ? '--' : fuelL.toFixed(1)
   const winOpen = windowsOpenCount(vs?.windows)
   const doorsLocked = vs?.doors?.overall
   const climateOn = !!(vs?.climate?.acOn || vs?.climate?.remoteClimateActive)
@@ -259,6 +263,13 @@ export function Dashboard() {
           value={efficiency}
           unit="kWh/100km"
           accent="var(--m-teal)"
+        />
+        <StatTile
+          icon={<IconFuel size={20} />}
+          label={t('tile.fuel_cons')}
+          value={fuelCons}
+          unit="L/100km"
+          accent="var(--m-orange)"
         />
         <StatTile icon={<IconThermo size={20} />} label={tempLabel} value={fmtTemp(tempValue)} accent="var(--m-orange)" />
         <StatTile

@@ -36,7 +36,7 @@ function readCachedOdo(): Odometer | null {
     // A cached "no odometer" is worth nothing on first paint — it would just
     // render the range, which is what happens anyway once the car answers.
     if (totalKm == null) return null
-    return { totalKm, evKm: num(c.evKm), hevKm: num(c.hevKm) }
+    return { totalKm, evKm: num(c.evKm), hevKm: num(c.hevKm), fuelLPer100: num(c.fuelLPer100) }
   } catch {
     return null
   }

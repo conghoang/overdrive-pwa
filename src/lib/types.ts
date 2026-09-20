@@ -256,6 +256,8 @@ export interface TripRow {
   energyUsedKwh?: number
   /** False when the energy figure was inferred rather than measured. */
   energyMetered?: boolean
+  /** Litres of fuel burned on the trip (PHEV); 0 on a pure-EV drive. */
+  litresUsed?: number
   tripCost?: number
   currency?: string
 }
