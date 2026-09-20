@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks'
+import { useEffect, useState } from 'preact/hooks'
 import { AppHeader } from '../components/AppHeader'
 import { ChargingStats } from '../components/ChargingStats'
 import { TripStats } from '../components/TripStats'
@@ -9,14 +9,26 @@ import { t } from '../lib/i18n'
 /**
  * History and statistics, as opposed to the live state the other tabs show.
  *
- * The cards here read the car's own recorded history rather than the telemetry
- * poll, so they fetch on mount and on demand instead of every 5 seconds. The
- * trips card opens an in-app detail list (TripList) rather than the car's web UI.
+ * The trips card opens an in-app detail list (TripList). That sub-view is kept
+ * in the URL hash (#/data/trips) so a reload — most often a pull-to-refresh —
+ * restores it instead of dropping back to the summary.
  */
-export function Data() {
-  const [showTrips, setShowTrips] = useState(false)
+const isTripsHash = () => location.hash.replace(/^#\/?/, '').split('/')[1] === 'trips'
 
-  if (showTrips) return <TripList onBack={() => setShowTrips(false)} />
+export function Data() {
+  const [showTrips, setShowTrips] = useState(isTripsHash)
+
+  // Keep the sub-view in sync with the hash (back/forward, manual edits).
+  useEffect(() => {
+    const onHash = () => setShowTrips(isTripsHash())
+    addEventListener('hashchange', onHash)
+    return () => removeEventListener('hashchange', onHash)
+  }, [])
+
+  const open = () => { setShowTrips(true); history.replaceState(null, '', '#/data/trips') }
+  const close = () => { setShowTrips(false); history.replaceState(null, '', '#/data') }
+
+  if (showTrips) return <TripList onBack={close} />
 
   return (
     <div class="screen">
@@ -27,7 +39,7 @@ export function Data() {
       />
       <ChargingStats />
       {/* Renders nothing when trip recording is off — see TripStats. */}
-      <TripStats onOpenDetails={() => setShowTrips(true)} />
+      <TripStats onOpenDetails={open} />
     </div>
   )
 }

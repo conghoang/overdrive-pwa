@@ -32,15 +32,17 @@ const TAB_ORDER: Tab[] = ['dashboard', 'controls', 'camera', 'data', 'account']
  * still leaves the app rather than cycling tabs.
  */
 function tabFromHash(): Tab {
-  const h = location.hash.replace(/^#\/?/, '')
+  const h = location.hash.replace(/^#\/?/, '').split('/')[0]
   return (TAB_ORDER as string[]).includes(h) ? (h as Tab) : 'dashboard'
 }
 
 const tab = signal<Tab>(tabFromHash())
 
 effect(() => {
-  const target = `#/${tab.value}`
-  if (location.hash !== target) history.replaceState(null, '', target)
+  // Only rewrite the tab segment; preserve any sub-path (e.g. #/data/trips) so a
+  // screen's own sub-view survives a reload.
+  const cur = location.hash.replace(/^#\/?/, '').split('/')[0]
+  if (cur !== tab.value) history.replaceState(null, '', `#/${tab.value}`)
 })
 // Back/forward or a manually edited hash updates the tab.
 addEventListener('hashchange', () => { tab.value = tabFromHash() })
