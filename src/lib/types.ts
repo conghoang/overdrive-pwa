@@ -126,8 +126,6 @@ export interface VehicleState {
   success?: boolean
   doors?: DoorsState
   windows?: WindowsState
-  /** Live odometer + EV/HEV split (DM-i trims); keys omitted when the trim can't report. */
-  odometer?: { totalKm?: number; evKm?: number; hevKm?: number }
   trunk?: { lockStatus?: number }
   sunroof?: { state?: number; position?: number }
   battery?: { soc?: number; rangeKm?: number; bodyworkRangeKm?: number }
@@ -154,6 +152,8 @@ export interface LauncherSummary {
   }
   /** Usable pack capacity, used to estimate time-to-full before the car reports one. */
   battery?: { usableKwh?: number | null; socPct?: number | null }
+  /** Recent trip block; whPerKm is OD's computed consumption for the last drive. */
+  trip?: { whPerKm?: number | null; distanceKm?: number; durationMin?: number; cost?: number; currency?: string }
 }
 
 export interface CloudStatus {

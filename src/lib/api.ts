@@ -231,6 +231,7 @@ async function demoResponse<T>(path: string): Promise<T> {
       // Real cars report this; demo carries it too so the time-to-full
       // estimate path is exercised rather than silently untested.
       battery: { usableKwh: 18.3, socPct: 68 },
+      trip: { whPerKm: 148, distanceKm: 12.4, durationMin: 22 },
     } as unknown as T
   if (path === '/api/settings/unified') {
     return { config: { recording: { rectifyStrength: 80 } } } as unknown as T
