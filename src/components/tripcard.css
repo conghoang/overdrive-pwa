@@ -88,6 +88,8 @@ button.trip-main { cursor: pointer; }
 }
 .tstat { min-width: 0; }
 .tstat.full { grid-column: 1 / -1; }
+/* A lone trailing cell (odd count) spans full width instead of stranding. */
+.trip-detail .tstat:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .tstat-k { font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin-bottom: 4px; }
 .tstat-v { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
 .tarrow { color: var(--muted); margin: 0 4px; font-weight: 600; }

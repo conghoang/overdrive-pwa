@@ -76,7 +76,9 @@ export function ChargingSessionCard({ s }: { s: ChargingSession }) {
           {typeof s.rangeGained === 'number' && s.rangeGained > 0 &&
             cell(t('charge.range'), <>+{Math.round(s.rangeGained)} <span class="tu">km</span></>)}
           {s.durationMinutes ? cell(t('trip.duration'), <>{fmtDuration(s.durationMinutes)}</>) : null}
-          {s.cost ? cell(t('trip.cost'), <>{est ? '≈ ' : ''}{fmtMoney(s.cost, s.currency || '₫')}</>, true) : null}
+          {!s.inProgress && typeof s.endTime === 'number' && s.endTime > 0 &&
+            cell(t('charge.end_time'), <>{timeLabel(s.endTime)}</>)}
+          {s.cost ? cell(t('trip.cost'), <>{est ? '≈ ' : ''}{fmtMoney(s.cost, s.currency || '₫')}</>) : null}
         </div>
       </div>
     </div>

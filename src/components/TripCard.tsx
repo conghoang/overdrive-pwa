@@ -95,7 +95,7 @@ export function TripCard({ trip }: { trip: TripRow }) {
             cell(t('trip.energy_used'), <>{fmtDec(kwh, 1)} <span class="tu">kWh</span></>)}
           {typeof litres === 'number' && litres > 0 &&
             cell(t('trip.fuel_used'), <>{fmtDec(litres, 1)} <span class="tu">L</span></>)}
-          {trip.tripCost ? cell(t('trip.cost'), <>{fmtMoney(trip.tripCost, trip.currency || '₫')}</>, true) : null}
+          {trip.tripCost ? cell(t('trip.cost'), <>{fmtMoney(trip.tripCost, trip.currency || '₫')}</>) : null}
         </div>
       </div>
     </div>
