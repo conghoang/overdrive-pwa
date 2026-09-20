@@ -59,14 +59,14 @@ button.trip-main { cursor: pointer; }
 .tchip i { font-style: normal; color: var(--muted); font-weight: 600; font-size: 11px; }
 .tchip svg { color: var(--m-teal); }
 
-/* Expanded detail — height animates via the 0fr↔1fr grid-rows trick. */
+/* Expanded detail — animate max-height (works in older webviews, unlike the
+   grid-rows 0fr trick which some engines don't collapse). */
 .trip-detail-wrap {
-  display: grid; grid-template-rows: 0fr;
-  transition: grid-template-rows 0.3s ease;
+  max-height: 0; overflow: hidden;
+  transition: max-height 0.3s ease;
 }
-.trip.open .trip-detail-wrap { grid-template-rows: 1fr; }
+.trip.open .trip-detail-wrap { max-height: 480px; }
 .trip-detail {
-  overflow: hidden; min-height: 0;
   border-top: 1px solid var(--border-soft);
   padding: 13px 15px 15px;
   display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px;
