@@ -1,3 +1,12 @@
+.tl-head-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.tl-filter { display: inline-flex; flex: 0 0 auto; background: var(--surface-2, rgba(127, 127, 127, 0.14)); border-radius: 999px; padding: 3px; }
+.tl-filter button {
+  border: 0; background: none; font: inherit; cursor: pointer;
+  color: var(--muted); font-size: 13px; font-weight: 700;
+  padding: 5px 13px; border-radius: 999px; transition: color 0.15s ease;
+}
+.tl-filter button.active { background: var(--surface-1); color: var(--m-teal); box-shadow: var(--shadow-card); }
+
 .tl-back {
   display: inline-flex; align-items: center; justify-content: center;
   width: 40px; height: 40px; margin-right: 4px;
