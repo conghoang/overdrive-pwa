@@ -17,15 +17,18 @@
 }
 .trip.open { border-color: var(--m-teal); }
 
-/* Summary row: when | distance+meta | consumption chips */
+/* Summary row: when | distance+meta | caret, with chips below */
 .trip-main {
   display: grid;
-  grid-template-columns: auto 1fr;
-  grid-template-areas: 'when right' 'chips chips';
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas: 'when right caret' 'chips chips caret';
   align-items: center; gap: 4px 12px;
   width: 100%; padding: 13px 15px;
-  background: none; border: 0; text-align: left; cursor: pointer; color: inherit;
+  background: none; border: 0; text-align: left; color: inherit; font: inherit;
 }
+button.trip-main { cursor: pointer; }
+.trip-caret { grid-area: caret; align-self: center; color: var(--muted); display: inline-flex; transition: transform 0.28s ease; }
+.trip.open .trip-caret { transform: rotate(90deg); color: var(--m-teal); }
 .trip-when { grid-area: when; display: flex; flex-direction: column; }
 .trip-date { font-weight: 700; font-size: 15px; }
 .trip-time { color: var(--muted); font-size: 12px; }
@@ -46,11 +49,20 @@
 .tchip.soc { color: var(--m-orange); }
 .tchip.soc.up { color: var(--success); }
 
-/* Expanded detail */
+/* Expanded detail — height animates via the 0fr↔1fr grid-rows trick. */
+.trip-detail-wrap {
+  display: grid; grid-template-rows: 0fr;
+  transition: grid-template-rows 0.28s ease;
+}
+.trip.open .trip-detail-wrap { grid-template-rows: 1fr; }
 .trip-detail {
+  overflow: hidden; min-height: 0;
   border-top: 1px solid var(--border-soft);
   padding: 10px 15px 13px;
   display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .trip-detail-wrap, .trip-caret { transition: none; }
 }
 .td-row { display: flex; justify-content: space-between; gap: 8px; min-width: 0; }
 .td-k { color: var(--muted); font-size: 12px; font-weight: 600; }

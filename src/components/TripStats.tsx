@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks'
 import * as api from '../lib/api'
 import { t } from '../lib/i18n'
-import { IconCar, IconNext } from './icons-extra'
+import { IconCar } from './icons-extra'
 import {
   buildWindow,
   dayKey,
@@ -116,9 +116,10 @@ export function TripStats({ onOpenDetails }: { onOpenDetails?: () => void }) {
       icon={<IconCar size={20} />}
       title={t('data.trips')}
       subtitle={windowLabel(DAYS)}
-      chipLabel={`${DAYS}D`}
+      chipLabel={t('data.details')}
       href={odUrl}
-      hrefLabel={t('data.open_trips')}
+      hrefLabel={t('data.details')}
+      onChip={onOpenDetails}
       state={state}
       emptyText={t('data.no_trips')}
       bars={bars}
@@ -141,18 +142,25 @@ export function TripStats({ onOpenDetails }: { onOpenDetails?: () => void }) {
       }
       footer={
         last ? (
-          <button class="cs-last cs-last-btn" type="button" onClick={onOpenDetails}>
+          <div class="cs-last">
             <span class="cs-last-k">{t('data.last_trip')}</span>
             <span class="cs-soc">
               <b>{fmtKm(last.distanceKm ?? 0)}</b>
               <i>km</i>
             </span>
-            <span class="cs-last-meta">
-              {last.durationSeconds ? fmtDuration(last.durationSeconds / 60) : ''}
-              {last.energyUsedKwh != null ? ` · ${metered ? '' : '≈ '}${last.energyUsedKwh.toFixed(1)} kWh` : ''}
+            <span class="cs-last-right">
+              <span class="cs-last-meta">
+                {last.durationSeconds ? fmtDuration(last.durationSeconds / 60) : ''}
+                {last.avgSpeedKmh != null ? ` · ${Math.round(last.avgSpeedKmh)} km/h` : ''}
+              </span>
+              {last.energyUsedKwh != null && (
+                <span class="cs-flag done">
+                  {metered ? '' : '≈ '}
+                  {last.energyUsedKwh.toFixed(1)} kWh
+                </span>
+              )}
             </span>
-            <span class="cs-details">{t('data.details')} <IconNext size={14} /></span>
-          </button>
+          </div>
         ) : null
       }
     />
