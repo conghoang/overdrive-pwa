@@ -89,130 +89,57 @@
 }
 /* Controls: picker and quality on one row, kept short enough that the video
    above stays visible. */
-.cam-controls {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-top: 12px;
-  padding: 14px 16px;
+/* LIVE badge — one live indicator, on the feed itself. */
+.cam-live {
+  position: absolute; top: 12px; left: 12px; z-index: 2;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 10px; border-radius: 999px;
+  background: rgba(6, 12, 18, 0.55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  color: #fff; font-size: 12px; font-weight: 800; letter-spacing: 0.04em;
 }
+.cam-live-dot { width: 8px; height: 8px; border-radius: 50%; background: #ff5d6c; animation: cam-pulse 1.4s infinite; }
+@keyframes cam-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.cam-stage.full .cam-live { top: calc(var(--safe-top) + 10px); left: calc(env(safe-area-inset-left, 0px) + 12px); }
 
-.cam-picker {
-  position: relative;
-  flex: 0 0 auto;
-  width: 182px;
-  height: 216px;
+/* View switch overlaid on the video: quick-switch while watching. */
+.cam-views {
+  position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 2;
+  display: flex; gap: 6px; padding: 5px; border-radius: 14px;
+  background: rgba(8, 14, 22, 0.5); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
-/* The car is inset so the ring of hotspots sits AROUND it while staying inside
-   the picker box — otherwise the top and bottom buttons hang over the card. */
-/* Sized explicitly, NOT by inset + width:auto.
-   For an absolutely positioned REPLACED element (an <svg> is one), width:auto
-   resolves to the element's INTRINSIC size, not to the box the insets describe
-   — CSS 2.1 §10.3.8. So the insets never constrained it. Chrome happened to
-   fill the box anyway; Safari followed the spec and drew the car at full size,
-   overflowing the card on iOS. Explicit width/height removes the ambiguity. */
-.cam-car {
-  position: absolute;
-  display: block;
-  left: 42px;
-  top: 30px;
-  width: calc(100% - 84px);
-  height: calc(100% - 60px);
+.cam-stage.full .cam-views { bottom: calc(var(--safe-bottom) + 12px); }
+.cam-view {
+  flex: 1; min-width: 0; border: 0; background: none; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 8px 2px; border-radius: 10px;
+  color: #cdd9e6; font: inherit; font-size: 12px; font-weight: 700;
 }
-.cc-body { fill: var(--surface-3); stroke: var(--border-strong); stroke-width: 3; }
-.cc-glass { fill: rgba(150, 190, 225, 0.22); }
-.cc-roof { fill: rgba(150, 190, 225, 0.10); }
-.cc-wheel { fill: var(--track-deep); }
+.cam-view svg { width: 16px; height: 16px; }
+.cam-view.on { background: var(--accent); color: #04211c; }
+.cam-view:disabled { opacity: 0.5; }
 
-.cam-hotspot {
-  position: absolute;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  padding: 0;
-  border-radius: 50%;
-  border: 1px solid var(--border-strong);
-  background: var(--surface-1);
-  color: var(--text-secondary);
-  box-shadow: var(--shadow-card);
-  transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-}
-/* No transform here: each position below pins a different axis, so a shared
-   translate would fight them. */
-.cam-hotspot:active { opacity: 0.65; }
-.cam-hotspot.on {
-  background: var(--accent-soft);
-  border-color: var(--accent-border);
-  color: var(--accent-bright);
-}
-.cam-hotspot:disabled { opacity: 0.45; pointer-events: none; }
+/* Controls card below the video. */
+.cam-controls { margin-top: 12px; padding: 15px 16px; }
+.cam-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cam-row + .cam-row { margin-top: 16px; }
+.cam-row-block { display: block; }
+.cam-k { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.cam-k b { color: var(--accent-bright); margin-left: 6px; font-variant-numeric: tabular-nums; }
 
-/* mode ids: 1 front, 2 right, 3 rear, 4 left, 0 mosaic */
-.cam-hotspot.pos-1 { top: 0; left: 50%; transform: translateX(-50%); }
-.cam-hotspot.pos-3 { bottom: 0; left: 50%; transform: translateX(-50%); }
-.cam-hotspot.pos-4 { left: 0; top: 50%; transform: translateY(-50%); }
-.cam-hotspot.pos-2 { right: 0; top: 50%; transform: translateY(-50%); }
-.cam-hotspot.pos-all { left: 50%; top: 50%; transform: translate(-50%, -50%); }
-
-.cam-side { flex: 1 1 auto; min-width: 0; }
-.cam-current-k {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
+.cam-seg { display: inline-flex; gap: 3px; background: var(--surface-2); border-radius: 999px; padding: 3px; }
+.cam-seg button {
+  border: 0; background: none; cursor: pointer; font: inherit;
+  color: var(--muted); font-size: 12.5px; font-weight: 700;
+  padding: 6px 12px; border-radius: 999px; font-variant-numeric: tabular-nums;
 }
-.cam-current { font-size: 17px; font-weight: 700; margin-top: 2px; }
-.cam-dewarp-k { margin-top: 10px; }
-.cam-dewarp-k b { color: var(--text); font-size: 12px; margin-left: 2px; }
-/* Shorter track and thumb than the climate slider — this one sits in a control
-   strip sized to keep the video on screen. */
-.cam-dewarp-slider { height: 6px; margin-top: 5px; }
-.cam-dewarp-slider::-webkit-slider-thumb { width: 18px; height: 18px; border-width: 3px; }
-.cam-dewarp-slider::-moz-range-thumb { width: 16px; height: 16px; border-width: 3px; }
+.cam-seg button.on { background: var(--surface-1); color: var(--accent-bright); box-shadow: var(--shadow-card); }
+.cam-seg button:disabled { opacity: 0.5; }
 
-/* Native select, so a phone opens its own picker rather than a wall of buttons.
-   Sized to its content — filling the column made a small control look like the
-   main event next to the camera picker. */
-.qual-select {
-  appearance: none;
-  -webkit-appearance: none;
-  width: auto;
-  max-width: 100%;
-  margin-top: 4px;
-  background: var(--surface-2);
-  color: var(--text);
-  border: 1px solid var(--border-strong);
-  border-radius: 10px;
-  padding: 7px 28px 7px 11px;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
-    linear-gradient(135deg, currentColor 50%, transparent 50%);
-  background-position: calc(100% - 15px) 53%, calc(100% - 10px) 53%;
-  background-size: 5px 5px, 5px 5px;
-  background-repeat: no-repeat;
-}
-.qual-select:disabled { opacity: 0.5; }
-
-/* On narrow phones the picker was squeezing the select until "600p · 10fps"
-   lost its unit. Give the width back to the select — a readable preset matters
-   more than the last 26px of car. */
-@media (max-width: 380px) {
-  .cam-controls { gap: 12px; padding: 14px 12px; }
-  .cam-picker { width: 156px; height: 186px; }
-  .cam-car {
-    left: 36px;
-    top: 26px;
-    width: calc(100% - 72px);
-    height: calc(100% - 52px);
-  }
-  .cam-hotspot { width: 34px; height: 34px; }
-}
+.cam-dewarp-slider { height: 6px; margin-top: 10px; }
+.cam-dewarp-slider::-webkit-slider-thumb { width: 20px; height: 20px; border-width: 3px; }
+.cam-dewarp-slider::-moz-range-thumb { width: 18px; height: 18px; border-width: 3px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .cam-spinner { animation: none; }
+  .cam-spinner, .cam-live-dot { animation: none; }
 }
