@@ -27,14 +27,27 @@ export function TripCard({ trip }: { trip: TripRow }) {
   const km = trip.distanceKm
   const elec = per100(trip.energyUsedKwh, km)
   const fuel = per100(trip.litresUsed, km)
-  const socDelta =
-    typeof trip.socStart === 'number' && typeof trip.socEnd === 'number' ? trip.socEnd - trip.socStart : null
   const hasDetail =
     trip.odometerStartKm != null || trip.socStart != null || trip.fuelPctStart != null || !!trip.tripCost
 
   const detailRow = (k: string, v: string) => (
     <div class="td-row"><span class="td-k">{k}</span><span class="td-v mono">{v}</span></div>
   )
+  // A start → end % row with a coloured delta (drain/burn = orange, gain = green).
+  const deltaRow = (k: string, start?: number, end?: number) => {
+    const d = typeof start === 'number' && typeof end === 'number' ? end - start : null
+    return (
+      <div class="td-row">
+        <span class="td-k">{k}</span>
+        <span class="td-v mono">
+          {pct(start)} → {pct(end)}
+          {d != null && (
+            <em class={'td-delta' + (d > 0 ? ' up' : d < 0 ? ' down' : '')}> ({d > 0 ? '+' : ''}{fmtDec(d, 0)}%)</em>
+          )}
+        </span>
+      </div>
+    )
+  }
 
   const summary = (
     <>
@@ -68,11 +81,8 @@ export function TripCard({ trip }: { trip: TripRow }) {
         <div class="trip-detail">
           {trip.odometerStartKm != null &&
             detailRow(t('trip.odometer'), `${fmtOdo(trip.odometerStartKm)} → ${fmtOdo(trip.odometerEndKm)} km`)}
-          {trip.socStart != null && detailRow(
-            t('trip.battery'),
-            `${pct(trip.socStart)} → ${pct(trip.socEnd)}${socDelta != null ? ` (${socDelta > 0 ? '+' : ''}${fmtDec(socDelta, 0)}%)` : ''}`,
-          )}
-          {trip.fuelPctStart != null && detailRow(t('trip.fuel'), `${pct(trip.fuelPctStart)} → ${pct(trip.fuelPctEnd)}`)}
+          {trip.socStart != null && deltaRow(t('trip.battery'), trip.socStart, trip.socEnd)}
+          {trip.fuelPctStart != null && deltaRow(t('trip.fuel'), trip.fuelPctStart, trip.fuelPctEnd)}
           {typeof trip.energyUsedKwh === 'number' && trip.energyUsedKwh > 0 &&
             detailRow(t('trip.energy_used'), `${fmtDec(trip.energyUsedKwh, 1)} kWh`)}
           {typeof trip.litresUsed === 'number' && trip.litresUsed > 0 &&

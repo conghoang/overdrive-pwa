@@ -77,6 +77,9 @@ button.trip-main { cursor: pointer; }
 .td-row { display: flex; justify-content: space-between; gap: 8px; min-width: 0; }
 .td-k { color: var(--muted); font-size: 12px; font-weight: 600; }
 .td-v { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.td-delta { font-style: normal; color: var(--muted); }
+.td-delta.down { color: var(--m-orange); }
+.td-delta.up { color: var(--success); }
 
 @media (max-width: 360px) {
   .trip-detail { grid-template-columns: 1fr; }
