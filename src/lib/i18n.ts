@@ -116,6 +116,7 @@ const EN: Record<string, string> = {
   'energy.range': 'est. range',
 
   'tile.battery_health': 'Battery health',
+  'tile.ev_fuel_odo': 'EV / Fuel',
   'tile.cabin_temp': 'Cabin temp',
   'tile.outside_temp': 'Outside temp',
   'tile.network': 'Network',
@@ -349,6 +350,7 @@ const VI: Record<string, string> = {
   'energy.range': 'quãng đường ước tính',
 
   'tile.battery_health': 'Sức khỏe pin',
+  'tile.ev_fuel_odo': 'Điện / Xăng',
   'tile.cabin_temp': 'Nhiệt độ khoang',
   'tile.outside_temp': 'Nhiệt độ ngoài trời',
   'tile.network': 'Mạng',

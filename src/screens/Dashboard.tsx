@@ -1,5 +1,5 @@
 import { connected, lastError, outsideTempC, pm25Inside, pm25Outside, status, vehicleState } from '../lib/store'
-import { fmtTemp, ago } from '../lib/format'
+import { fmtTemp, ago, fmtOdo, distanceUnitLabel } from '../lib/format'
 import { t } from '../lib/i18n'
 import { effectiveGear } from '../lib/vehicle'
 import { carName, showMap } from '../lib/settings'
@@ -20,7 +20,7 @@ import { QuickActions } from '../components/QuickActions'
 import { EnergyGauges } from '../components/EnergyGauges'
 import { StatTile } from '../components/StatTile'
 import { Tyres } from '../components/Tyres'
-import { IconAir, IconLock, IconMapOpen, IconPin, IconPlug, IconThermo, IconUnlock, IconWifi, IconWind, IconWindow } from '../components/icons'
+import { IconAir, IconGauge, IconLock, IconMapOpen, IconPin, IconThermo, IconUnlock, IconWifi, IconWind, IconWindow } from '../components/icons'
 import type { WindowsState } from '../lib/types'
 import './dashboard.css'
 
@@ -60,6 +60,15 @@ export function Dashboard() {
   }
 
   const unit = s.distanceUnit || 'km'
+  /*
+   * EV vs fuel odometer — the DM-i mileage split from /api/vehicle/state
+   * (odometer.evKm / hevKm), live per-trim. Replaces the SOH tile, which barely
+   * moves. fmtOdo renders "--" for a value the trim doesn't report, so a car
+   * with no split shows "-- / --" rather than a misleading zero.
+   */
+  const odo = vs?.odometer
+  const evFuelOdo =
+    odo?.evKm == null && odo?.hevKm == null ? '--' : `${fmtOdo(odo?.evKm, unit)} / ${fmtOdo(odo?.hevKm, unit)}`
   const winOpen = windowsOpenCount(vs?.windows)
   const doorsLocked = vs?.doors?.overall
   const climateOn = !!(vs?.climate?.acOn || vs?.climate?.remoteClimateActive)
@@ -246,10 +255,10 @@ export function Dashboard() {
           stale number or a dash — and it is not something you act on anyway. */}
       <div class="tiles" style={{ marginTop: '14px' }}>
         <StatTile
-          icon={<IconPlug size={20} />}
-          label={t('tile.battery_health')}
-          value={s.soh?.percent != null ? String(Math.round(s.soh.percent)) : '--'}
-          unit="%"
+          icon={<IconGauge size={20} />}
+          label={t('tile.ev_fuel_odo')}
+          value={evFuelOdo}
+          unit={distanceUnitLabel(unit)}
           accent="var(--m-teal)"
         />
         <StatTile icon={<IconThermo size={20} />} label={tempLabel} value={fmtTemp(tempValue)} accent="var(--m-orange)" />

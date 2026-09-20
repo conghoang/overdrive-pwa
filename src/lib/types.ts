@@ -126,6 +126,8 @@ export interface VehicleState {
   success?: boolean
   doors?: DoorsState
   windows?: WindowsState
+  /** Live odometer + EV/HEV split (DM-i trims); keys omitted when the trim can't report. */
+  odometer?: { totalKm?: number; evKm?: number; hevKm?: number }
   trunk?: { lockStatus?: number }
   sunroof?: { state?: number; position?: number }
   battery?: { soc?: number; rangeKm?: number; bodyworkRangeKm?: number }
