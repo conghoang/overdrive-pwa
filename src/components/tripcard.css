@@ -57,6 +57,7 @@ button.trip-main { cursor: pointer; }
 .tchip svg { color: var(--m-teal); }
 .tchip.soc { color: var(--m-orange); }
 .tchip.soc.up { color: var(--success); }
+.tchip.soc svg { color: inherit; }
 
 /* Expanded detail — height animates via the 0fr↔1fr grid-rows trick. */
 .trip-detail-wrap {

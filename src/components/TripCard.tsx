@@ -3,7 +3,7 @@ import type { TripRow } from '../lib/types'
 import { lang, t } from '../lib/i18n'
 import { fmtDec, fmtOdo } from '../lib/format'
 import { fmtDuration, fmtMoney } from './StatChartCard'
-import { IconBolt, IconFuel } from './icons'
+import { IconBattery, IconBolt, IconFuel } from './icons'
 import { IconNext } from './icons-extra'
 
 const loc = () => (lang.value === 'vi' ? 'vi-VN' : 'en-US')
@@ -53,7 +53,9 @@ export function TripCard({ trip }: { trip: TripRow }) {
         {elec != null && <span class="tchip"><IconBolt size={13} /> {fmtDec(elec, 1)}<i>kWh/100</i></span>}
         {fuel != null && fuel > 0 && <span class="tchip"><IconFuel size={13} /> {fmtDec(fuel, 1)}<i>L/100</i></span>}
         {socDelta != null && (
-          <span class={'tchip soc' + (socDelta > 0 ? ' up' : '')}>{socDelta > 0 ? '+' : ''}{fmtDec(socDelta, 0)}%</span>
+          <span class={'tchip soc' + (socDelta > 0 ? ' up' : '')} title={t('trip.battery')}>
+            <IconBattery size={13} /> {socDelta > 0 ? '+' : ''}{fmtDec(socDelta, 0)}%
+          </span>
         )}
       </div>
     </>
