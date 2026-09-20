@@ -56,7 +56,7 @@ const EN: Record<string, string> = {
   'trip.odometer': 'Odometer',
   'trip.battery': 'Battery',
   'trip.fuel': 'Fuel',
-  'trip.energy_used': 'Energy',
+  'trip.energy_used': 'Electric used',
   'trip.fuel_used': 'Fuel used',
   'trip.cost': 'Cost',
   'trip.empty': 'No trips in this period',

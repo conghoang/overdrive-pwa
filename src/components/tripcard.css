@@ -36,50 +36,56 @@
   background: none; border: 0; text-align: left; color: inherit; font: inherit;
 }
 button.trip-main { cursor: pointer; }
-.trip-caret { grid-area: caret; align-self: center; color: var(--muted); display: inline-flex; transition: transform 0.28s ease; }
-.trip.open .trip-caret { transform: rotate(90deg); color: var(--m-teal); }
+.trip-chev { grid-area: caret; align-self: center; display: inline-flex; color: var(--muted); }
+.trip-caret { transition: transform 0.28s ease; }
+.trip.open .trip-caret { transform: rotate(180deg); }
+.trip.open .trip-chev { color: var(--m-teal); }
 .trip-when { grid-area: when; display: flex; flex-direction: column; }
-.trip-date { font-weight: 700; font-size: 15px; }
-.trip-time { color: var(--muted); font-size: 12px; }
+.trip-date { font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
+.trip-time { color: var(--muted); font-size: 12.5px; margin-top: 1px; }
 .trip-right { grid-area: right; text-align: right; }
-.trip-dist { font-size: 17px; }
-.trip-dist b { color: var(--m-teal); font-weight: 700; }
+.trip-dist { font-size: 20px; letter-spacing: -0.02em; }
+.trip-dist b { color: var(--m-teal); font-weight: 800; }
+.trip-dist small { font-size: 13px; color: var(--muted); font-weight: 600; margin-left: 3px; }
 .trip-sub { color: var(--muted); font-size: 12px; margin-top: 1px; }
 
-.trip-chips { grid-area: chips; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.trip-chips { grid-area: chips; display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; }
 .tchip {
-  display: inline-flex; align-items: center; gap: 3px;
-  padding: 3px 8px; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 10px; border-radius: 999px;
   background: var(--surface-2, rgba(127, 127, 127, 0.12));
-  font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
+  font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums;
 }
 .tchip i { font-style: normal; color: var(--muted); font-weight: 600; font-size: 11px; }
 .tchip svg { color: var(--m-teal); }
-.tchip.soc { color: var(--m-orange); }
-.tchip.soc.up { color: var(--success); }
-.tchip.soc svg { color: inherit; }
 
 /* Expanded detail — height animates via the 0fr↔1fr grid-rows trick. */
 .trip-detail-wrap {
   display: grid; grid-template-rows: 0fr;
-  transition: grid-template-rows 0.28s ease;
+  transition: grid-template-rows 0.3s ease;
 }
 .trip.open .trip-detail-wrap { grid-template-rows: 1fr; }
 .trip-detail {
   overflow: hidden; min-height: 0;
   border-top: 1px solid var(--border-soft);
-  padding: 10px 15px 13px;
-  display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px;
+  padding: 13px 15px 15px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px;
 }
 @media (prefers-reduced-motion: reduce) {
   .trip-detail-wrap, .trip-caret { transition: none; }
 }
-.td-row { display: flex; justify-content: space-between; gap: 8px; min-width: 0; }
-.td-k { color: var(--muted); font-size: 12px; font-weight: 600; }
-.td-v { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.td-delta { font-style: normal; color: var(--muted); }
-.td-delta.down { color: var(--m-orange); }
-.td-delta.up { color: var(--success); }
+.tstat { min-width: 0; }
+.tstat.full { grid-column: 1 / -1; }
+.tstat-k { font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin-bottom: 4px; }
+.tstat-v { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.tarrow { color: var(--muted); margin: 0 4px; font-weight: 600; }
+.tu { color: var(--muted); font-weight: 600; font-size: 12px; }
+.tdelta { font-style: normal; font-size: 12px; font-weight: 700; margin-left: 6px; color: var(--muted); }
+.tdelta.down { color: var(--m-orange); }
+.tdelta.up { color: var(--success); }
+.tbar { position: relative; height: 5px; border-radius: 3px; background: var(--surface-2, rgba(127, 127, 127, 0.18)); margin-top: 7px; overflow: hidden; }
+.tbar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--m-teal); }
+.tbar .from { opacity: 0.35; }
 
 @media (max-width: 360px) {
   .trip-detail { grid-template-columns: 1fr; }
