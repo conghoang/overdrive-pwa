@@ -42,13 +42,20 @@
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 14px;
   margin-top: 14px;
-  /* Equal height when side by side: the map card is taller, so start-alignment
-     left the tyre card floating above a gap. Stretch both to the row height and
-     centre the tyre diagram in its extra space so the two bottoms line up. */
+  /* Equal height when side by side. Both cards are flex columns so they take
+     the grid stretch (a plain block card did NOT — it stayed its content height
+     and pinned to the bottom). The taller card sets the row; the other's main
+     content fills the gap: the map grows, the tyre diagram centres. */
   align-items: stretch;
 }
+/* align-items:stretch alone did not take on the map card (it kept its content
+   height and pinned to the bottom of the row). The row height IS definite, so
+   height:100% resolves against it and forces both cards to fill it. */
+.dash-pair > .card { height: 100%; }
 .tyre-card { display: flex; flex-direction: column; }
-.tyre-card .tyre-diagram { margin: auto 0; }
+.tyre-card .tyre-diagram { margin-block: auto; }
+.loc-card { display: flex; flex-direction: column; }
+.loc-card .minimap { flex: 1; }
 
 /* status rows */
 .srow { display: flex; align-items: center; justify-content: space-between; padding: 11px 0; }

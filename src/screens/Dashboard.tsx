@@ -174,7 +174,7 @@ export function Dashboard() {
 
         {/* location */}
         {s.gps?.hasLocation && s.gps?.lat != null && s.gps?.lng != null && (
-          <div class="card">
+          <div class="card loc-card">
             <div class="spread" style={{ marginBottom: showMap.value ? '10px' : 0 }}>
               <div class="card-title" style={{ margin: 0 }}>{t('loc.title')}</div>
               {/* In map mode the map says where it is, so the row below is dropped

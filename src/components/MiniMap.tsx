@@ -97,7 +97,7 @@ export function MiniMap({ lat, lng, height = 180 }: { lat: number; lng: number; 
   if (failed) return null
 
   return (
-    <div class="minimap" style={{ height: `${height}px` }}>
+    <div class="minimap" style={{ minHeight: `${height}px` }}>
       <div ref={hostRef} class="minimap-host" />
       {ready && (
         <button
