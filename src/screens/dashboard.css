@@ -31,31 +31,30 @@
 .tile-dual small { font-size: 12px; color: var(--muted); font-weight: 600; }
 .tile-dual .dual-sep { color: var(--muted); font-weight: 700; }
 
-/* Tyre-pressure + location pair. One per row on a phone; two-up on a bigger
-   screen. The min is 240px, not ~280px, on purpose: the app caps content at
-   560px (.app-main) until 1000px, so a foldable unfolded still only gives the
-   pair ~528px — two 280px cards (574px) never fit and it stayed stacked, while
-   two 240px cards (494px) do. auto-fit still collapses the empty track when
-   only one card renders, so a missing GPS fix never leaves a half-width gap. */
-.dash-pair {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 14px;
-  margin-top: 14px;
-  /* Equal height when side by side. Both cards are flex columns so they take
-     the grid stretch (a plain block card did NOT — it stayed its content height
-     and pinned to the bottom). The taller card sets the row; the other's main
-     content fills the gap: the map grows, the tyre diagram centres. */
-  align-items: stretch;
+/* Tyre-pressure + location pair: stacked on a phone, side by side once there is
+   room. Flexbox, not grid — grid's stretch did not take on the map card (it kept
+   its content height and sat 14px low), whereas flex's align-items:stretch
+   reliably gives BOTH cards the same top AND bottom. A lone card (no GPS) fills
+   the row via flex:1. The taller card sets the height; the other's main content
+   fills the gap — the map grows, the tyre diagram centres. */
+.dash-pair { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; }
+/* The pair spaces its cards with `gap`, so cancel the global `.card + .card`
+   top margin — on the second card that 14px was the whole bug: it pushed the
+   map card down and made flex stretch size it to rowHeight−14, so the two boxes
+   never lined up (bottoms matched, tops did not). */
+.dash-pair > .card + .card { margin-top: 0; }
+@media (min-width: 500px) {
+  .dash-pair { flex-direction: row; align-items: stretch; }
+  .dash-pair > .card { flex: 1 1 0; min-width: 0; }
 }
-/* align-items:stretch alone did not take on the map card (it kept its content
-   height and pinned to the bottom of the row). The row height IS definite, so
-   height:100% resolves against it and forces both cards to fill it. */
-.dash-pair > .card { height: 100%; }
 .tyre-card { display: flex; flex-direction: column; }
 .tyre-card .tyre-diagram { margin-block: auto; }
 .loc-card { display: flex; flex-direction: column; }
-.loc-card .minimap { flex: 1; }
+.loc-card .minimap { flex: 1 1 auto; }
+/* Top-align the location header so its title lines up with the tyre card's
+   title beside it — otherwise it centres against the map-toggle button and
+   sits lower. */
+.loc-card .spread { align-items: flex-start; }
 
 /* status rows */
 .srow { display: flex; align-items: center; justify-content: space-between; padding: 11px 0; }
@@ -165,6 +164,17 @@
 .tyre-read.warn .tyre-reason { color: var(--warning); }
 .tyre-read.alert .tyre-reason { color: var(--danger); }
 .tyre-read.muted .tyre-reason { color: var(--muted); }
+/* Two-up layout (foldable/tablet, and the >=1000px masonry) halves the card
+   width; the full-size readings then run into the card border. Shrink the
+   figures and the car so they clear it. A full-width stacked phone (below this)
+   keeps the large figures. */
+@media (min-width: 500px) {
+  .tyre-diagram { grid-template-columns: 1fr 66px 1fr; column-gap: 4px; padding: 10px 4px 4px; }
+  .tyre-read .p { font-size: 19px; }
+  .tyre-read .u { font-size: 9px; margin-top: 2px; }
+  .tyre-reason { font-size: 8.5px; margin-top: 2px; }
+  .tyre-car svg { width: 58px; }
+}
 
 /* doors */
 .door-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 16px; margin-top: 16px; }
