@@ -51,10 +51,6 @@
 .tyre-card .tyre-diagram { margin-block: auto; }
 .loc-card { display: flex; flex-direction: column; }
 .loc-card .minimap { flex: 1 1 auto; }
-/* Top-align the location header so its title lines up with the tyre card's
-   title beside it — otherwise it centres against the map-toggle button and
-   sits lower. */
-.loc-card .spread { align-items: flex-start; }
 
 /* status rows */
 .srow { display: flex; align-items: center; justify-content: space-between; padding: 11px 0; }
