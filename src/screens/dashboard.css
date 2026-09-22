@@ -169,10 +169,20 @@
 
 /* car hero (reference-style) */
 .car-hero-card { padding: 18px 16px 16px; }
-.veh-range { display: flex; align-items: baseline; gap: 8px; }
-.veh-range-num { font-size: 44px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
+/* Range headline centred over the car, BYD-app style. */
+.veh-range { display: flex; align-items: baseline; justify-content: center; gap: 8px; }
+.veh-range-num { font-size: 48px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
 .veh-range-unit { font-size: 18px; color: var(--muted); font-weight: 600; }
 .veh-range-label { color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+
+/* battery / fuel proportion bars under the combined range */
+.hero-energy { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 14px; }
+.hero-energy-item { display: flex; align-items: center; gap: 8px; }
+.hero-energy-ico { display: flex; flex: 0 0 auto; }
+.hero-bar { width: 70px; height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; flex: 0 0 auto; }
+.hero-bar i { display: block; height: 100%; border-radius: 999px; transition: width 0.5s cubic-bezier(0.22, 0.61, 0.36, 1); }
+.hero-energy-pct { font-size: 14px; font-weight: 700; color: var(--text-secondary); font-variant-numeric: tabular-nums; min-width: 32px; }
+.hero-energy-div { width: 1px; align-self: stretch; min-height: 20px; background: var(--border-soft); }
 /* EV / HEV legs under the odometer headline */
 .odo-split {
   display: flex;

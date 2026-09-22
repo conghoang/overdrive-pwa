@@ -1,25 +1,41 @@
 import { useState } from 'preact/hooks'
+import type { JSX } from 'preact'
 import { carPhoto } from '../lib/settings'
-import { chargeEtaMin, chargeTargetPct, odometer } from '../lib/store'
-import { distanceUnitLabel, fmtDistance, fmtEta, fmtNum, fmtOdo } from '../lib/format'
+import { chargeEtaMin, chargeTargetPct } from '../lib/store'
+import { distanceUnitLabel, fmtDistance, fmtEta, fmtNum } from '../lib/format'
 import { t } from '../lib/i18n'
 import { effectiveGear } from '../lib/vehicle'
-import { IconBolt } from './icons'
+import { IconBattery, IconBolt, IconFuel } from './icons'
 import type { StatusResponse } from '../lib/types'
 
 const GEARS = ['P', 'R', 'N', 'D']
 export const DEFAULT_PHOTO = `${import.meta.env.BASE_URL}car/sealion6.webp`
 
 /**
- * Vehicle hero: odometer, car photo, P R N D, charging.
+ * One energy source as an inline proportion bar under the combined range —
+ * icon, a fill bar, and the percent. A null reading shows an empty bar and
+ * "--" rather than a confident 0%, keeping "empty" distinct from "not said".
+ */
+function EnergyBar({ icon, pct, color }: { icon: JSX.Element; pct: number | undefined | null; color: string }) {
+  const has = typeof pct === 'number'
+  const w = has ? Math.max(0, Math.min(100, pct as number)) : 0
+  return (
+    <div class="hero-energy-item">
+      <span class="hero-energy-ico" style={{ color }}>{icon}</span>
+      <span class="hero-bar"><i style={{ width: `${w}%`, background: color }} /></span>
+      <span class="hero-energy-pct mono">{has ? `${Math.round(pct as number)}%` : '--'}</span>
+    </div>
+  )
+}
+
+/**
+ * Vehicle hero: combined range, battery/fuel bars, car photo, P R N D, charging.
  *
- * Prefers the ODOMETER over estimated range — range already leads the energy
- * card below, so repeating it here wasted the headline.
- *
- * Falls back to range when the car cannot report an odometer, which today is
- * every release build: the reading is only reachable through the BYD SDK
- * device, and no HTTP endpoint serves it (see api.getOdometer). Better a
- * duplicated range than a headline reading "--".
+ * Leads with the total driving range and the battery (plus fuel, on a PHEV) as
+ * inline bars — the header BYD's own app leads with. The odometer is not shown:
+ * on every release build it is unreachable (only the BYD SDK device serves it,
+ * no HTTP endpoint does — see api.getOdometer), so it only ever fell back to
+ * this same range anyway.
  */
 export function CarHero({ s }: { s: StatusResponse }) {
   const [imgOk, setImgOk] = useState(true)
@@ -28,53 +44,26 @@ export function CarHero({ s }: { s: StatusResponse }) {
   const charging = !!s.charging?.charging
   const power = s.charging?.chargingPowerKW ?? s.charging?.powerKw
   const photo = carPhoto.value || DEFAULT_PHOTO
-  const odo = odometer.value
+  const isPhev = !!s.range?.isPhev
   const range = s.range?.totalRangeKm ?? s.range?.elecRangeKm
-  /*
-   * Null means the odometer has not been READ yet; the store only replaces it
-   * once the call settles, and a car that cannot report one settles on an
-   * object whose totalKm is null. Those two states have to be told apart.
-   *
-   * Treating "not read yet" as "no odometer" made the headline show estimated
-   * range on first paint and then swap — number AND label — a beat later when
-   * the reading landed. So the odometer is assumed until proven otherwise: the
-   * label is right immediately and only the number fills in. Falling back to
-   * range still happens, just for cars that genuinely have no odometer (trip
-   * recording off), where it is the correct final answer rather than a flash.
-   */
-  const odoRead = odo !== null
-  const hasOdo = odo?.totalKm != null
-  const showOdo = !odoRead || hasOdo
 
   return (
     <div class="card car-hero-card">
       <div class="veh-range">
-        <span class="veh-range-num mono">
-          {showOdo ? fmtOdo(odo?.totalKm, unit) : fmtDistance(range, unit)}
-        </span>
+        <span class="veh-range-num mono">{fmtDistance(range, unit)}</span>
         <span class="veh-range-unit">{distanceUnitLabel(unit)}</span>
       </div>
-      <div class="veh-range-label">{showOdo ? t('car.odo') : t('car.range')}</div>
 
-      {/* EV / HEV split of that total. A BEV or a trim without the split leaves
-          hevKm unavailable, so each leg is rendered only when the car reports
-          it — rather than showing a confident "0 km" that isn't true. */}
-      {(odo?.evKm != null || odo?.hevKm != null) && (
-        <div class="odo-split">
-          {odo?.evKm != null && (
-            <div class="odo-leg">
-              <span class="odo-leg-k">{t('car.odo_ev')}</span>
-              <span class="odo-leg-v mono">{fmtOdo(odo.evKm, unit)}<small> {distanceUnitLabel(unit)}</small></span>
-            </div>
-          )}
-          {odo?.hevKm != null && (
-            <div class="odo-leg">
-              <span class="odo-leg-k">{t('car.odo_hev')}</span>
-              <span class="odo-leg-v mono">{fmtOdo(odo.hevKm, unit)}<small> {distanceUnitLabel(unit)}</small></span>
-            </div>
-          )}
-        </div>
-      )}
+      {/* Battery — and, on a PHEV, fuel — as inline bars under the range, the
+          way BYD's app leads its home screen. Fuel only when this trim has it,
+          so a BEV shows a single centred battery bar rather than a lone gap. */}
+      <div class="hero-energy">
+        <EnergyBar icon={<IconBattery size={16} />} pct={s.soc?.percent} color="var(--success)" />
+        {isPhev && <span class="hero-energy-div" aria-hidden="true" />}
+        {isPhev && (
+          <EnergyBar icon={<IconFuel size={15} class="ico-fuel" />} pct={s.range?.fuelPercent} color="var(--m-orange)" />
+        )}
+      </div>
 
       {imgOk ? (
         <img class="car-photo" src={photo} alt="" onError={() => setImgOk(false)} />
