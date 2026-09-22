@@ -18,6 +18,7 @@ export function MiniMap({ lat, lng, height = 180 }: { lat: number; lng: number; 
   // Keep the live map + marker across renders without re-creating them.
   const mapRef = useRef<import('leaflet').Map | null>(null)
   const markerRef = useRef<import('leaflet').CircleMarker | null>(null)
+  const roRef = useRef<ResizeObserver | null>(null)
   const [ready, setReady] = useState(false)
   const [failed, setFailed] = useState(false)
 
@@ -57,14 +58,30 @@ export function MiniMap({ lat, lng, height = 180 }: { lat: number; lng: number; 
 
         mapRef.current = map
         setReady(true)
-        // The container animates in; make sure Leaflet measures it correctly.
-        setTimeout(() => map.invalidateSize(), 60)
+        /*
+         * Leaflet measures the container at creation and requests only the tiles
+         * that cover it. Inside the responsive dashboard grid that size settles
+         * AFTER init — the card goes from stacked (full width) to two-up (half),
+         * and a foldable changes it again on fold/unfold — so a single early
+         * measure left it holding tiles for the wrong box, or none at all: the
+         * marker showed but the map was blank. Re-measure after paint, and on
+         * every container resize thereafter.
+         */
+        requestAnimationFrame(() => map.invalidateSize())
+        setTimeout(() => map.invalidateSize(), 200)
+        if (typeof ResizeObserver !== 'undefined' && hostRef.current) {
+          const ro = new ResizeObserver(() => mapRef.current?.invalidateSize())
+          ro.observe(hostRef.current)
+          roRef.current = ro
+        }
       } catch {
         if (!cancelled) setFailed(true)
       }
     })()
     return () => {
       cancelled = true
+      roRef.current?.disconnect()
+      roRef.current = null
       mapRef.current?.remove()
       mapRef.current = null
       markerRef.current = null

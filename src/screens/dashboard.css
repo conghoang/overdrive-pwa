@@ -42,8 +42,13 @@
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 14px;
   margin-top: 14px;
-  align-items: start;
+  /* Equal height when side by side: the map card is taller, so start-alignment
+     left the tyre card floating above a gap. Stretch both to the row height and
+     centre the tyre diagram in its extra space so the two bottoms line up. */
+  align-items: stretch;
 }
+.tyre-card { display: flex; flex-direction: column; }
+.tyre-card .tyre-diagram { margin: auto 0; }
 
 /* status rows */
 .srow { display: flex; align-items: center; justify-content: space-between; padding: 11px 0; }

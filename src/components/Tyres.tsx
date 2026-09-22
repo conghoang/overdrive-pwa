@@ -49,7 +49,7 @@ export function Tyres({ tyres, unit }: { tyres: TyresState | undefined; unit: st
   }
 
   return (
-    <div class="card">
+    <div class="card tyre-card">
       <div class="card-title">{t('tyre.title')}</div>
       {available ? (
         <div class="tyre-diagram">
