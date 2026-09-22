@@ -1,14 +1,13 @@
 import { useState } from 'preact/hooks'
 import type { JSX } from 'preact'
 import { carPhoto } from '../lib/settings'
-import { chargeEtaMin, chargeTargetPct } from '../lib/store'
+import { chargeEtaMin, chargeTargetPct, vehicleState } from '../lib/store'
 import { distanceUnitLabel, fmtDistance, fmtEta, fmtNum } from '../lib/format'
 import { t } from '../lib/i18n'
-import { effectiveGear } from '../lib/vehicle'
-import { IconBattery, IconBolt, IconFuel } from './icons'
+import { windowsOpenCount } from '../lib/vehicle'
+import { IconBattery, IconBolt, IconFuel, IconLock, IconUnlock, IconWindow } from './icons'
 import type { StatusResponse } from '../lib/types'
 
-const GEARS = ['P', 'R', 'N', 'D']
 export const DEFAULT_PHOTO = `${import.meta.env.BASE_URL}car/sealion6.webp`
 
 /**
@@ -40,12 +39,18 @@ function EnergyBar({ icon, pct, color }: { icon: JSX.Element; pct: number | unde
 export function CarHero({ s }: { s: StatusResponse }) {
   const [imgOk, setImgOk] = useState(true)
   const unit = s.distanceUnit || 'km'
-  const gear = effectiveGear(s)
   const charging = !!s.charging?.charging
   const power = s.charging?.chargingPowerKW ?? s.charging?.powerKw
   const photo = carPhoto.value || DEFAULT_PHOTO
   const isPhev = !!s.range?.isPhev
   const range = s.range?.totalRangeKm ?? s.range?.elecRangeKm
+
+  // At-a-glance parked state under the car: ignition, locks, windows — the
+  // three things you check before walking away, in the slot the gear pills held.
+  const vs = vehicleState.value
+  const powerOn = !!s.acc
+  const doors = vs?.doors?.overall // 1 locked, 2 unlocked, else unknown
+  const winOpen = windowsOpenCount(vs?.windows)
 
   return (
     <div class="card car-hero-card">
@@ -77,13 +82,37 @@ export function CarHero({ s }: { s: StatusResponse }) {
         </div>
       )}
 
-      {/* Read aloud, "P R N D" is four letters with nothing to say which one
-          is current — the selected gear is pure colour. The group carries the
-          answer as text so it does not depend on seeing the highlight. */}
-      <div class="prnd" role="img" aria-label={`${t('vitals.gear')}: ${gear ?? '--'}`}>
-        {GEARS.map((g) => (
-          <span key={g} class={'prnd-item' + (gear === g ? ' on' : '')} aria-hidden="true">{g}</span>
-        ))}
+      {/* Ignition / locks / windows — the walk-away checks, in the slot the
+          gear pills used to hold. Doors and windows carry Unknown states so a
+          car that hasn't reported never shows a false "Locked"/"Closed". */}
+      <div class="hero-state">
+        <div class="hs-cell">
+          <span class="hs-ico"><IconBolt size={18} /></span>
+          <span class={'hs-val ' + (powerOn ? 'g' : 'm')}>{powerOn ? t('common.on') : t('common.off')}</span>
+          <span class="hs-lbl">{t('vitals.power')}</span>
+        </div>
+        <div class="hs-cell">
+          <span class="hs-ico">{doors === 2 ? <IconUnlock size={18} /> : <IconLock size={18} />}</span>
+          {doors === 1 ? (
+            <span class="hs-val g">{t('status.locked')}</span>
+          ) : doors === 2 ? (
+            <span class="hs-val w">{t('status.unlocked')}</span>
+          ) : (
+            <span class="hs-val m">{t('common.unknown')}</span>
+          )}
+          <span class="hs-lbl">{t('status.doors')}</span>
+        </div>
+        <div class="hs-cell">
+          <span class="hs-ico"><IconWindow size={18} /></span>
+          {winOpen == null ? (
+            <span class="hs-val m">{t('common.unknown')}</span>
+          ) : winOpen > 0 ? (
+            <span class="hs-val w">{t('status.open_count', { n: winOpen })}</span>
+          ) : (
+            <span class="hs-val g">{t('status.closed')}</span>
+          )}
+          <span class="hs-lbl">{t('status.windows')}</span>
+        </div>
       </div>
 
       {charging ? (

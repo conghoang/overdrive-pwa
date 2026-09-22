@@ -37,6 +37,10 @@
 .srow-left { display: flex; align-items: center; gap: 11px; color: var(--text-secondary); }
 .srow-left svg { color: var(--muted); }
 .srow-label { font-size: 14px; font-weight: 500; color: var(--text); }
+/* Right-hand value for the gear / speed / climate rows. */
+.srow-val { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.srow-val small { font-size: 12px; color: var(--muted); font-weight: 600; }
+.srow-val.on { color: var(--success); }
 
 /* mini map (Leaflet, lazy-loaded) */
 .minimap {
@@ -100,22 +104,6 @@
 
 /* skeleton / empty */
 .center-note { text-align: center; color: var(--muted); padding: 40px 0; }
-
-/* vitals: power / gear / speed */
-.vitals { display: grid; grid-template-columns: 1fr 1fr 1fr; }
-.vital { text-align: center; padding: 2px 0; position: relative; }
-.vital + .vital::before {
-  content: '';
-  position: absolute; left: 0; top: 14%; bottom: 14%;
-  width: 1px; background: var(--border-soft);
-}
-.vital-value { font-size: 21px; font-weight: 700; letter-spacing: -0.01em; }
-.vital-value small { font-size: 12px; color: var(--muted); font-weight: 600; }
-.vital-label { color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 3px; }
-.vital-on { color: var(--success); }
-.vital-off { color: var(--muted); }
-
-/* energy bars (battery + fuel for PHEV) */
 
 /* tyres — top-view diagram with a reading at each wheel */
 .tyre-diagram {
@@ -183,6 +171,24 @@
 .hero-bar i { display: block; height: 100%; border-radius: 999px; transition: width 0.5s cubic-bezier(0.22, 0.61, 0.36, 1); }
 .hero-energy-pct { font-size: 14px; font-weight: 700; color: var(--text-secondary); font-variant-numeric: tabular-nums; min-width: 32px; }
 .hero-energy-div { width: 1px; align-self: stretch; min-height: 20px; background: var(--border-soft); }
+
+/* walk-away state strip (power / doors / windows) where the gear pills were */
+.hero-state { display: grid; grid-template-columns: 1fr 1fr 1fr; margin-top: 16px; }
+.hs-cell {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 2px 4px; text-align: center;
+}
+.hs-cell + .hs-cell::before {
+  content: ''; position: absolute; left: 0; top: 14%; bottom: 14%;
+  width: 1px; background: var(--border-soft);
+}
+.hs-ico { color: var(--muted); display: flex; }
+.hs-val { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.1; }
+.hs-val.g { color: var(--success); }
+.hs-val.w { color: var(--warning); }
+.hs-val.m { color: var(--muted); }
+.hs-lbl { color: var(--muted); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
 /* EV / HEV legs under the odometer headline */
 .odo-split {
   display: flex;
@@ -237,17 +243,6 @@
 .car-preset:hover, .car-preset:focus-visible { border-color: var(--accent); }
 .car-svg { display: block; }
 
-.prnd {
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  max-width: 300px; margin: 8px auto 0;
-  padding: 6px; border: 1px solid var(--border-strong); border-radius: 999px;
-}
-.prnd-item {
-  flex: 1; text-align: center; padding: 8px 0;
-  font-size: 15px; font-weight: 700; color: var(--muted);
-  border-radius: 999px; transition: color 0.15s ease, background 0.15s ease;
-}
-.prnd-item.on { color: var(--app-bg); background: var(--accent-bright); }
 .charging-wrap { margin-top: 0; }
 .charging-line { text-align: center; margin-top: 14px; font-size: 14px; font-weight: 600; color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px; }
 .charging-wrap .charging-line { margin-top: 12px; }

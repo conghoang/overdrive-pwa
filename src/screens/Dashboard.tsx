@@ -20,27 +20,8 @@ import { QuickActions } from '../components/QuickActions'
 import { EnergyGauges } from '../components/EnergyGauges'
 import { StatTile } from '../components/StatTile'
 import { Tyres } from '../components/Tyres'
-import { IconAir, IconBolt, IconLock, IconMapOpen, IconPin, IconThermo, IconUnlock, IconWifi, IconWind, IconWindow } from '../components/icons'
-import type { WindowsState } from '../lib/types'
+import { IconAir, IconBolt, IconGauge, IconGear, IconMapOpen, IconPin, IconThermo, IconWifi, IconWind } from '../components/icons'
 import './dashboard.css'
-
-/**
- * How many windows are open, or null when the car hasn't said.
- *
- * Null matters. OverDrive reports -1 per corner for "no reading" and sends
- * `windows: {}` when it has nothing at all, and counting those as zero printed
- * a green "Closed" for a car whose driver window might be wide open — the same
- * confident-lie shape the doors row already avoids by having an Unknown state.
- * It also fires after `store` drops a stale vehicleState, where every other row
- * correctly goes unknown.
- */
-function windowsOpenCount(w: WindowsState | undefined): number | null {
-  if (!w) return null
-  const vals = [w.lf, w.rf, w.lr, w.rr, w.sunroof, w.sunshade]
-  const known = vals.filter((v) => typeof v === 'number' && v >= 0)
-  if (!known.length) return null
-  return known.filter((v) => (v as number) > 0).length
-}
 
 export function Dashboard() {
   const s = status.value
@@ -80,8 +61,6 @@ export function Dashboard() {
   // from the same trip fetch. 0.0 on a pure-EV drive; "--" when not reported.
   const fuelL = odometer.value?.fuelLPer100
   const fuelCons = fuelL == null ? '--' : fuelL.toFixed(1)
-  const winOpen = windowsOpenCount(vs?.windows)
-  const doorsLocked = vs?.doors?.overall
   const climateOn = !!(vs?.climate?.acOn || vs?.climate?.remoteClimateActive)
   /*
    * Cabin temperature is only sent while the sensor is actually answering — on a
@@ -105,7 +84,6 @@ export function Dashboard() {
   // faulted, the card keeps its usual place below the hero.
   const chargingNow = chargingPhase(s) === 'charging'
 
-  const powerOn = !!s.acc
   const gear = effectiveGear(s)
   const rawKmh =
     s.gps?.canSpeedKmh != null ? s.gps.canSpeedKmh : s.gps?.speed != null ? s.gps.speed * 3.6 : null
@@ -121,7 +99,7 @@ export function Dashboard() {
    * So the gear and ignition gate the readout, and isMoving only refines it —
    * which also keeps it at 0 when stopped in gear at a light.
    */
-  const canMove = powerOn && gear !== 'P'
+  const canMove = !!s.acc && gear !== 'P'
   const speedDisp =
     !canMove || !s.gps?.isMoving || rawKmh == null
       ? 0
@@ -143,62 +121,29 @@ export function Dashboard() {
 
       {!chargingNow && <ChargingCard s={s} />}
 
-      {/* power / gear / speed */}
+      {/* gear / speed / climate — the driving-state facts, below the hero's
+          walk-away strip (power / doors / windows). */}
       <div class="card" style={{ marginTop: '14px' }}>
-        <div class="vitals">
-          <div class="vital">
-            <div class={'vital-value ' + (powerOn ? 'vital-on' : 'vital-off')}>{powerOn ? t('common.on') : t('common.off')}</div>
-            <div class="vital-label">{t('vitals.power')}</div>
-          </div>
-          <div class="vital">
-            <div class="vital-value">{gear || '–'}</div>
-            <div class="vital-label">{t('vitals.gear')}</div>
-          </div>
-          <div class="vital">
-            <div class="vital-value mono">{speedDisp}<small> {speedUnit}</small></div>
-            <div class="vital-label">{t('vitals.speed')}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* status */}
-      <div class="card" style={{ marginTop: '14px' }}>
-        <div class="card-title">{t('status.title')}</div>
         <div class="srow">
           <div class="srow-left">
-            {/* Only draw the open padlock when the car actually said unlocked.
-                It is the at-a-glance signal, and showing it for "unknown"
-                claimed something the pill beside it was declining to claim. */}
-            {doorsLocked === 2 ? <IconUnlock size={20} /> : <IconLock size={20} />}
-            <span class="srow-label">{t('status.doors')}</span>
+            <IconGear size={20} />
+            <span class="srow-label">{t('vitals.gear')}</span>
           </div>
-          {doorsLocked === 1 ? (
-            <span class="pill good">{t('status.locked')}</span>
-          ) : doorsLocked === 2 ? (
-            <span class="pill warn">{t('status.unlocked')}</span>
-          ) : (
-            <span class="pill">{t('common.unknown')}</span>
-          )}
+          <span class="srow-val">{gear || '–'}</span>
         </div>
         <div class="srow">
           <div class="srow-left">
-            <IconWindow size={20} />
-            <span class="srow-label">{t('status.windows')}</span>
+            <IconGauge size={20} />
+            <span class="srow-label">{t('vitals.speed')}</span>
           </div>
-          {winOpen == null ? (
-            <span class="pill">{t('common.unknown')}</span>
-          ) : winOpen > 0 ? (
-            <span class="pill warn">{t('status.open_count', { n: winOpen })}</span>
-          ) : (
-            <span class="pill good">{t('status.closed')}</span>
-          )}
+          <span class="srow-val mono">{speedDisp} <small>{speedUnit}</small></span>
         </div>
         <div class="srow">
           <div class="srow-left">
             <IconWind size={20} />
             <span class="srow-label">{t('status.climate')}</span>
           </div>
-          <span class={'pill' + (climateOn ? ' good' : '')}>{climateOn ? t('common.on') : t('common.off')}</span>
+          <span class={'srow-val' + (climateOn ? ' on' : '')}>{climateOn ? t('common.on') : t('common.off')}</span>
         </div>
       </div>
 
