@@ -152,6 +152,8 @@ export interface LauncherSummary {
   }
   /** Usable pack capacity, used to estimate time-to-full before the car reports one. */
   battery?: { usableKwh?: number | null; socPct?: number | null }
+  /** Recent trip block; whPerKm is OD's computed consumption for the last drive. */
+  trip?: { whPerKm?: number | null; distanceKm?: number; durationMin?: number; cost?: number; currency?: string }
 }
 
 export interface CloudStatus {
@@ -209,8 +211,13 @@ export interface ChargingSession {
   currency?: string
   isDc?: boolean
   rangeGained?: number
+  /** Average / peak charging power over the session, kW. */
+  avgPower?: number
+  peakPower?: number
   /** "soc_estimate" means energyAdded was inferred, not measured. */
   energySource?: string
+  /** True when energyAdded was inferred rather than metered. */
+  isEstimated?: boolean
 }
 
 export interface ChargingSummary {
@@ -250,10 +257,19 @@ export interface TripRow {
   durationSeconds?: number
   avgSpeedKmh?: number
   maxSpeedKmh?: number
+  odometerStartKm?: number
   odometerEndKm?: number
   energyUsedKwh?: number
   /** False when the energy figure was inferred rather than measured. */
   energyMetered?: boolean
+  /** Litres of fuel burned on the trip (PHEV); 0 on a pure-EV drive. */
+  litresUsed?: number
+  /** State of charge (%) at the trip's start/end. */
+  socStart?: number
+  socEnd?: number
+  /** Fuel tank level (%) at the trip's start/end (PHEV). */
+  fuelPctStart?: number
+  fuelPctEnd?: number
   tripCost?: number
   currency?: string
 }

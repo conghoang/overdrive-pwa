@@ -36,7 +36,7 @@ function readCachedOdo(): Odometer | null {
     // A cached "no odometer" is worth nothing on first paint — it would just
     // render the range, which is what happens anyway once the car answers.
     if (totalKm == null) return null
-    return { totalKm, evKm: num(c.evKm), hevKm: num(c.hevKm) }
+    return { totalKm, evKm: num(c.evKm), hevKm: num(c.hevKm), fuelLPer100: num(c.fuelLPer100) }
   } catch {
     return null
   }
@@ -51,6 +51,8 @@ export const odometer = signal<Odometer | null>(readCachedOdo())
  * fall back to something real.
  */
 export const outsideTempC = signal<number | null>(null)
+/** Recent driving consumption in Wh/km, from the launcher summary's trip block. */
+export const consumptionWhPerKm = signal<number | null>(null)
 /** Particulates (µg/m³) inside and outside the cabin, on the same slow poll. */
 export const pm25Inside = signal<number | null>(null)
 export const pm25Outside = signal<number | null>(null)
@@ -222,6 +224,7 @@ async function tick(): Promise<void> {
             outsideTempC.value = num(sum.env?.tempC)
             pm25Inside.value = num(sum.air?.pm25Inside)
             pm25Outside.value = num(sum.air?.pm25Outside)
+            consumptionWhPerKm.value = num(sum.trip?.whPerKm)
           }
           if (forCharge) {
             chargeEtaMin.value = sum.charging?.etaMin ?? null
@@ -312,6 +315,7 @@ export function reset(): void {
   outsideTempC.value = null
   pm25Inside.value = null
   pm25Outside.value = null
+  consumptionWhPerKm.value = null
   odoAt = 0
   vsFails = 0
   authLost.value = false

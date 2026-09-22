@@ -14,12 +14,16 @@ import { lazyScreen } from '../lib/lazy'
  * out of the app shell for everyone who never opens it.
  */
 const WiCarlinkEditor = lazyScreen(() => import('../components/WiCarlinkEditor'), 'WiCarlinkEditor')
+
 import { carName, carPhoto, resetSettings, setCarName, setCarPhoto, setShowMap, setWicarlink, showMap, wicarlink } from '../lib/settings'
-import { fileToResizedDataUrl } from '../lib/image'
+import { fileToResizedBlob } from '../lib/image'
 import { toast } from '../lib/toast'
 import { lang, setLang, t } from '../lib/i18n'
 import { hapticsEnabled, hapticsSupported, setHapticsEnabled, tapFeedback } from '../lib/haptics'
 import { setSoundEnabled, soundEnabled, soundSupported, tapSound, unlockAudio } from '../lib/sound'
+// Bundled neutral car shapes (public/car/presets/*.webp), for users who'd
+// rather pick a silhouette than photograph their own car.
+const CAR_PRESETS = ['sedan', 'suv', 'mpv', 'hatch', 'sports', 'compact', 'offroad', 'truck'] as const
 
 export function Account({ onSignOut }: { onSignOut: () => void }) {
   const s = status.value
@@ -40,10 +44,21 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
     const file = (e.target as HTMLInputElement).files?.[0]
     if (!file) return
     try {
-      setCarPhoto(await fileToResizedDataUrl(file, 1100))
+      await setCarPhoto(await fileToResizedBlob(file))
     } catch (err) {
       const quota = err instanceof Error && /quota/i.test(err.name + err.message)
       toast(quota ? t('account.photo_big') : t('account.photo_err'), 'err')
+    }
+  }
+
+  /** Store a bundled preset the same way as an upload: fetch it, keep the blob. */
+  async function pickPreset(id: string) {
+    try {
+      const res = await fetch(`${import.meta.env.BASE_URL}car/presets/${id}.webp`)
+      if (!res.ok) throw new Error(String(res.status))
+      await setCarPhoto(await res.blob())
+    } catch {
+      toast(t('account.photo_err'), 'err')
     }
   }
 
@@ -66,9 +81,25 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
             {t('dev.change_photo')}
             <input type="file" accept="image/*" style={{ display: 'none' }} onChange={pickPhoto} />
           </label>
-          <button class="btn" disabled={!carPhoto.value} onClick={() => setCarPhoto(null)}>
+          <button class="btn" disabled={!carPhoto.value} onClick={() => void setCarPhoto(null)}>
             {t('dev.use_default')}
           </button>
+        </div>
+
+        {/* Shape presets, for anyone who doesn't want to photograph their car. */}
+        <div class="screen-sub" style={{ marginTop: '14px' }}>{t('dev.presets')}</div>
+        <div class="car-preset-row">
+          {CAR_PRESETS.map((id) => (
+            <button
+              key={id}
+              class="car-preset"
+              title={id}
+              aria-label={id}
+              onClick={() => void pickPreset(id)}
+            >
+              <img src={`${import.meta.env.BASE_URL}car/presets/${id}.webp`} alt="" loading="lazy" />
+            </button>
+          ))}
         </div>
       </div>
 

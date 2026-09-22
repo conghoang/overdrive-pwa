@@ -18,6 +18,18 @@ import '../components/controls.css'
 
 const TEMP_MIN = 16
 const TEMP_MAX = 30
+
+/*
+ * AC AUTO. This was hidden for a while because OverDrive drove auto mode through the feature id
+ * Ac.AUTO_MODE_SET, which does not exist on Di 3.0 — the lookup fell back to another trim's
+ * literal, the HAL rejected it, and the button only ever produced "the car rejected the command
+ * over the direct connection".
+ *
+ * Re-enabled: OverDrive now writes the paired AC_CTRL_MODE_SET + AC_CTRL_SOURCE_SET registers
+ * (verified accepted by the car; the write flips the AC panel between auto and manual), and that
+ * fix is deployed in the installed build.
+ */
+const AUTO_MODE_SUPPORTED = true
 /*
  * How long the user's own taps outrank the car's reported setpoint.
  *
@@ -207,9 +219,11 @@ export function Controls() {
         </div>
 
         <div class="climate-fan">
-          <button class="btn climate-auto" disabled={disabled} onClick={() => run(() => api.setClimateAuto(true), t('ctrl.auto_mode'))}>
-            {t('ctrl.auto')}
-          </button>
+          {AUTO_MODE_SUPPORTED && (
+            <button class="btn climate-auto" disabled={disabled} onClick={() => run(() => api.setClimateAuto(true), t('ctrl.auto_mode'))}>
+              {t('ctrl.auto')}
+            </button>
+          )}
           {/* A row of seven bars whose only difference is colour. Without the
               radio semantics a screen reader hears seven identical buttons and
               cannot tell which level is set — and neither can anyone reading

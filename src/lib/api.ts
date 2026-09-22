@@ -231,6 +231,7 @@ async function demoResponse<T>(path: string): Promise<T> {
       // Real cars report this; demo carries it too so the time-to-full
       // estimate path is exercised rather than silently untested.
       battery: { usableKwh: 18.3, socPct: 68 },
+      trip: { whPerKm: 148, distanceKm: 12.4, durationMin: 22 },
     } as unknown as T
   if (path === '/api/settings/unified') {
     return { config: { recording: { rectifyStrength: 80 } } } as unknown as T
@@ -250,7 +251,7 @@ async function demoResponse<T>(path: string): Promise<T> {
     return { success: true, config: { enabled: true } } as unknown as T
   }
   if (path.startsWith('/api/trips')) {
-    return { success: true, trips: [{ odometerEndKm: 24680.4 }] } as unknown as T
+    return { success: true, trips: [{ odometerEndKm: 24680.4, distanceKm: 12.4, litresUsed: 0.9 }] } as unknown as T
   }
   if (path === '/api/vehicle/cloud-status') {
     // demo aid: set localStorage odpwa.demoNoCloud=1 to preview the no-cloud UI
@@ -340,9 +341,9 @@ export const closeAllWindows = (): Promise<ControlResult> => apiPost('/api/vehic
  */
 
 
-export interface Odometer { totalKm: number | null; evKm: number | null; hevKm: number | null }
+export interface Odometer { totalKm: number | null; evKm: number | null; hevKm: number | null; fuelLPer100: number | null }
 
-const NO_ODO: Odometer = { totalKm: null, evKm: null, hevKm: null }
+const NO_ODO: Odometer = { totalKm: null, evKm: null, hevKm: null, fuelLPer100: null }
 
 /**
  * The odometer, or null when the car did not answer.
@@ -373,10 +374,20 @@ export async function getOdometer(): Promise<Odometer | null> {
     // which would look identical to trip recording being switched off.
     if (!log) return null
 
-    const km = log.trips?.[0]?.odometerEndKm
+    const trip0 = log.trips?.[0]
+    const km = trip0?.odometerEndKm
     // Cars that do not report the odometer leave this at 0 rather than absent.
     const totalKm = typeof km === 'number' && km > 0 ? Math.round(km) : null
-    return { totalKm, evKm: null, hevKm: null }
+    // Fuel consumption of the latest trip (PHEV): litres / distance. 0 litres on a
+    // pure-EV drive is a real 0.0 L/100km, not "unknown"; only a missing distance
+    // or litres figure yields null.
+    const litres = trip0?.litresUsed
+    const dist = trip0?.distanceKm
+    const fuelLPer100 =
+      typeof litres === 'number' && typeof dist === 'number' && dist > 0
+        ? Math.round((litres / dist) * 1000) / 10
+        : null
+    return { totalKm, evKm: null, hevKm: null, fuelLPer100 }
   } catch {
     return null // never break the poll, and never invent an answer
   }

@@ -5,8 +5,8 @@ import { connected } from '../lib/store'
 import { dewarpByView, setDewarpFor } from '../lib/settings'
 import { AppHeader } from '../components/AppHeader'
 import { t } from '../lib/i18n'
-import { IconCamera } from '../components/icons'
-import { IconApp, IconClose, IconExpand } from '../components/icons-extra'
+import type { JSX } from 'preact'
+import { IconClose, IconExpand } from '../components/icons-extra'
 import { startPlayer, webCodecsSupported } from '../lib/h264'
 import type { PlayerHandle, PlayerState } from '../lib/h264'
 import './camera.css'
@@ -56,6 +56,28 @@ async function enableStream(isCancelled: () => boolean): Promise<void> {
     if (isCancelled()) return
   }
   throw new Error('stream did not start')
+}
+
+/** Top-down car with the active camera's edge highlighted (mosaic = 4-grid). */
+function CamIcon({ mode }: { mode: number }): JSX.Element {
+  if (mode === 0) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width={2}>
+        <rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" />
+        <rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" />
+      </svg>
+    )
+  }
+  const edge =
+    mode === 1 ? <rect x="7" y="2.6" width="10" height="3.2" rx="1.4" fill="currentColor" stroke="none" />
+    : mode === 2 ? <rect x="18.2" y="7" width="3.2" height="10" rx="1.4" fill="currentColor" stroke="none" />
+    : mode === 3 ? <rect x="7" y="18.2" width="10" height="3.2" rx="1.4" fill="currentColor" stroke="none" />
+    : <rect x="2.6" y="7" width="3.2" height="10" rx="1.4" fill="currentColor" stroke="none" />
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width={1.8}>
+      <rect x="6.5" y="6.5" width="11" height="11" rx="3" />{edge}
+    </svg>
+  )
 }
 
 export function Camera() {
@@ -250,17 +272,23 @@ export function Camera() {
     : state === 'error' ? t('cam.error')
     : t('cam.stopped')
 
+  // One "live" signal only (the badge on the feed + the status dot). When live,
+  // the subtitle carries the current view name rather than repeating "Live".
+  const viewName = t(CAMERA_VIEWS.find((v) => v.mode === view)?.key ?? 'cam.front')
+  const subText = !connected.value ? t('common.reconnecting') : state === 'live' ? viewName : label
+
   return (
     <div class="screen cam-screen">
       <AppHeader
         title={t('tab.camera')}
-        sub={connected.value ? label : t('common.reconnecting')}
+        sub={subText}
         dot={state === 'live' ? 'ok' : state === 'error' ? 'bad' : 'wait'}
       />
 
       <div class={'card cam-card' + (full ? ' full' : '')}>
         <div class={'cam-stage' + (full ? ' full' : '')}>
           <canvas ref={canvasRef} class="cam-canvas" />
+          {state === 'live' && <span class="cam-live"><span class="cam-live-dot" />LIVE</span>}
           <button
             class="cam-full"
             title={t(full ? 'cam.exit_full' : 'cam.fullscreen')}
@@ -286,63 +314,42 @@ export function Camera() {
         </div>
       </div>
 
-      {/* One compact control strip: camera picker and quality side by side, so
-          the video and the controls fit on screen together. Anything taller
-          meant scrolling up to watch and down to switch, which is the wrong
-          trade for a live view. */}
+      {/* Controls below the video — one column, no overlap on the feed. */}
       <div class="card cam-controls">
-        <div class="cam-picker">
-          <svg class="cam-car" viewBox="0 0 200 300" aria-hidden="true">
-            <rect x="46" y="16" width="108" height="268" rx="46" class="cc-body" />
-            <path d="M68 74 Q100 60 132 74 L127 100 Q100 90 73 100 Z" class="cc-glass" />
-            <rect x="70" y="116" width="60" height="66" rx="13" class="cc-roof" />
-            <path d="M73 214 Q100 202 127 214 L132 238 Q100 226 68 238 Z" class="cc-glass" />
-            {[
-              [40, 84],
-              [148, 84],
-              [40, 200],
-              [148, 200],
-            ].map(([x, y]) => (
-              <rect key={`${x}-${y}`} x={x} y={y} width="12" height="34" rx="5" class="cc-wheel" />
-            ))}
-          </svg>
-
-          {/* Icon-only: at this size a text label would not fit, and position
-              already says which camera it is. The name is spelled out beside
-              the diagram and in the accessible name. */}
-          {CAMERA_VIEWS.filter((v) => v.mode !== 0).map((v) => (
+        <div class="cam-views">
+          {CAMERA_VIEWS.map((v) => (
             <button
               key={v.mode}
-              class={`cam-hotspot pos-${v.mode}` + (v.mode === view ? ' on' : '')}
+              class={'cam-view' + (v.mode === view ? ' on' : '')}
               disabled={!connected.value || isDemo || !supported}
-              title={t(v.key)}
-              aria-label={t(v.key)}
               aria-pressed={v.mode === view}
+              aria-label={t(v.key)}
               onClick={() => setView(v.mode)}
             >
-              <IconCamera size={15} />
+              <CamIcon mode={v.mode} />
+              {t(v.key)}
             </button>
           ))}
-
-          <button
-            class={'cam-hotspot pos-all' + (view === 0 ? ' on' : '')}
-            disabled={!connected.value || isDemo || !supported}
-            title={t('cam.mosaic')}
-            aria-label={t('cam.mosaic')}
-            aria-pressed={view === 0}
-            onClick={() => setView(0)}
-          >
-            <IconApp size={15} />
-          </button>
         </div>
 
-        <div class="cam-side">
-          <div class="cam-current-k">{t('cam.view')}</div>
-          <div class="cam-current">{t(CAMERA_VIEWS.find((v) => v.mode === view)?.key ?? 'cam.front')}</div>
-
-          <div class="cam-current-k cam-dewarp-k">
-            {t('cam.dewarp')} <b>{strength}</b>
+        {!!quality.options?.length && (
+          <div class="cam-row">
+            <span class="cam-k">{t('cam.quality')}</span>
+            <select
+              class="cam-select"
+              value={quality.current ?? ''}
+              disabled={!connected.value || isDemo}
+              onChange={(e) => void pickQuality((e.target as HTMLSelectElement).value)}
+            >
+              {quality.options.map((o) => (
+                <option key={o.id} value={o.id}>{o.name || (o.height ? `${o.height}p` : o.id)}</option>
+              ))}
+            </select>
           </div>
+        )}
+
+        <div class="cam-row cam-row-block">
+          <span class="cam-k">{t('cam.dewarp')} <b>{strength}</b></span>
           <input
             class="slider cam-dewarp-slider"
             type="range"
@@ -355,25 +362,6 @@ export function Camera() {
             disabled={!connected.value || isDemo}
             onInput={(e) => setDewarpFor(view, Number((e.target as HTMLInputElement).value))}
           />
-
-          {!!quality.options?.length && (
-            <>
-              <div class="cam-current-k" style={{ marginTop: '12px' }}>{t('cam.quality')}</div>
-              <select
-                class="qual-select"
-                value={quality.current ?? ''}
-                disabled={!connected.value || isDemo}
-                onChange={(e) => void pickQuality((e.target as HTMLSelectElement).value)}
-              >
-                {quality.options.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.height ? `${o.height}p` : o.id}
-                    {o.fps ? ` · ${o.fps}fps` : ''}
-                  </option>
-                ))}
-              </select>
-            </>
-          )}
         </div>
       </div>
     </div>

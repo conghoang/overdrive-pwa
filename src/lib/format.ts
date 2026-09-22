@@ -26,6 +26,15 @@ export function fmtNum(n: number | undefined | null, digits = 0): string {
   return n.toFixed(digits)
 }
 
+/** Locale-aware decimal (VI groups with "." and uses "," for the decimal). */
+export function fmtDec(n: number | undefined | null, digits = 1): string {
+  if (n == null || Number.isNaN(n)) return '--'
+  return n.toLocaleString(lang.value === 'vi' ? 'vi-VN' : 'en-US', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  })
+}
+
 export function fmtTemp(c: number | undefined | null): string {
   if (c == null || Number.isNaN(c)) return '--'
   return `${Math.round(c)}°`

@@ -25,6 +25,11 @@
 .tile-value { font-size: 22px; font-weight: 700; }
 .tile-unit { font-size: 13px; color: var(--muted); font-weight: 600; }
 .tile-label { color: var(--muted); font-size: 12px; font-weight: 600; margin-top: 2px; }
+/* Two stats (electric · fuel) in one tile. */
+.tile-dual { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.tile-dual b { font-size: 18px; font-weight: 700; }
+.tile-dual small { font-size: 12px; color: var(--muted); font-weight: 600; }
+.tile-dual .dual-sep { color: var(--muted); font-weight: 700; }
 
 /* status rows */
 .srow { display: flex; align-items: center; justify-content: space-between; padding: 11px 0; }
@@ -196,6 +201,30 @@
 
 .car-photo { display: block; width: 100%; max-width: 380px; margin: 6px auto 4px; height: auto; filter: var(--shadow-photo); }
 .car-photo-preview { display: block; width: 100%; max-width: 300px; height: auto; margin: 0 auto; filter: var(--shadow-photo-sm); }
+
+/* Shape presets: a scrollable strip of tappable car silhouettes. */
+.car-preset-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.car-preset {
+  flex: 0 0 auto;
+  width: 84px;
+  height: 56px;
+  padding: 6px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  cursor: pointer;
+}
+.car-preset img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.car-preset:hover, .car-preset:focus-visible { border-color: var(--accent); }
 .car-svg { display: block; }
 
 .prnd {

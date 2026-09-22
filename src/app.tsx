@@ -1,4 +1,4 @@
-import { signal } from '@preact/signals'
+import { effect, signal } from '@preact/signals'
 import type { JSX } from 'preact'
 import { isConfigured } from './lib/api'
 import * as store from './lib/store'
@@ -25,7 +25,27 @@ export type Tab = 'dashboard' | 'controls' | 'camera' | 'data' | 'account'
 
 const TAB_ORDER: Tab[] = ['dashboard', 'controls', 'camera', 'data', 'account']
 
-const tab = signal<Tab>('dashboard')
+/*
+ * The active tab is mirrored to the URL hash (#/data, …) so a reload — most
+ * commonly a pull-to-refresh — restores the current tab instead of dropping back
+ * to the Vehicle tab. replaceState keeps it out of the history stack, so Back
+ * still leaves the app rather than cycling tabs.
+ */
+function tabFromHash(): Tab {
+  const h = location.hash.replace(/^#\/?/, '').split('/')[0]
+  return (TAB_ORDER as string[]).includes(h) ? (h as Tab) : 'dashboard'
+}
+
+const tab = signal<Tab>(tabFromHash())
+
+effect(() => {
+  // Only rewrite the tab segment; preserve any sub-path (e.g. #/data/trips) so a
+  // screen's own sub-view survives a reload.
+  const cur = location.hash.replace(/^#\/?/, '').split('/')[0]
+  if (cur !== tab.value) history.replaceState(null, '', `#/${tab.value}`)
+})
+// Back/forward or a manually edited hash updates the tab.
+addEventListener('hashchange', () => { tab.value = tabFromHash() })
 const configured = signal(isConfigured())
 
 // True if the element (or an ancestor) can scroll horizontally — so a swipe there

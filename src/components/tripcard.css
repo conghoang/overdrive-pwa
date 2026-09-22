@@ -1,0 +1,119 @@
+.tl-head-left { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.tl-filter { display: inline-flex; flex: 0 0 auto; background: var(--surface-2, rgba(127, 127, 127, 0.14)); border-radius: 999px; padding: 3px; }
+.tl-filter button {
+  border: 0; background: none; font: inherit; cursor: pointer;
+  color: var(--muted); font-size: 13px; font-weight: 700;
+  padding: 5px 13px; border-radius: 999px; transition: color 0.15s ease;
+}
+.tl-filter button.active { background: var(--surface-1); color: var(--m-teal); box-shadow: var(--shadow-card); }
+
+.tl-back {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; margin-right: 4px;
+  background: var(--surface-1); border: 1px solid var(--border-soft);
+  border-radius: 50%; color: var(--text-primary); cursor: pointer;
+}
+.tl-back:active { transform: scale(0.94); }
+
+.trip-list { display: flex; flex-direction: column; gap: 10px; }
+
+/* Date-grouped history */
+.hist-group + .hist-group { margin-top: 10px; }
+.hist-day {
+  position: sticky; top: 0; z-index: 3;
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  padding: 9px 4px; margin-bottom: 2px;
+  background: var(--app-bg);
+}
+.hist-day-label { font-size: 12px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+.hist-day-sum { font-size: 12.5px; font-weight: 700; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.hist-day-sum b { color: var(--m-teal); }
+
+/* Loading skeleton — shaped like the real grouped rows */
+.skel-row {
+  background: var(--surface-1); border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md); box-shadow: var(--shadow-card);
+  padding: 13px 15px;
+}
+.skel-top { display: flex; justify-content: space-between; align-items: flex-start; }
+.skel-chips { display: flex; gap: 7px; margin-top: 12px; }
+.sk-time { width: 68px; height: 15px; }
+.sk-dist { width: 62px; height: 20px; border-radius: 7px; }
+.sk-chip { width: 92px; height: 26px; border-radius: 999px; }
+.sk-day { width: 96px; height: 12px; }
+
+.trip {
+  background: var(--surface-1);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.trip.open { border-color: var(--m-teal); }
+
+/* Summary row: when | distance+meta | caret, with chips below */
+.trip-main {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas: 'when right caret' 'chips chips caret';
+  align-items: center; gap: 4px 12px;
+  width: 100%; padding: 13px 15px;
+  background: none; border: 0; text-align: left; color: inherit; font: inherit;
+}
+button.trip-main { cursor: pointer; }
+.trip-chev { grid-area: caret; align-self: center; display: inline-flex; color: var(--muted); }
+.trip-caret { transition: transform 0.28s ease; }
+.trip.open .trip-caret { transform: rotate(180deg); }
+.trip.open .trip-chev { color: var(--m-teal); }
+.trip-when { grid-area: when; display: flex; flex-direction: column; }
+.trip-date { font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
+.trip-time { color: var(--muted); font-size: 12.5px; margin-top: 1px; }
+.trip-right { grid-area: right; text-align: right; }
+.trip-dist { font-size: 20px; letter-spacing: -0.02em; }
+.trip-dist b { color: var(--m-teal); font-weight: 800; }
+.trip-dist small { font-size: 13px; color: var(--muted); font-weight: 600; margin-left: 3px; }
+.trip-sub { color: var(--muted); font-size: 12px; margin-top: 1px; }
+
+.trip-chips { grid-area: chips; display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; }
+.tchip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 10px; border-radius: 999px;
+  background: var(--surface-2, rgba(127, 127, 127, 0.12));
+  font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.tchip i { font-style: normal; color: var(--muted); font-weight: 600; font-size: 11px; }
+.tchip svg { color: var(--m-teal); }
+
+/* Expanded detail — animate max-height (works in older webviews, unlike the
+   grid-rows 0fr trick which some engines don't collapse). */
+.trip-detail-wrap {
+  max-height: 0; overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+.trip.open .trip-detail-wrap { max-height: 480px; }
+.trip-detail {
+  border-top: 1px solid var(--border-soft);
+  padding: 13px 15px 15px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .trip-detail-wrap, .trip-caret { transition: none; }
+}
+.tstat { min-width: 0; }
+.tstat.full { grid-column: 1 / -1; }
+/* A lone trailing cell (odd count) spans full width instead of stranding. */
+.trip-detail .tstat:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.tstat-k { font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin-bottom: 4px; }
+.tstat-v { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.tarrow { color: var(--muted); margin: 0 4px; font-weight: 600; }
+.tu { color: var(--muted); font-weight: 600; font-size: 12px; }
+.tdelta { font-style: normal; font-size: 12px; font-weight: 700; margin-left: 6px; color: var(--muted); }
+.tdelta.down { color: var(--m-orange); }
+.tdelta.up { color: var(--success); }
+.tbar { position: relative; height: 5px; border-radius: 3px; background: var(--surface-2, rgba(127, 127, 127, 0.18)); margin-top: 7px; overflow: hidden; }
+.tbar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--m-teal); }
+.tbar .from { opacity: 0.35; }
+
+@media (max-width: 360px) {
+  .trip-detail { grid-template-columns: 1fr; }
+}

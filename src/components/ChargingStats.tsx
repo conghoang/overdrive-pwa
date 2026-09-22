@@ -70,7 +70,7 @@ function latest(sessions: ChargingSession[] | undefined): ChargingSession | null
   return [...sessions].sort((a, b) => (b.startTime ?? 0) - (a.startTime ?? 0))[0]
 }
 
-export function ChargingStats() {
+export function ChargingStats({ onOpenDetails }: { onOpenDetails?: () => void }) {
   // Seeded from the last visit so the card opens on real numbers; the live
   // fetch below replaces them a moment later.
   const [data, setData] = useState<ChargingOverview | null>(() => readCache(CACHE_KEY, revive))
@@ -141,9 +141,10 @@ export function ChargingStats() {
       icon={<IconPlug size={20} />}
       title={t('data.charging')}
       subtitle={windowLabel(DAYS)}
-      chipLabel={`${DAYS}D`}
+      chipLabel={t('data.details')}
       href={odUrl}
-      hrefLabel={t('data.open_history')}
+      hrefLabel={t('data.details')}
+      onChip={onOpenDetails}
       state={state}
       emptyText={t('data.unavailable')}
       bars={bars}

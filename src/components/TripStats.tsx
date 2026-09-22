@@ -42,7 +42,7 @@ function fmtKm(v: number): string {
   return v >= 100 ? String(Math.round(v)) : v.toFixed(1)
 }
 
-export function TripStats() {
+export function TripStats({ onOpenDetails }: { onOpenDetails?: () => void }) {
   const [cfg, setCfg] = useState<TripConfig | null>(null)
   // Seeded from the last visit, so the card opens on real distances.
   const [trips, setTrips] = useState<TripRow[] | null>(() => readCache(CACHE_KEY, revive))
@@ -116,9 +116,10 @@ export function TripStats() {
       icon={<IconCar size={20} />}
       title={t('data.trips')}
       subtitle={windowLabel(DAYS)}
-      chipLabel={`${DAYS}D`}
+      chipLabel={t('data.details')}
       href={odUrl}
-      hrefLabel={t('data.open_trips')}
+      hrefLabel={t('data.details')}
+      onChip={onOpenDetails}
       state={state}
       emptyText={t('data.no_trips')}
       bars={bars}

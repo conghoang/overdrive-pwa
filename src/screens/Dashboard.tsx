@@ -1,4 +1,4 @@
-import { connected, lastError, outsideTempC, pm25Inside, pm25Outside, status, vehicleState } from '../lib/store'
+import { connected, consumptionWhPerKm, lastError, odometer, outsideTempC, pm25Inside, pm25Outside, status, vehicleState } from '../lib/store'
 import { fmtTemp, ago } from '../lib/format'
 import { t } from '../lib/i18n'
 import { effectiveGear } from '../lib/vehicle'
@@ -20,7 +20,7 @@ import { QuickActions } from '../components/QuickActions'
 import { EnergyGauges } from '../components/EnergyGauges'
 import { StatTile } from '../components/StatTile'
 import { Tyres } from '../components/Tyres'
-import { IconAir, IconLock, IconMapOpen, IconPin, IconPlug, IconThermo, IconUnlock, IconWifi, IconWind, IconWindow } from '../components/icons'
+import { IconAir, IconBolt, IconLock, IconMapOpen, IconPin, IconThermo, IconUnlock, IconWifi, IconWind, IconWindow } from '../components/icons'
 import type { WindowsState } from '../lib/types'
 import './dashboard.css'
 
@@ -47,19 +47,39 @@ export function Dashboard() {
   const vs = vehicleState.value
 
   if (!s) {
+    // Skeleton shaped like the dashboard, so the first load reads as "coming up"
+    // rather than an empty error card. The header still carries the real status.
     return (
       <div class="screen">
-        <AppHeader title={carName.value || t('tab.vehicle')} sub={connected.value ? t('common.live') : t('common.reconnecting')} dot={connected.value ? 'ok' : 'wait'} />
-        <div class="card">
-          <div class="center-note">
-            {connected.value ? t('common.loading_vehicle') : lastError.value || t('common.connecting_car')}
-          </div>
+        <AppHeader
+          title={carName.value || t('tab.vehicle')}
+          sub={connected.value ? t('common.loading_vehicle') : lastError.value || t('common.connecting_car')}
+          dot="wait"
+        />
+        <div class="sk sk-card" style={{ height: '150px' }} />
+        <div class="sk sk-card" style={{ height: '58px' }} />
+        <div class="sk sk-card" style={{ height: '96px' }} />
+        <div class="sk sk-card" style={{ height: '150px' }} />
+        <div class="tiles" style={{ marginTop: '14px' }}>
+          {[0, 1, 2, 3].map((i) => <div key={i} class="sk" style={{ height: '92px', borderRadius: 'var(--radius-md)' }} />)}
         </div>
       </div>
     )
   }
 
   const unit = s.distanceUnit || 'km'
+  /*
+   * Driving efficiency — OD's own consumption figure (summary.trip.whPerKm, the
+   * last drive), shown as kWh/100km. Replaces the SOH tile, which barely moves;
+   * consumption is the signature EV metric and changes with every trip. Shows
+   * "--" until the summary lands.
+   */
+  const wh = consumptionWhPerKm.value
+  const efficiency = wh == null ? '--' : (wh / 10).toFixed(1) // Wh/km → kWh/100km
+  // Fuel consumption of the latest trip (PHEV), L/100km — computed in getOdometer
+  // from the same trip fetch. 0.0 on a pure-EV drive; "--" when not reported.
+  const fuelL = odometer.value?.fuelLPer100
+  const fuelCons = fuelL == null ? '--' : fuelL.toFixed(1)
   const winOpen = windowsOpenCount(vs?.windows)
   const doorsLocked = vs?.doors?.overall
   const climateOn = !!(vs?.climate?.acOn || vs?.climate?.remoteClimateActive)
@@ -245,13 +265,16 @@ export function Dashboard() {
           {available:false, isStale:true} most of the time, so it was usually a
           stale number or a dash — and it is not something you act on anyway. */}
       <div class="tiles" style={{ marginTop: '14px' }}>
-        <StatTile
-          icon={<IconPlug size={20} />}
-          label={t('tile.battery_health')}
-          value={s.soh?.percent != null ? String(Math.round(s.soh.percent)) : '--'}
-          unit="%"
-          accent="var(--m-teal)"
-        />
+        {/* Consumption: electric (kWh/100km) and fuel (L/100km) in one tile. */}
+        <div class="tile">
+          <div class="tile-icon" style={{ color: 'var(--m-teal)' }}><IconBolt size={20} /></div>
+          <div class="tile-dual mono">
+            <span><b>{efficiency}</b> <small>kWh</small></span>
+            <span class="dual-sep">·</span>
+            <span><b>{fuelCons}</b> <small>L</small></span>
+          </div>
+          <div class="tile-label">{t('tile.efficiency')}</div>
+        </div>
         <StatTile icon={<IconThermo size={20} />} label={tempLabel} value={fmtTemp(tempValue)} accent="var(--m-orange)" />
         <StatTile
           icon={<IconAir size={20} />}

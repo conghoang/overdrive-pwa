@@ -82,6 +82,7 @@ export function StatChartCard({
   chipLabel,
   href,
   hrefLabel,
+  onChip,
   state,
   emptyText,
   totals,
@@ -98,6 +99,8 @@ export function StatChartCard({
   /** Where the chip goes — null when there is no car to open (demo). */
   href: string | null
   hrefLabel: string
+  /** When set, the chip is an in-app button (takes precedence over href). */
+  onChip?: () => void
   state: 'loading' | 'ready' | 'error'
   emptyText: string
   totals: JSX.Element
@@ -138,14 +141,25 @@ export function StatChartCard({
           <div class="cs-title">{title}</div>
           <div class="cs-sub">{subtitle}</div>
         </div>
-        {href && (
+        {onChip ? (
+          <button class="cs-period" type="button" onClick={onChip} aria-label={hrefLabel} title={hrefLabel}>
+            {chipLabel} <IconArrow size={14} />
+          </button>
+        ) : href ? (
           <a class="cs-period" href={href} target="_blank" rel="noopener noreferrer" aria-label={hrefLabel} title={hrefLabel}>
             {chipLabel} <IconArrow size={14} />
           </a>
-        )}
+        ) : null}
       </div>
 
-      {state === 'error' ? (
+      {state === 'loading' ? (
+        <div class="cs-skel">
+          <div class="sk" style={{ height: '22px', width: '58%' }} />
+          <div class="cs-skel-bars">
+            {[40, 62, 28, 82, 52, 70, 46].map((h, i) => <div class="sk" key={i} style={{ height: `${h}%` }} />)}
+          </div>
+        </div>
+      ) : state === 'error' ? (
         <div class="cs-empty">{emptyText}</div>
       ) : (
         <>
