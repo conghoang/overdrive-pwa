@@ -41,12 +41,17 @@ export function MiniMap({ lat, lng, height = 180 }: { lat: number; lng: number; 
           // because the map is short and easy to scroll past.
           dragging: true,
         })
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        // Esri's basemap, not OSM's public tiles. OSM's tile server forbids
+        // app/heavy use and rate-limits by IP — reloading during development
+        // got a whole network blocked, showing a blank map on every device on
+        // it while other IPs were fine. Esri's is built for embedding, needs no
+        // key, and runs on separate infrastructure. Note the {z}/{y}/{x} order.
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
           maxZoom: 19,
-          className: 'osm-dark', // CSS darkens just the tiles
+          className: 'osm-dark', // CSS darkens just the tiles in dark mode
         }).addTo(map)
         L.control.zoom({ position: 'bottomright' }).addTo(map)
-        L.control.attribution({ position: 'bottomleft', prefix: false }).addAttribution('© OpenStreetMap').addTo(map)
+        L.control.attribution({ position: 'bottomleft', prefix: false }).addAttribution('© Esri').addTo(map)
 
         markerRef.current = L.circleMarker([lat, lng], {
           radius: 7,
