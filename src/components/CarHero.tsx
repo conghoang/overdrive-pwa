@@ -1,8 +1,8 @@
 import { useState } from 'preact/hooks'
 import type { JSX } from 'preact'
 import { carPhoto } from '../lib/settings'
-import { chargeEtaMin, chargeTargetPct, vehicleState } from '../lib/store'
-import { distanceUnitLabel, fmtDistance, fmtEta, fmtNum } from '../lib/format'
+import { vehicleState } from '../lib/store'
+import { distanceUnitLabel, fmtDistance } from '../lib/format'
 import { t } from '../lib/i18n'
 import { windowsOpenCount } from '../lib/vehicle'
 import { IconBattery, IconBolt, IconFuel, IconLock, IconUnlock, IconWindow } from './icons'
@@ -40,7 +40,6 @@ export function CarHero({ s }: { s: StatusResponse }) {
   const [imgOk, setImgOk] = useState(true)
   const unit = s.distanceUnit || 'km'
   const charging = !!s.charging?.charging
-  const power = s.charging?.chargingPowerKW ?? s.charging?.powerKw
   const photo = carPhoto.value || DEFAULT_PHOTO
   const isPhev = !!s.range?.isPhev
   const range = s.range?.totalRangeKm ?? s.range?.elecRangeKm
@@ -115,21 +114,12 @@ export function CarHero({ s }: { s: StatusResponse }) {
         </div>
       </div>
 
-      {charging ? (
-        <div class="charging-wrap">
-          <div class="charging-line on">
-            <IconBolt size={16} /> {t('car.charging')}{power ? ` · ${fmtNum(power, 1)} kW` : ''}
-          </div>
-          {chargeEtaMin.value != null && chargeEtaMin.value > 0 && (
-            <div class="charging-sub">
-              ~{fmtEta(chargeEtaMin.value)} {t('car.to')} {chargeTargetPct.value ? `${chargeTargetPct.value}%` : t('car.full')}
-            </div>
-          )}
-        </div>
-      ) : (
-        <div class="charging-line">
-          {s.acc ? t('car.ready') : s.charging?.plugged ? t('car.plugged') : t('car.parked')}
-        </div>
+      {/* No charging line here — the dedicated charging card owns that, and
+          repeating "Charging · kW · ETA" under the strip only duplicated it.
+          Just a quiet ready/parked note when unplugged, where there is no
+          charging card to say anything. */}
+      {!charging && !s.charging?.plugged && (
+        <div class="charging-line">{s.acc ? t('car.ready') : t('car.parked')}</div>
       )}
     </div>
   )

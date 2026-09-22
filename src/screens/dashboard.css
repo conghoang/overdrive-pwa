@@ -243,11 +243,7 @@
 .car-preset:hover, .car-preset:focus-visible { border-color: var(--accent); }
 .car-svg { display: block; }
 
-.charging-wrap { margin-top: 0; }
 .charging-line { text-align: center; margin-top: 14px; font-size: 14px; font-weight: 600; color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px; }
-.charging-wrap .charging-line { margin-top: 12px; }
-.charging-line.on { color: var(--success); }
-.charging-sub { text-align: center; margin-top: 3px; font-size: 12px; font-weight: 600; color: var(--muted); }
 
 /* quick actions row (Device page) */
 .quick-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 14px; }
