@@ -31,6 +31,19 @@
 .tile-dual small { font-size: 12px; color: var(--muted); font-weight: 600; }
 .tile-dual .dual-sep { color: var(--muted); font-weight: 700; }
 
+/* Tyre-pressure + location pair. One per row on a phone; two-up as soon as the
+   row can hold two ~280px cards (a foldable unfolded, a tablet). auto-fit
+   collapses the empty track when only one card renders, so a missing GPS fix
+   never leaves a half-width gap. At >=1000px the whole .screen is already a
+   two-column masonry, so this simply stacks inside its column. */
+.dash-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+  align-items: start;
+}
+
 /* status rows */
 .srow { display: flex; align-items: center; justify-content: space-between; padding: 11px 0; }
 .srow + .srow { border-top: 1px solid var(--border-soft); }

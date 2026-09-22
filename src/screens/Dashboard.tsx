@@ -151,60 +151,64 @@ export function Dashboard() {
         <EnergyGauges s={s} />
       </div>
 
-      {/* tyre pressure */}
-      <div style={{ marginTop: '14px' }}>
+      {/* Tyre pressure + location, paired: side by side once the screen is wide
+          enough (foldables unfolded, tablets), stacked on a normal phone. The
+          grid itself is the breakpoint — no media query — so a single card
+          (no GPS fix) still fills the row instead of leaving a gap. */}
+      <div class="dash-pair">
+        {/* tyre pressure */}
         <Tyres tyres={vs?.tyres} unit={s.pressureUnit || 'kpa'} />
-      </div>
 
-      {/* location */}
-      {s.gps?.hasLocation && s.gps?.lat != null && s.gps?.lng != null && (
-        <div class="card" style={{ marginTop: '14px' }}>
-          <div class="spread" style={{ marginBottom: showMap.value ? '10px' : 0 }}>
-            <div class="card-title" style={{ margin: 0 }}>{t('loc.title')}</div>
-            {/* In map mode the map says where it is, so the row below is dropped
-                and Open-in-Maps becomes a compact icon button. */}
-            {showMap.value && (
-              <a
-                class="loc-ext"
-                href={`https://www.google.com/maps/search/?api=1&query=${s.gps.lat},${s.gps.lng}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={t('loc.open_maps')}
-                aria-label={t('loc.open_maps')}
-              >
-                <IconMapOpen size={19} />
-              </a>
+        {/* location */}
+        {s.gps?.hasLocation && s.gps?.lat != null && s.gps?.lng != null && (
+          <div class="card">
+            <div class="spread" style={{ marginBottom: showMap.value ? '10px' : 0 }}>
+              <div class="card-title" style={{ margin: 0 }}>{t('loc.title')}</div>
+              {/* In map mode the map says where it is, so the row below is dropped
+                  and Open-in-Maps becomes a compact icon button. */}
+              {showMap.value && (
+                <a
+                  class="loc-ext"
+                  href={`https://www.google.com/maps/search/?api=1&query=${s.gps.lat},${s.gps.lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={t('loc.open_maps')}
+                  aria-label={t('loc.open_maps')}
+                >
+                  <IconMapOpen size={19} />
+                </a>
+              )}
+            </div>
+
+            {showMap.value ? (
+              <MiniMapLazy lat={s.gps.lat} lng={s.gps.lng} />
+            ) : (
+              <>
+                <div class="row" style={{ gap: '11px' }}>
+                  <IconPin size={20} />
+                  <div class="stack">
+                    <span class="loc-coords mono">
+                      {s.gps.lat.toFixed(5)}, {s.gps.lng.toFixed(5)}
+                    </span>
+                    <span class="screen-sub">
+                      {s.gps.isMoving ? t('loc.moving') : t('loc.parked')}
+                      {s.gps.lastUpdate ? ` · ${ago(s.gps.lastUpdate)}` : ''}
+                    </span>
+                  </div>
+                </div>
+                <a
+                  class="loc-link"
+                  href={`https://www.google.com/maps/search/?api=1&query=${s.gps.lat},${s.gps.lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <IconMapOpen size={17} /> {t('loc.open_maps')}
+                </a>
+              </>
             )}
           </div>
-
-          {showMap.value ? (
-            <MiniMapLazy lat={s.gps.lat} lng={s.gps.lng} />
-          ) : (
-            <>
-              <div class="row" style={{ gap: '11px' }}>
-                <IconPin size={20} />
-                <div class="stack">
-                  <span class="loc-coords mono">
-                    {s.gps.lat.toFixed(5)}, {s.gps.lng.toFixed(5)}
-                  </span>
-                  <span class="screen-sub">
-                    {s.gps.isMoving ? t('loc.moving') : t('loc.parked')}
-                    {s.gps.lastUpdate ? ` · ${ago(s.gps.lastUpdate)}` : ''}
-                  </span>
-                </div>
-              </div>
-              <a
-                class="loc-link"
-                href={`https://www.google.com/maps/search/?api=1&query=${s.gps.lat},${s.gps.lng}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <IconMapOpen size={17} /> {t('loc.open_maps')}
-              </a>
-            </>
-          )}
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Minor info tiles. No 12V voltage: /status reports it as
           {available:false, isStale:true} most of the time, so it was usually a
