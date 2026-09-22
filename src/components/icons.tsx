@@ -82,6 +82,10 @@ export const IconGear = ({ size, class: c }: IconProps) =>
     size,
     c,
   )
+/* A gear shifter — knob, stick, base — for the transmission gear (P/R/N/D),
+   which the cog-shaped IconGear (the Settings icon) read as a sun for. */
+export const IconShift = ({ size, class: c }: IconProps) =>
+  svg(<><circle cx="12" cy="6" r="2.4" /><path d="M12 8.4v6.6" /><path d="M7.5 19.5h9" /></>, size, c)
 export const IconFuel = ({ size, class: c }: IconProps) =>
   svg(<><rect x="4" y="3" width="10" height="18" rx="2" /><path d="M4 10h10" /><path d="M14 7l3.2 3.2a2 2 0 0 1 .6 1.4V17a1.8 1.8 0 0 0 3.2 1.2" /><path d="M18 12v-2" /></>, size, c)
 /* Horizontal cell with a terminal nub and a bolt — reads as a traction battery

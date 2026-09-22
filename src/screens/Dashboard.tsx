@@ -19,7 +19,7 @@ const ChargingCard = lazyScreen(() => import('../components/ChargingCard'), 'Cha
 import { QuickActions } from '../components/QuickActions'
 import { StatTile } from '../components/StatTile'
 import { Tyres } from '../components/Tyres'
-import { IconAir, IconBolt, IconGauge, IconGear, IconMapOpen, IconPin, IconRoad, IconThermo, IconWifi, IconWind } from '../components/icons'
+import { IconAir, IconBolt, IconGauge, IconMapOpen, IconPin, IconRoad, IconShift, IconThermo, IconWifi, IconWind } from '../components/icons'
 import './dashboard.css'
 
 export function Dashboard() {
@@ -143,7 +143,7 @@ export function Dashboard() {
         )}
         <div class="srow">
           <div class="srow-left">
-            <IconGear size={20} />
+            <IconShift size={20} />
             <span class="srow-label">{t('vitals.gear')}</span>
           </div>
           <span class="srow-val">{gear || '–'}</span>
