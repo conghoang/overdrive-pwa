@@ -11,18 +11,39 @@ import type { StatusResponse } from '../lib/types'
 export const DEFAULT_PHOTO = `${import.meta.env.BASE_URL}car/sealion6.webp`
 
 /**
- * One energy source as an inline proportion bar under the combined range —
- * icon, a fill bar, and the percent. A null reading shows an empty bar and
- * "--" rather than a confident 0%, keeping "empty" distinct from "not said".
+ * One energy source under the combined range: its name, its own estimated
+ * range in km (what you actually plan around, so it leads), the level as a
+ * quiet percent, and a proportion bar. A null reading shows "--" and an empty
+ * bar rather than a confident 0, keeping "empty" distinct from "not said".
  */
-function EnergyBar({ icon, pct, color }: { icon: JSX.Element; pct: number | undefined | null; color: string }) {
-  const has = typeof pct === 'number'
-  const w = has ? Math.max(0, Math.min(100, pct as number)) : 0
+function EnergyLeg({
+  icon,
+  name,
+  km,
+  pct,
+  color,
+  unit,
+}: {
+  icon: JSX.Element
+  name: string
+  km: number | undefined | null
+  pct: number | undefined | null
+  color: string
+  unit: string
+}) {
+  const hasPct = typeof pct === 'number'
+  const w = hasPct ? Math.max(0, Math.min(100, pct as number)) : 0
   return (
-    <div class="hero-energy-item">
-      <span class="hero-energy-ico" style={{ color }}>{icon}</span>
-      <span class="hero-bar"><i style={{ width: `${w}%`, background: color }} /></span>
-      <span class="hero-energy-pct mono">{has ? `${Math.round(pct as number)}%` : '--'}</span>
+    <div class="hero-leg">
+      <div class="hero-leg-head">
+        <span class="hero-leg-ico" style={{ color }}>{icon}</span>
+        <span class="hero-leg-name">{name}</span>
+        <span class="hero-leg-km mono">
+          {km != null ? fmtDistance(km, unit) : '--'}<small> {distanceUnitLabel(unit)}</small>
+        </span>
+        <span class="hero-leg-pct mono">{hasPct ? `${Math.round(pct as number)}%` : '--'}</span>
+      </div>
+      <div class="hero-leg-bar"><i style={{ width: `${w}%`, background: color }} /></div>
     </div>
   )
 }
@@ -57,15 +78,30 @@ export function CarHero({ s }: { s: StatusResponse }) {
         <span class="veh-range-num mono">{fmtDistance(range, unit)}</span>
         <span class="veh-range-unit">{distanceUnitLabel(unit)}</span>
       </div>
+      <div class="veh-range-label">{t('car.range')}</div>
 
-      {/* Battery — and, on a PHEV, fuel — as inline bars under the range, the
-          way BYD's app leads its home screen. Fuel only when this trim has it,
-          so a BEV shows a single centred battery bar rather than a lone gap. */}
+      {/* The estimated range broken into its legs: battery, and fuel on a PHEV.
+          Each leg leads with its own km so the two visibly sum to the headline.
+          The grid stacks on a phone and goes two-up once the card is wide enough
+          (a foldable unfolded); a BEV has one leg and fills the row. */}
       <div class="hero-energy">
-        <EnergyBar icon={<IconBattery size={16} />} pct={s.soc?.percent} color="var(--success)" />
-        {isPhev && <span class="hero-energy-div" aria-hidden="true" />}
+        <EnergyLeg
+          icon={<IconBattery size={16} />}
+          name={t('energy.battery')}
+          km={s.range?.elecRangeKm}
+          pct={s.soc?.percent}
+          color="var(--success)"
+          unit={unit}
+        />
         {isPhev && (
-          <EnergyBar icon={<IconFuel size={15} class="ico-fuel" />} pct={s.range?.fuelPercent} color="var(--m-orange)" />
+          <EnergyLeg
+            icon={<IconFuel size={15} class="ico-fuel" />}
+            name={t('energy.fuel')}
+            km={s.range?.fuelRangeKm}
+            pct={s.range?.fuelPercent}
+            color="var(--m-orange)"
+            unit={unit}
+          />
         )}
       </div>
 

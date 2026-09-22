@@ -1,5 +1,5 @@
 import { connected, consumptionWhPerKm, lastError, odometer, outsideTempC, pm25Inside, pm25Outside, status, vehicleState } from '../lib/store'
-import { fmtTemp, ago } from '../lib/format'
+import { fmtTemp, ago, fmtOdo, distanceUnitLabel } from '../lib/format'
 import { t } from '../lib/i18n'
 import { effectiveGear } from '../lib/vehicle'
 import { carName, showMap } from '../lib/settings'
@@ -20,7 +20,7 @@ import { QuickActions } from '../components/QuickActions'
 import { EnergyGauges } from '../components/EnergyGauges'
 import { StatTile } from '../components/StatTile'
 import { Tyres } from '../components/Tyres'
-import { IconAir, IconBolt, IconGauge, IconGear, IconMapOpen, IconPin, IconThermo, IconWifi, IconWind } from '../components/icons'
+import { IconAir, IconBolt, IconGauge, IconGear, IconMapOpen, IconPin, IconRoad, IconThermo, IconWifi, IconWind } from '../components/icons'
 import './dashboard.css'
 
 export function Dashboard() {
@@ -59,7 +59,8 @@ export function Dashboard() {
   const efficiency = wh == null ? '--' : (wh / 10).toFixed(1) // Wh/km → kWh/100km
   // Fuel consumption of the latest trip (PHEV), L/100km — computed in getOdometer
   // from the same trip fetch. 0.0 on a pure-EV drive; "--" when not reported.
-  const fuelL = odometer.value?.fuelLPer100
+  const odo = odometer.value
+  const fuelL = odo?.fuelLPer100
   const fuelCons = fuelL == null ? '--' : fuelL.toFixed(1)
   const climateOn = !!(vs?.climate?.acOn || vs?.climate?.remoteClimateActive)
   /*
@@ -121,9 +122,26 @@ export function Dashboard() {
 
       {!chargingNow && <ChargingCard s={s} />}
 
-      {/* gear / speed / climate — the driving-state facts, below the hero's
-          walk-away strip (power / doors / windows). */}
+      {/* odometer / gear / speed / climate — the vehicle-stats card. Odometer
+          leads: it moved here out of the hero, which now leads with range. Its
+          row is drawn only when the car actually reports a reading. */}
       <div class="card" style={{ marginTop: '14px' }}>
+        {odo?.totalKm != null && (
+          <div class="srow">
+            <div class="srow-left">
+              <IconRoad size={20} />
+              <span class="srow-label">{t('car.odo')}</span>
+            </div>
+            <div class="odo-right">
+              <span class="srow-val mono">{fmtOdo(odo.totalKm, unit)} <small>{distanceUnitLabel(unit)}</small></span>
+              {(odo.evKm != null || odo.hevKm != null) && (
+                <span class="odo-sub mono">
+                  {t('car.odo_ev')} {fmtOdo(odo.evKm, unit)} · {t('car.odo_hev')} {fmtOdo(odo.hevKm, unit)}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
         <div class="srow">
           <div class="srow-left">
             <IconGear size={20} />

@@ -23,6 +23,9 @@ export function svg(path: JSX.Element, size = 24, cls?: string): JSX.Element {
 export const IconGauge = ({ size, class: c }: IconProps) =>
   svg(<><path d="M12 14l4-4" /><path d="M4.9 19a9 9 0 1 1 14.2 0" /><circle cx="12" cy="14" r="1.4" fill="currentColor" stroke="none" /></>, size, c)
 
+export const IconRoad = ({ size, class: c }: IconProps) =>
+  svg(<><path d="M6 3 4 21" /><path d="M18 3l2 18" /><path d="M12 4v3" /><path d="M12 10.5v3" /><path d="M12 17v3" /></>, size, c)
+
 export const IconSliders = ({ size, class: c }: IconProps) =>
   svg(<><path d="M4 6h10" /><path d="M18 6h2" /><circle cx="16" cy="6" r="2" /><path d="M4 12h2" /><path d="M10 12h10" /><circle cx="8" cy="12" r="2" /><path d="M4 18h10" /><path d="M18 18h2" /><circle cx="16" cy="18" r="2" /></>, size, c)
 

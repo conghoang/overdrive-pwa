@@ -54,6 +54,9 @@
 .srow-val { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .srow-val small { font-size: 12px; color: var(--muted); font-weight: 600; }
 .srow-val.on { color: var(--success); }
+/* Odometer row: total on top, EV/HEV split as a quiet subline, right-aligned. */
+.odo-right { display: flex; flex-direction: column; align-items: flex-end; }
+.odo-sub { color: var(--muted); font-size: 11px; font-weight: 600; margin-top: 2px; }
 
 /* mini map (Leaflet, lazy-loaded) */
 .minimap {
@@ -174,16 +177,26 @@
 .veh-range { display: flex; align-items: baseline; justify-content: center; gap: 8px; }
 .veh-range-num { font-size: 48px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
 .veh-range-unit { font-size: 18px; color: var(--muted); font-weight: 600; }
-.veh-range-label { color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+.veh-range-label { color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 4px; text-align: center; }
 
-/* battery / fuel proportion bars under the combined range */
-.hero-energy { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 14px; }
-.hero-energy-item { display: flex; align-items: center; gap: 8px; }
-.hero-energy-ico { display: flex; flex: 0 0 auto; }
-.hero-bar { width: 70px; height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; flex: 0 0 auto; }
-.hero-bar i { display: block; height: 100%; border-radius: 999px; transition: width 0.5s cubic-bezier(0.22, 0.61, 0.36, 1); }
-.hero-energy-pct { font-size: 14px; font-weight: 700; color: var(--text-secondary); font-variant-numeric: tabular-nums; min-width: 32px; }
-.hero-energy-div { width: 1px; align-self: stretch; min-height: 20px; background: var(--border-soft); }
+/* The estimated range split into its legs (battery / fuel). One column on a
+   phone; two-up once the card can hold two ~220px legs (a foldable unfolded),
+   the row itself being the breakpoint so a lone BEV leg still fills the width. */
+.hero-energy {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px 18px;
+  margin-top: 16px;
+}
+.hero-leg-head { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+.hero-leg-ico { display: flex; flex: 0 0 auto; }
+.hero-leg-name { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+/* km leads — it is what you plan around — so it is the largest thing in the leg. */
+.hero-leg-km { margin-left: auto; font-size: 17px; font-weight: 800; letter-spacing: -0.01em; }
+.hero-leg-km small { font-size: 12px; color: var(--muted); font-weight: 600; }
+.hero-leg-pct { font-size: 12px; font-weight: 700; color: var(--muted); min-width: 34px; text-align: right; }
+.hero-leg-bar { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.hero-leg-bar i { display: block; height: 100%; border-radius: 999px; transition: width 0.5s cubic-bezier(0.22, 0.61, 0.36, 1); }
 
 /* walk-away state strip (power / doors / windows) where the gear pills were */
 .hero-state { display: grid; grid-template-columns: 1fr 1fr 1fr; margin-top: 16px; }
