@@ -31,14 +31,15 @@
 .tile-dual small { font-size: 12px; color: var(--muted); font-weight: 600; }
 .tile-dual .dual-sep { color: var(--muted); font-weight: 700; }
 
-/* Tyre-pressure + location pair. One per row on a phone; two-up as soon as the
-   row can hold two ~280px cards (a foldable unfolded, a tablet). auto-fit
-   collapses the empty track when only one card renders, so a missing GPS fix
-   never leaves a half-width gap. At >=1000px the whole .screen is already a
-   two-column masonry, so this simply stacks inside its column. */
+/* Tyre-pressure + location pair. One per row on a phone; two-up on a bigger
+   screen. The min is 240px, not ~280px, on purpose: the app caps content at
+   560px (.app-main) until 1000px, so a foldable unfolded still only gives the
+   pair ~528px — two 280px cards (574px) never fit and it stayed stacked, while
+   two 240px cards (494px) do. auto-fit still collapses the empty track when
+   only one card renders, so a missing GPS fix never leaves a half-width gap. */
 .dash-pair {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 14px;
   margin-top: 14px;
   align-items: start;
@@ -177,8 +178,6 @@
 .veh-range { display: flex; align-items: baseline; justify-content: center; gap: 8px; }
 .veh-range-num { font-size: 48px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
 .veh-range-unit { font-size: 18px; color: var(--muted); font-weight: 600; }
-.veh-range-label { color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 4px; text-align: center; }
-
 /* The estimated range split into its legs (battery / fuel). One column on a
    phone; two-up once the card can hold two ~220px legs (a foldable unfolded),
    the row itself being the breakpoint so a lone BEV leg still fills the width. */
@@ -313,32 +312,3 @@
 }
 .quick-icon, .quick-label, .quick-hint { position: relative; }
 
-/* dual ring gauges */
-.gauges { display: flex; align-items: center; justify-content: space-around; gap: 12px; padding: 6px 0 2px; }
-.gauges.single { justify-content: center; }
-/* The whole readout sits inside the ring. */
-.gauge { position: relative; width: 132px; height: 132px; }
-.gauge-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
-/* Icon beside the number, sharing its line — it identifies the ring without
-   costing a row. Optically nudged down: the glyph's mass sits lower than the
-   digits' cap height, so true centring reads as too high.
-
-   The gap is set from where the INK ends, not where the box does. Each icon
-   carries ~2px of empty viewBox on its right, so a 7px gap measured 9px to the
-   eye and the icon drifted away from the number it belongs to. 4px here lands
-   at ~6px optical, which is what actually reads as attached. */
-.gauge-val-row { display: flex; align-items: center; gap: 4px; }
-.gauge-ico { display: flex; margin-top: 2px; }
-/* The fuel pump is not a solid shape: its body ends about two thirds across
-   and only a thin hose occupies the rest, so the eye measures the gap from the
-   body and reads it as farther off than the battery — whose cell and terminal
-   run the full width. Equal numbers, unequal appearance. Pulling it in lets
-   the light hose sit in the gap instead of the gap sitting after the hose. */
-.gauge-ico .ico-fuel { margin-right: -3px; }
-.gauge-val { font-size: 31px; font-weight: 700; line-height: 1; }
-.gauge-val small { font-size: 15px; color: var(--muted); font-weight: 600; }
-/* Range this ring's energy is worth, paired with the percentage above it. */
-.gauge-sub { font-size: 13px; font-weight: 600; line-height: 1; color: var(--muted); }
-.gauge-sub .mono { color: var(--text); font-weight: 700; }
-.gauges-range { text-align: center; margin-top: 12px; color: var(--muted); font-size: 14px; font-weight: 600; }
-.gauges-range .mono { color: var(--text); font-size: 18px; }

@@ -78,7 +78,6 @@ export function CarHero({ s }: { s: StatusResponse }) {
         <span class="veh-range-num mono">{fmtDistance(range, unit)}</span>
         <span class="veh-range-unit">{distanceUnitLabel(unit)}</span>
       </div>
-      <div class="veh-range-label">{t('car.range')}</div>
 
       {/* The estimated range broken into its legs: battery, and fuel on a PHEV.
           Each leg leads with its own km so the two visibly sum to the headline.

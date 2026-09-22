@@ -17,7 +17,6 @@ import { MiniMapLazy } from '../components/MiniMapLazy'
  */
 const ChargingCard = lazyScreen(() => import('../components/ChargingCard'), 'ChargingCard', null)
 import { QuickActions } from '../components/QuickActions'
-import { EnergyGauges } from '../components/EnergyGauges'
 import { StatTile } from '../components/StatTile'
 import { Tyres } from '../components/Tyres'
 import { IconAir, IconBolt, IconGauge, IconGear, IconMapOpen, IconPin, IconRoad, IconThermo, IconWifi, IconWind } from '../components/icons'
@@ -163,10 +162,6 @@ export function Dashboard() {
           </div>
           <span class={'srow-val' + (climateOn ? ' on' : '')}>{climateOn ? t('common.on') : t('common.off')}</span>
         </div>
-      </div>
-
-      <div style={{ marginTop: '14px' }}>
-        <EnergyGauges s={s} />
       </div>
 
       {/* Tyre pressure + location, paired: side by side once the screen is wide
