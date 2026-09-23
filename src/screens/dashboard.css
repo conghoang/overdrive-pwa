@@ -47,8 +47,8 @@
   .dash-pair { flex-direction: row; align-items: stretch; }
   .dash-pair > .card { flex: 1 1 0; min-width: 0; }
 }
-/* Dev preview (`?twoup`): force the pair side by side at any width, with the
-   compact tyre readings so they still fit when the cards are narrow. */
+/* Dev build (html.twoup, set in main.tsx): force the pair side by side at any
+   width, with the compact tyre readings so they still fit when cards are narrow. */
 html.twoup .dash-pair { flex-direction: row; align-items: stretch; }
 html.twoup .dash-pair > .card { flex: 1 1 0; min-width: 0; }
 html.twoup .tyre-diagram { grid-template-columns: 1fr 66px 1fr; column-gap: 4px; padding: 10px 4px 4px; }
