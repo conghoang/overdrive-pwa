@@ -159,11 +159,17 @@ html.twoup .tyre-car svg { width: 42px; }
   padding: 12px 8px 6px;
 }
 .tyre-car { grid-column: 2; grid-row: 1 / span 2; align-self: center; display: flex; justify-content: center; }
-.tyre-read { display: flex; flex-direction: column; align-items: center; }
-.tyre-read.fl { grid-column: 1; grid-row: 1; }
-.tyre-read.fr { grid-column: 3; grid-row: 1; }
-.tyre-read.rl { grid-column: 1; grid-row: 2; }
-.tyre-read.rr { grid-column: 3; grid-row: 2; }
+.tyre-read { display: flex; flex-direction: column; }
+/* Align each side's figures to the OUTER edge, not centred: centring left a
+   narrow number ("36") with more space around it than a wide one ("36.3"), so
+   the left and right padding looked mismatched. Outer-aligned, both sides sit
+   the same distance from the card edge. */
+.tyre-read.fl, .tyre-read.rl { grid-column: 1; align-items: flex-start; }
+.tyre-read.fr, .tyre-read.rr { grid-column: 3; align-items: flex-end; }
+.tyre-read.fl { grid-row: 1; }
+.tyre-read.fr { grid-row: 1; }
+.tyre-read.rl { grid-row: 2; }
+.tyre-read.rr { grid-row: 2; }
 .tyre-read .p { font-size: 27px; font-weight: 700; line-height: 1; }
 .tyre-read .u { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 3px; }
 .tyre-read.warn .p { color: var(--warning); }
