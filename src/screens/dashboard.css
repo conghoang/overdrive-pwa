@@ -225,7 +225,8 @@
 .hero-leg-name { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 /* km leads — it is what you plan around — so it is the largest thing in the leg. */
 .hero-leg-km { margin-left: auto; font-size: 17px; font-weight: 800; letter-spacing: -0.01em; }
-.hero-leg-km small { font-size: 12px; color: var(--muted); font-weight: 600; }
+/* Inherit the leg colour so "km" is tinted with the number, not left grey. */
+.hero-leg-km small { font-size: 12px; color: inherit; opacity: 0.7; font-weight: 600; }
 .hero-leg-pct { font-size: 12px; font-weight: 700; color: var(--muted); min-width: 34px; text-align: right; }
 .hero-leg-bar { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
 .hero-leg-bar i { display: block; height: 100%; border-radius: 999px; transition: width 0.5s cubic-bezier(0.22, 0.61, 0.36, 1); }
