@@ -274,7 +274,7 @@
 .odo-leg-v { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .odo-leg-v small { font-size: 11px; font-weight: 500; color: var(--muted); }
 
-.car-photo { display: block; width: 100%; max-width: 380px; margin: 6px auto 4px; height: auto; filter: var(--shadow-photo); }
+.car-photo { display: block; width: 100%; max-width: 380px; margin: 20px auto 4px; height: auto; filter: var(--shadow-photo); }
 .car-photo-preview { display: block; width: 100%; max-width: 300px; height: auto; margin: 0 auto; filter: var(--shadow-photo-sm); }
 
 /* Shape presets: a scrollable strip of tappable car silhouettes. */
