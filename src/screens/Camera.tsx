@@ -83,7 +83,9 @@ function CamIcon({ mode }: { mode: number }): JSX.Element {
 export function Camera() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const playerRef = useRef<PlayerHandle | null>(null)
-  const [view, setView] = useState<number>(CAMERA_VIEWS[0].mode)
+  // Default to Front (mode 1), not CAMERA_VIEWS[0] — the list now leads with
+  // Left, but the front camera is the natural view to open on.
+  const [view, setView] = useState<number>(1)
   const [state, setState] = useState<PlayerState>('stopped')
   const [quality, setQuality] = useState<api.StreamQuality>({})
   // Bumped only when the USER picks a preset. Keying the stream effect on

@@ -401,11 +401,14 @@ export async function getOdometer(): Promise<Odometer | null> {
  * an Authorization header, and cookies are stripped cross-site through a
  * tunnel, so the query param is the only channel OD accepts.
  */
+// Ordered left → front → right → back to read like the car around you, then the
+// all-round mosaic. Modes are the AVM channels; there is no live "DVR" channel —
+// OverDrive's DVR is recorded dashcam clips (oemDashcam), a playback feature.
 export const CAMERA_VIEWS = [
+  { mode: 4, key: 'cam.left' },
   { mode: 1, key: 'cam.front' },
   { mode: 2, key: 'cam.right' },
   { mode: 3, key: 'cam.rear' },
-  { mode: 4, key: 'cam.left' },
   { mode: 0, key: 'cam.mosaic' },
 ] as const
 
