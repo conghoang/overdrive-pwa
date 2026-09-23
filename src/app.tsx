@@ -13,10 +13,40 @@ const SetupScreen = lazyScreen(() => import('./screens/Setup'), 'Setup')
  * fetched when chosen. Controls brings the climate banner, the seat artwork and
  * the 51DK grid with it, none of which anything else uses.
  */
-const ControlsTab = lazyScreen(() => import('./screens/Controls'), 'Controls')
-const AccountTab = lazyScreen(() => import('./screens/Account'), 'Account')
-const CameraTab = lazyScreen(() => import('./screens/Camera'), 'Camera')
-const DataTab = lazyScreen(() => import('./screens/Data'), 'Data')
+// Named loaders so the same import() both defines the lazy tab AND can be
+// pre-warmed during idle time (see preloadTabsWhenIdle).
+const loadControls = () => import('./screens/Controls')
+const loadCamera = () => import('./screens/Camera')
+const loadData = () => import('./screens/Data')
+const loadAccount = () => import('./screens/Account')
+const ControlsTab = lazyScreen(loadControls, 'Controls')
+const AccountTab = lazyScreen(loadAccount, 'Account')
+const CameraTab = lazyScreen(loadCamera, 'Camera')
+const DataTab = lazyScreen(loadData, 'Data')
+
+/**
+ * Warm the lazy tab chunks during idle time, so the first open is instant rather
+ * than waiting on a cold fetch (and never lands on the load-failed state on a
+ * flaky link). One chunk per idle slot, sequential, so it never competes with
+ * the initial paint or the telemetry poll. Skipped on save-data / 2G / offline,
+ * where spending background bandwidth on a tab that may go unopened is rude.
+ */
+let preloadStarted = false
+function preloadTabsWhenIdle(): void {
+  const conn = (navigator as unknown as { connection?: { saveData?: boolean; effectiveType?: string } }).connection
+  if (!navigator.onLine || conn?.saveData || /(^|\b)2g$/.test(conn?.effectiveType ?? '')) return
+  const idle = (cb: () => void) =>
+    typeof requestIdleCallback === 'function' ? requestIdleCallback(cb, { timeout: 4000 }) : setTimeout(cb, 1200)
+  const loaders = [loadControls, loadData, loadCamera, loadAccount]
+  let i = 0
+  const step = () => {
+    if (i >= loaders.length) return
+    // Swallow failures: a rejected preload must not surface anywhere; the tab's
+    // own Retry handles it if the user opens one that failed to warm.
+    loaders[i++]().catch(() => {}).finally(() => idle(step))
+  }
+  idle(step)
+}
 
 import { TabBar } from './components/TabBar'
 import { Toaster } from './components/Toaster'
@@ -122,6 +152,11 @@ export function App() {
     }, TAB_ANIM_MS)
     return () => clearTimeout(id)
   }, [tab.value])
+
+  // Once the app is set up, warm the other tabs' chunks in the background.
+  useEffect(() => {
+    if (configured.value && !preloadStarted) { preloadStarted = true; preloadTabsWhenIdle() }
+  }, [configured.value])
 
   // Not set up yet, or the backend rejected our token → show the setup screen.
   if (!configured.value || store.authLost.value) {
