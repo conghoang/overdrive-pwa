@@ -60,8 +60,6 @@
   --m-teal: #35dfc1;
   --m-blue: #75a7ff;
   --m-orange: #f6a23c;
-  /* Vivid electric blue for the EV leg — brighter/more saturated than --m-blue. */
-  --ev-blue: #22b6ff;
 
   /* borders */
   --border-soft: var(--d-border-soft);
@@ -185,8 +183,6 @@
   --m-teal: #0f9c8b;
   --m-blue: #2f63cc;
   --m-orange: #c06a0c;
-  /* Vivid electric blue for the EV leg, a touch deeper on white for contrast. */
-  --ev-blue: #0aa5e6;
 
   --border-soft: rgba(16, 42, 66, 0.12);
   --border-strong: rgba(16, 42, 66, 0.2);

@@ -89,7 +89,7 @@ export function CarHero({ s }: { s: StatusResponse }) {
           name={t('energy.battery')}
           km={s.range?.elecRangeKm}
           pct={s.soc?.percent}
-          color="var(--ev-blue)"
+          color="var(--success)"
           unit={unit}
         />
         {isPhev && (
