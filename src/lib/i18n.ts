@@ -259,6 +259,8 @@ const EN: Record<string, string> = {
   'wc.remove': 'Remove',
 
   'common.failed': 'Failed',
+  'common.load_failed': "Couldn't load this screen",
+  'common.reload': 'Reload',
   'ctrl.set_temp': 'Set {temp}°C',
   'ctrl.auto_mode': 'Auto mode',
   'ctrl.auto': 'AUTO',
@@ -511,6 +513,8 @@ const VI: Record<string, string> = {
   'wc.remove': 'Xóa',
 
   'common.failed': 'Thất bại',
+  'common.load_failed': 'Không tải được màn hình này',
+  'common.reload': 'Tải lại',
   'ctrl.set_temp': 'Đặt {temp}°C',
   'ctrl.auto_mode': 'Chế độ tự động',
   'ctrl.auto': 'TỰ ĐỘNG',
