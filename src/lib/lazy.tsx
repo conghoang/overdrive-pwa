@@ -33,23 +33,41 @@ export function lazyScreen<P extends Record<string, unknown>, K extends string>(
     // placeholder forever. Track the failure and offer a full reload, which
     // re-fetches the HTML and lets the new service worker take over.
     const [failed, setFailed] = useState(false)
+    // Bumping this re-runs the effect to re-attempt the import. 0 is the first
+    // load; >0 is a user-triggered retry.
+    const [attempt, setAttempt] = useState(0)
     useEffect(() => {
       let live = true
       // setComp(() => C) — the updater form, or React/Preact would CALL the
       // component instead of storing it.
       load().then(
         (m) => { if (live) setComp(() => m[name]) },
-        () => { if (live) setFailed(true) },
+        () => {
+          if (!live) return
+          // A rejected dynamic import is cached by the browser for the page's
+          // life, so re-importing the same chunk returns the same rejection —
+          // a soft retry can't re-fetch. So the first Retry attempts it (cheap,
+          // and it DOES work in browsers that don't cache the failure); if that
+          // retry also fails, fall back to a full reload, which re-fetches the
+          // HTML and lets a new service worker take over — the reliable cure.
+          if (attempt > 0) location.reload()
+          else setFailed(true)
+        },
       )
       return () => { live = false }
-    }, [])
+    }, [attempt])
     if (failed) {
       return (
         <div class="screen">
           <div class="card">
             <div class="center-note" style={{ display: 'grid', gap: '14px', justifyItems: 'center' }}>
               <span>{t('common.load_failed')}</span>
-              <button class="btn accent" onClick={() => location.reload()}>{t('common.reload')}</button>
+              <button
+                class="btn accent"
+                onClick={() => { setFailed(false); setAttempt((n) => n + 1) }}
+              >
+                {t('common.retry')}
+              </button>
             </div>
           </div>
         </div>

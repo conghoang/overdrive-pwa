@@ -260,6 +260,7 @@ const EN: Record<string, string> = {
 
   'common.failed': 'Failed',
   'common.load_failed': "Couldn't load this screen",
+  'common.retry': 'Retry',
   'common.reload': 'Reload',
   'ctrl.set_temp': 'Set {temp}°C',
   'ctrl.auto_mode': 'Auto mode',
@@ -514,6 +515,7 @@ const VI: Record<string, string> = {
 
   'common.failed': 'Thất bại',
   'common.load_failed': 'Không tải được màn hình này',
+  'common.retry': 'Thử lại',
   'common.reload': 'Tải lại',
   'ctrl.set_temp': 'Đặt {temp}°C',
   'ctrl.auto_mode': 'Chế độ tự động',
