@@ -3,8 +3,9 @@ import { useState } from 'preact/hooks'
 import type { TripRow } from '../lib/types'
 import { lang, t } from '../lib/i18n'
 import { fmtDec, fmtOdo } from '../lib/format'
+import { tripView } from '../lib/settings'
 import { fmtDuration, fmtMoney } from './StatChartCard'
-import { IconBolt, IconFuel } from './icons'
+import { IconBattery, IconBolt, IconFuel, IconGauge } from './icons'
 
 const loc = () => (lang.value === 'vi' ? 'vi-VN' : 'en-US')
 const per100 = (used?: number, km?: number) =>
@@ -21,10 +22,125 @@ function whenLabel(ts?: number): { date: string; time: string } {
   }
 }
 
+/** Full date with weekday, matching OverDrive's trip screen (e.g. "CN, 20/09/2026"). */
+function fullDate(ts?: number): string {
+  if (typeof ts !== 'number') return '--'
+  return new Date(ts).toLocaleDateString(loc(), {
+    weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric',
+  })
+}
+
+/** Duration as HH:MM (45 min → "00:45"), the way the native trip card shows it. */
+function hhmm(seconds?: number): string {
+  if (typeof seconds !== 'number' || seconds <= 0) return '--'
+  const total = Math.round(seconds / 60)
+  const h = Math.floor(total / 60)
+  const m = total % 60
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
 const Chevron = () => (
   <svg class="trip-caret" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
     stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6" /></svg>
 )
+
+// Line icons the standard card needs that aren't in the shared set.
+const line = (path: JSX.Element) => (
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">{path}</svg>
+)
+const IconCal = () => line(<><rect x="3" y="4.5" width="18" height="16" rx="2" /><path d="M3 9h18M8 2.5v4M16 2.5v4" /></>)
+const IconClock = () => line(<><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></>)
+const IconCan = () => line(<><path d="M5 8h9v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z" /><path d="M14 11h3a2 2 0 0 1 2 2v4.5a1.6 1.6 0 0 1-3.2 0V16" /><path d="M7.5 8V6.2A1.2 1.2 0 0 1 8.7 5h1.6" /></>)
+
+/** One labelled stat: icon, caption, value (with optional absolute, unit, delta). */
+function Stat(props: {
+  icon: JSX.Element; label: string; value: JSX.Element
+  sub?: string; unit?: string; delta?: number | null
+}): JSX.Element {
+  const { icon, label, value, sub, unit, delta } = props
+  return (
+    <div class="tripc-cell">
+      <span class="tripc-ico">{icon}</span>
+      <div class="tripc-txt">
+        <div class="tripc-lbl">{label}</div>
+        <div class="tripc-val">
+          {value}
+          {sub && <small class="tripc-abs"> {sub}</small>}
+          {delta != null && (
+            <small class="tripc-delta"> ({delta > 0 ? '+' : ''}{fmtDec(delta, Number.isInteger(delta) ? 0 : 1)}%)</small>
+          )}
+          {unit && <small class="tripc-unit">{unit}</small>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** The fully-expanded, labelled card (OverDrive-style) for the "standard" view. */
+function StandardCard({ trip }: { trip: TripRow }): JSX.Element {
+  const km = trip.distanceKm
+  const elec = per100(trip.energyUsedKwh, km)
+  const fuel = per100(trip.litresUsed, km)
+  const kwh = trip.energyUsedKwh
+  const litres = trip.litresUsed
+  const socDelta =
+    typeof trip.socStart === 'number' && typeof trip.socEnd === 'number' ? trip.socEnd - trip.socStart : null
+  const fuelDelta =
+    typeof trip.fuelPctStart === 'number' && typeof trip.fuelPctEnd === 'number' ? trip.fuelPctEnd - trip.fuelPctStart : null
+
+  return (
+    <div class="tripc">
+      <div class="tripc-head">
+        <span class="tripc-ico cal"><IconCal /></span>
+        <div class="tripc-when">
+          <div class="tripc-date">{fullDate(trip.startTime)}</div>
+          <div class="tripc-time">{whenLabel(trip.startTime).time}</div>
+        </div>
+        <div class="tripc-dist mono"><b>{fmtDec(km, km != null && km >= 100 ? 0 : 1)}</b> <small>km</small></div>
+      </div>
+
+      <div class="tripc-top">
+        <Stat icon={<IconClock />} label={t('trip.duration')} value={<span class="mono">{hhmm(trip.durationSeconds)}</span>} />
+        <div class="tripc-consum">
+          {elec != null && (
+            <Stat icon={<IconBolt size={17} />} label={t('trip.consumption')}
+              value={<span class="mono">{fmtDec(elec, 1)}</span>} unit="kWh/100km"
+              sub={typeof kwh === 'number' ? `(${fmtDec(kwh, 1)} kWh)` : undefined} />
+          )}
+          {fuel != null && fuel > 0 && (
+            <Stat icon={<IconFuel size={17} />} label={t('trip.consumption')}
+              value={<span class="mono">{fmtDec(fuel, 1)}</span>} unit="L/100km"
+              sub={typeof litres === 'number' ? `(${fmtDec(litres, 1)} L)` : undefined} />
+          )}
+        </div>
+      </div>
+
+      {(trip.odometerStartKm != null || trip.socStart != null || trip.fuelPctStart != null) && (
+        <div class="tripc-pairs">
+          {trip.odometerStartKm != null && (
+            <>
+              <Stat icon={<IconGauge size={17} />} label={t('trip.km_start')} value={<span class="mono">{fmtOdo(trip.odometerStartKm)} km</span>} />
+              <Stat icon={<IconGauge size={17} />} label={t('trip.km_end')} value={<span class="mono">{fmtOdo(trip.odometerEndKm)} km</span>} />
+            </>
+          )}
+          {trip.socStart != null && (
+            <>
+              <Stat icon={<IconBattery size={17} />} label={t('trip.batt_start')} value={<span class="mono">{pct(trip.socStart)}</span>} />
+              <Stat icon={<IconBattery size={17} />} label={t('trip.batt_end')} value={<span class="mono">{pct(trip.socEnd)}</span>} delta={socDelta} />
+            </>
+          )}
+          {trip.fuelPctStart != null && (
+            <>
+              <Stat icon={<IconCan />} label={t('trip.fuel_start')} value={<span class="mono">{pct(trip.fuelPctStart)}</span>} />
+              <Stat icon={<IconCan />} label={t('trip.fuel_end')} value={<span class="mono">{pct(trip.fuelPctEnd)}</span>} delta={fuelDelta} />
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 /** One trip: a tight summary that expands (animated) to labelled stat cells. */
 export function TripCard({ trip }: { trip: TripRow }) {
@@ -40,6 +156,8 @@ export function TripCard({ trip }: { trip: TripRow }) {
   const hasDetail =
     trip.odometerStartKm != null || trip.socStart != null ||
     (typeof kwh === 'number' && kwh > 0) || (typeof litres === 'number' && litres > 0) || !!trip.tripCost
+
+  if (tripView.value === 'standard') return <StandardCard trip={trip} />
 
   const cell = (label: string, value: JSX.Element, full = false) => (
     <div class={'tstat' + (full ? ' full' : '')}>

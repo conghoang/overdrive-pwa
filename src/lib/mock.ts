@@ -122,11 +122,28 @@ export function mockTrips(days: number) {
   const plan: [number, number][] = [
     [0, 12.4], [0, 5.1], [1, 18.9], [3, 7.6], [3, 22.3], [4, 9.2], [6, 15.5],
   ]
+  // Odometer accumulates backwards from "now"; SoC and fuel drift per trip so the
+  // standard view has real start/end pairs to show.
+  const totalKm = plan.filter(([ago]) => ago < days).reduce((a, [, km]) => a + km, 0)
+  let odo = 9413 - totalKm
+  let soc = 78
+  let fuelPct = 62
   return plan
     .filter(([ago]) => ago < days)
     .map(([ago, km], i) => {
       const start = midnight.getTime() - ago * day + (8 + i) * 3600_000
       const durationSeconds = Math.round((km / 24) * 3600)
+      const energyUsedKwh = km * 0.16
+      const litresUsed = Math.round(km * 0.06 * 10) / 10 // light PHEV engine assist
+      const odometerStartKm = Math.round(odo * 10) / 10
+      odo += km
+      const odometerEndKm = Math.round(odo * 10) / 10
+      const socStart = Math.round(soc * 10) / 10
+      soc = Math.max(6, soc - km * 0.55)
+      const socEnd = Math.round(soc * 10) / 10
+      const fuelPctStart = Math.round(fuelPct)
+      fuelPct = Math.max(4, fuelPct - litresUsed * 2)
+      const fuelPctEnd = Math.round(fuelPct)
       return {
         id: 100 + i,
         startTime: start,
@@ -134,8 +151,15 @@ export function mockTrips(days: number) {
         distanceKm: km,
         durationSeconds,
         avgSpeedKmh: 24,
-        energyUsedKwh: km * 0.16,
+        energyUsedKwh,
         energyMetered: true,
+        litresUsed,
+        odometerStartKm,
+        odometerEndKm,
+        socStart,
+        socEnd,
+        fuelPctStart,
+        fuelPctEnd,
         tripCost: Math.round(km * 0.16 * 4000),
         currency: '\u20ab',
       }

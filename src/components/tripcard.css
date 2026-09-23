@@ -117,3 +117,47 @@ button.trip-main { cursor: pointer; }
 @media (max-width: 360px) {
   .trip-detail { grid-template-columns: 1fr; }
 }
+
+/* ── Density toggle row (Compact / Standard) ─────────────────────────── */
+.hist-toolbar { display: flex; justify-content: flex-end; margin: -8px 2px 14px; }
+
+/* ── Standard view: a fully-expanded, labelled card per trip ─────────── */
+.tripc {
+  background: var(--surface-1);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: 14px 16px 16px;
+}
+.tripc-head {
+  display: flex; align-items: center; gap: 11px;
+  padding-bottom: 13px; margin-bottom: 13px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.tripc-head .tripc-when { flex: 1 1 auto; min-width: 0; }
+.tripc-date { font-size: 13px; color: var(--muted); font-weight: 600; }
+.tripc-time { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; margin-top: 1px; }
+.tripc-dist { font-size: 22px; letter-spacing: -0.02em; white-space: nowrap; }
+.tripc-dist b { color: var(--m-teal); font-weight: 800; }
+.tripc-dist small { font-size: 14px; color: var(--muted); font-weight: 600; }
+
+.tripc-top, .tripc-pairs {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px 14px; align-items: start;
+}
+.tripc-pairs { margin-top: 16px; }
+.tripc-consum { display: flex; flex-direction: column; gap: 16px; }
+
+.tripc-cell { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
+.tripc-ico { flex: 0 0 auto; color: var(--muted); line-height: 0; margin-top: 2px; }
+.tripc-ico.cal { color: var(--m-teal); }
+.tripc-ico svg { display: block; }
+.tripc-txt { min-width: 0; }
+.tripc-lbl { font-size: 12.5px; color: var(--muted); font-weight: 600; margin-bottom: 3px; }
+.tripc-val {
+  font-size: 18px; font-weight: 700; letter-spacing: -0.01em;
+  color: var(--text-primary); font-variant-numeric: tabular-nums;
+  line-height: 1.15; word-break: break-word;
+}
+.tripc-val .mono { font-weight: 700; }
+.tripc-abs, .tripc-delta { font-size: 13px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.tripc-unit { display: block; font-size: 12.5px; font-weight: 600; color: var(--muted); margin-top: 1px; }

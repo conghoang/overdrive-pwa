@@ -19,6 +19,19 @@ export function setCarName(name: string): void {
   else localStorage.removeItem(K_CARNAME)
 }
 
+// Trip history row density. "compact" = the tight collapsible rows (default);
+// "standard" = a fully-expanded, labelled card per trip (like OverDrive's own
+// trip screen). Persisted so the choice sticks across sessions.
+export type TripView = 'compact' | 'standard'
+const K_TRIPVIEW = 'odpwa.tripView'
+export const tripView = signal<TripView>(
+  localStorage.getItem(K_TRIPVIEW) === 'standard' ? 'standard' : 'compact',
+)
+export function setTripView(v: TripView): void {
+  tripView.value = v
+  localStorage.setItem(K_TRIPVIEW, v)
+}
+
 // Opt-in mini map on the Vehicle tab (off by default: it fetches map tiles).
 const K_MAP = 'odpwa.map'
 export const showMap = signal<boolean>(localStorage.getItem(K_MAP) === '1')
@@ -221,6 +234,7 @@ export function resetSettings(): void {
   void idbDel(IDB_CARPHOTO).catch(() => {})
   carName.value = ''
   showMap.value = false
+  tripView.value = 'compact'
   wicarlink.value = false
   dewarpByView.value = {}
   wcCommands.value = DEFAULT_WC_COMMANDS.map((c) => ({ ...c }))

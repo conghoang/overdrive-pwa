@@ -44,11 +44,13 @@ export interface HistoryListProps<T> {
   daySummary: (items: T[]) => JSX.Element
   countLabel: (n: number) => string
   emptyText: string
+  /** Optional controls shown in their own row under the header (e.g. a view toggle). */
+  toolbar?: JSX.Element
 }
 
 /** A back-headed, 7D/30D-filterable history list, grouped under date headers. */
 export function HistoryList<T>(props: HistoryListProps<T>) {
-  const { title, onBack, load, startTimeOf, renderRow, daySummary, countLabel, emptyText } = props
+  const { title, onBack, load, startTimeOf, renderRow, daySummary, countLabel, emptyText, toolbar } = props
   const [items, setItems] = useState<T[] | null>(null)
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading')
   const [days, setDays] = useState<Days>(7)
@@ -96,6 +98,8 @@ export function HistoryList<T>(props: HistoryListProps<T>) {
           ))}
         </div>
       </div>
+
+      {toolbar && <div class="hist-toolbar">{toolbar}</div>}
 
       {state === 'loading' && <Skeleton />}
       {state === 'error' && <div class="card center-note">{emptyText}</div>}
