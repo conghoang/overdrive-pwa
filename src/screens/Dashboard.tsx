@@ -121,49 +121,6 @@ export function Dashboard() {
 
       {!chargingNow && <ChargingCard s={s} />}
 
-      {/* odometer / gear / speed / climate — the vehicle-stats card. Odometer
-          leads: it moved here out of the hero, which now leads with range. Its
-          row is drawn only when the car actually reports a reading. */}
-      <div class="card" style={{ marginTop: '14px' }}>
-        {odo?.totalKm != null && (
-          <div class="srow">
-            <div class="srow-left">
-              <IconRoad size={20} />
-              <span class="srow-label">{t('car.odo')}</span>
-            </div>
-            <div class="odo-right">
-              <span class="srow-val mono">{fmtOdo(odo.totalKm, unit)} <small>{distanceUnitLabel(unit)}</small></span>
-              {(odo.evKm != null || odo.hevKm != null) && (
-                <span class="odo-sub mono">
-                  {t('car.odo_ev')} {fmtOdo(odo.evKm, unit)} · {t('car.odo_hev')} {fmtOdo(odo.hevKm, unit)}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-        <div class="srow">
-          <div class="srow-left">
-            <IconShift size={20} />
-            <span class="srow-label">{t('vitals.gear')}</span>
-          </div>
-          <span class="srow-val">{gear || '–'}</span>
-        </div>
-        <div class="srow">
-          <div class="srow-left">
-            <IconGauge size={20} />
-            <span class="srow-label">{t('vitals.speed')}</span>
-          </div>
-          <span class="srow-val mono">{speedDisp} <small>{speedUnit}</small></span>
-        </div>
-        <div class="srow">
-          <div class="srow-left">
-            <IconWind size={20} />
-            <span class="srow-label">{t('status.climate')}</span>
-          </div>
-          <span class={'srow-val' + (climateOn ? ' on' : '')}>{climateOn ? t('common.on') : t('common.off')}</span>
-        </div>
-      </div>
-
       {/* Tyre pressure + location, paired: side by side once the screen is wide
           enough (foldables unfolded, tablets), stacked on a normal phone. The
           grid itself is the breakpoint — no media query — so a single card
@@ -221,6 +178,50 @@ export function Dashboard() {
             )}
           </div>
         )}
+      </div>
+
+      {/* odometer / gear / speed / climate — the vehicle-stats card, placed
+          below the location map. Odometer leads: it moved here out of the hero,
+          which now leads with range. Its row is drawn only when the car reports
+          a reading. */}
+      <div class="card" style={{ marginTop: '14px' }}>
+        {odo?.totalKm != null && (
+          <div class="srow">
+            <div class="srow-left">
+              <IconRoad size={20} />
+              <span class="srow-label">{t('car.odo')}</span>
+            </div>
+            <div class="odo-right">
+              <span class="srow-val mono">{fmtOdo(odo.totalKm, unit)} <small>{distanceUnitLabel(unit)}</small></span>
+              {(odo.evKm != null || odo.hevKm != null) && (
+                <span class="odo-sub mono">
+                  {t('car.odo_ev')} {fmtOdo(odo.evKm, unit)} · {t('car.odo_hev')} {fmtOdo(odo.hevKm, unit)}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+        <div class="srow">
+          <div class="srow-left">
+            <IconShift size={20} />
+            <span class="srow-label">{t('vitals.gear')}</span>
+          </div>
+          <span class="srow-val">{gear || '–'}</span>
+        </div>
+        <div class="srow">
+          <div class="srow-left">
+            <IconGauge size={20} />
+            <span class="srow-label">{t('vitals.speed')}</span>
+          </div>
+          <span class="srow-val mono">{speedDisp} <small>{speedUnit}</small></span>
+        </div>
+        <div class="srow">
+          <div class="srow-left">
+            <IconWind size={20} />
+            <span class="srow-label">{t('status.climate')}</span>
+          </div>
+          <span class={'srow-val' + (climateOn ? ' on' : '')}>{climateOn ? t('common.on') : t('common.off')}</span>
+        </div>
       </div>
 
       {/* Minor info tiles. No 12V voltage: /status reports it as

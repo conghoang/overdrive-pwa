@@ -159,11 +159,12 @@
 .tyre-read.warn .tyre-reason { color: var(--warning); }
 .tyre-read.alert .tyre-reason { color: var(--danger); }
 .tyre-read.muted .tyre-reason { color: var(--muted); }
-/* Two-up layout (foldable/tablet, and the >=1000px masonry) halves the card
-   width; the full-size readings then run into the card border. Shrink the
-   figures and the car so they clear it. A full-width stacked phone (below this)
-   keeps the large figures. */
-@media (min-width: 500px) {
+/* Shrink the tyre readings only where each card is narrow enough that the
+   full-size figures hit the border: the 560px-capped two-up band (≈500–599px,
+   card ~257px) and the ≥1000px two-column masonry (card ~230–268px). A stacked
+   phone (<500px) and the widened foldable column (600–999px, card ~280–360px)
+   have room, so they keep the large figures. */
+@media (min-width: 500px) and (max-width: 599px), (min-width: 1000px) {
   .tyre-diagram { grid-template-columns: 1fr 66px 1fr; column-gap: 4px; padding: 10px 4px 4px; }
   .tyre-read .p { font-size: 19px; }
   .tyre-read .u { font-size: 9px; margin-top: 2px; }

@@ -211,6 +211,16 @@ h1, h2, h3, p { margin: 0; }
 .spin { animation: spin 0.9s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ---------- foldables / small tablets ----------
+ * Between a phone and the 1000px two-column layout, the 560px cap left big empty
+ * margins and made the side-by-side cards (tyre + location) small. Widen the
+ * single column here so they use the space. Kept below the point where a single
+ * card would look too empty; past 1000px the two-column layout takes over.
+ */
+@media (min-width: 600px) and (max-width: 999px) {
+  .app-main { max-width: 760px; }
+}
+
 /* ---------- wide screens ----------
  * The layout is mobile-first and caps at 560px, which on a tablet or desktop
  * leaves a narrow ribbon in a sea of background. Rather than stretching the
