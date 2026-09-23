@@ -52,8 +52,13 @@
    hard to clear the border — this is a layout preview, not a fidelity check. */
 html.twoup .dash-pair { flex-direction: row; align-items: stretch; }
 html.twoup .dash-pair > .card { flex: 1 1 0; min-width: 0; }
-/* EV + fuel legs side by side too, to preview the full wide hero. */
+/* EV + fuel legs side by side too, to preview the full wide hero. At phone
+   width each leg is ~160px — too narrow for the name plus km plus %, especially
+   the longer English labels — so drop the name (the icon and bar colour already
+   say battery vs fuel) and let the km + % sit together. */
 html.twoup .hero-energy { grid-template-columns: 1fr 1fr; }
+html.twoup .hero-leg-name { display: none; }
+html.twoup .hero-leg-km { font-size: 15px; }
 html.twoup .tyre-diagram { grid-template-columns: 1fr 44px 1fr; column-gap: 3px; padding: 8px 2px 4px; }
 html.twoup .tyre-read .p { font-size: 15px; }
 html.twoup .tyre-read .u { font-size: 8px; margin-top: 1px; }
