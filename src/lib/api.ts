@@ -341,9 +341,40 @@ export const closeAllWindows = (): Promise<ControlResult> => apiPost('/api/vehic
  */
 
 
-export interface Odometer { totalKm: number | null; evKm: number | null; hevKm: number | null; fuelLPer100: number | null }
+export interface Odometer {
+  totalKm: number | null; evKm: number | null; hevKm: number | null; fuelLPer100: number | null
+  /**
+   * Rolling averages over the most recent ~100 km of driving — recent trips
+   * accumulated newest-first until they cover 100 km, then energy/fuel divided
+   * by the distance actually covered. null when no trip carries that figure.
+   * recentKm is how far the window really reached (< 100 on a short history).
+   */
+  recentKwhPer100?: number | null
+  recentLPer100?: number | null
+  recentKm?: number | null
+}
 
 const NO_ODO: Odometer = { totalKm: null, evKm: null, hevKm: null, fuelLPer100: null }
+
+/** Accumulate recent trips (already newest-first) until they cover targetKm. */
+function recentConsumption(trips: TripRow[], targetKm: number): Pick<Odometer, 'recentKwhPer100' | 'recentLPer100' | 'recentKm'> {
+  let dist = 0, kwh = 0, litres = 0, haveKwh = false, haveL = false
+  for (const trip of trips) {
+    const d = trip.distanceKm
+    if (typeof d !== 'number' || d <= 0) continue
+    dist += d
+    if (typeof trip.energyUsedKwh === 'number') { kwh += trip.energyUsedKwh; haveKwh = true }
+    if (typeof trip.litresUsed === 'number') { litres += trip.litresUsed; haveL = true }
+    if (dist >= targetKm) break
+  }
+  if (dist <= 0) return { recentKwhPer100: null, recentLPer100: null, recentKm: 0 }
+  const per100 = (v: number) => Math.round((v / dist) * 1000) / 10
+  return {
+    recentKwhPer100: haveKwh ? per100(kwh) : null,
+    recentLPer100: haveL ? per100(litres) : null,
+    recentKm: Math.round(dist),
+  }
+}
 
 /**
  * The odometer, or null when the car did not answer.
@@ -357,9 +388,12 @@ const NO_ODO: Odometer = { totalKm: null, evKm: null, hevKm: null, fuelLPer100: 
 export async function getOdometer(): Promise<Odometer | null> {
   try {
     // Both in one round trip; either failing alone must not lose the other.
+    // Pull a run of recent trips (not just the newest): the odometer is still
+    // the newest trip's end reading, but the consumption tile averages the last
+    // ~100 km, which spans several trips.
     const [cfg, log] = await Promise.all([
       apiGet<TripConfig>('/api/trips/config').catch(() => null),
-      apiGet<{ trips?: TripRow[] }>('/api/trips?limit=1').catch(() => null),
+      apiGet<{ trips?: TripRow[] }>('/api/trips?limit=100').catch(() => null),
     ])
 
     // With trip recording OFF the newest row can be arbitrarily old, so its end
@@ -374,7 +408,10 @@ export async function getOdometer(): Promise<Odometer | null> {
     // which would look identical to trip recording being switched off.
     if (!log) return null
 
-    const trip0 = log.trips?.[0]
+    // Newest first, so trips[0] is the current odometer and the accumulation
+    // below walks back from the latest drive.
+    const trips = [...(log.trips ?? [])].sort((a, b) => (b.startTime ?? 0) - (a.startTime ?? 0))
+    const trip0 = trips[0]
     const km = trip0?.odometerEndKm
     // Cars that do not report the odometer leave this at 0 rather than absent.
     const totalKm = typeof km === 'number' && km > 0 ? Math.round(km) : null
@@ -387,7 +424,7 @@ export async function getOdometer(): Promise<Odometer | null> {
       typeof litres === 'number' && typeof dist === 'number' && dist > 0
         ? Math.round((litres / dist) * 1000) / 10
         : null
-    return { totalKm, evKm: null, hevKm: null, fuelLPer100 }
+    return { totalKm, evKm: null, hevKm: null, fuelLPer100, ...recentConsumption(trips, 100) }
   } catch {
     return null // never break the poll, and never invent an answer
   }

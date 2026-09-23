@@ -1,4 +1,4 @@
-import { connected, consumptionWhPerKm, lastError, odometer, outsideTempC, pm25Inside, pm25Outside, status, vehicleState } from '../lib/store'
+import { connected, lastError, odometer, outsideTempC, pm25Inside, pm25Outside, status, vehicleState } from '../lib/store'
 import { fmtTemp, ago, fmtOdo, distanceUnitLabel } from '../lib/format'
 import { t } from '../lib/i18n'
 import { effectiveGear } from '../lib/vehicle'
@@ -49,17 +49,15 @@ export function Dashboard() {
 
   const unit = s.distanceUnit || 'km'
   /*
-   * Driving efficiency — OD's own consumption figure (summary.trip.whPerKm, the
-   * last drive), shown as kWh/100km. Replaces the SOH tile, which barely moves;
-   * consumption is the signature EV metric and changes with every trip. Shows
-   * "--" until the summary lands.
+   * Driving efficiency — electric (kWh) and fuel (L) averaged over the last
+   * ~100 km of driving, accumulated across recent trips in getOdometer. A
+   * rolling window reads truer than a single last-trip figure that a 2 km hop
+   * can skew. Shows "--" until the trip log lands.
    */
-  const wh = consumptionWhPerKm.value
-  const efficiency = wh == null ? '--' : (wh / 10).toFixed(1) // Wh/km → kWh/100km
-  // Fuel consumption of the latest trip (PHEV), L/100km — computed in getOdometer
-  // from the same trip fetch. 0.0 on a pure-EV drive; "--" when not reported.
   const odo = odometer.value
-  const fuelL = odo?.fuelLPer100
+  const kwh100 = odo?.recentKwhPer100
+  const efficiency = kwh100 == null ? '--' : kwh100.toFixed(1)
+  const fuelL = odo?.recentLPer100
   const fuelCons = fuelL == null ? '--' : fuelL.toFixed(1)
   const climateOn = !!(vs?.climate?.acOn || vs?.climate?.remoteClimateActive)
   /*
@@ -233,8 +231,14 @@ export function Dashboard() {
           <div class="tile-icon" style={{ color: 'var(--m-teal)' }}><IconBolt size={20} /></div>
           <div class="tile-dual mono">
             <span><b>{efficiency}</b> <small>kWh</small></span>
-            <span class="dual-sep">·</span>
-            <span><b>{fuelCons}</b> <small>L</small></span>
+            {/* Fuel only when it actually burned some — a pure-EV drive reads
+                0.0 L, which is just noise next to the kWh. */}
+            {fuelL != null && fuelL > 0 && (
+              <>
+                <span class="dual-sep">·</span>
+                <span><b>{fuelCons}</b> <small>L</small></span>
+              </>
+            )}
           </div>
           <div class="tile-label">{t('tile.efficiency')}</div>
         </div>
