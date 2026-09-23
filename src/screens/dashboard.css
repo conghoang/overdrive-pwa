@@ -47,6 +47,16 @@
   .dash-pair { flex-direction: row; align-items: stretch; }
   .dash-pair > .card { flex: 1 1 0; min-width: 0; }
 }
+/* Dev preview (`?twoup`): force the pair side by side at any width, with the
+   compact tyre readings so they still fit when the cards are narrow. */
+html.twoup .dash-pair { flex-direction: row; align-items: stretch; }
+html.twoup .dash-pair > .card { flex: 1 1 0; min-width: 0; }
+html.twoup .tyre-diagram { grid-template-columns: 1fr 66px 1fr; column-gap: 4px; padding: 10px 4px 4px; }
+html.twoup .tyre-read .p { font-size: 19px; }
+html.twoup .tyre-read .u { font-size: 9px; margin-top: 2px; }
+html.twoup .tyre-reason { font-size: 8.5px; margin-top: 2px; }
+html.twoup .tyre-car svg { width: 58px; }
+
 .tyre-card { display: flex; flex-direction: column; }
 .tyre-card .tyre-diagram { margin-block: auto; }
 .loc-card { display: flex; flex-direction: column; }
