@@ -151,11 +151,14 @@ html.twoup .tyre-car svg { width: 42px; }
   display: grid;
   grid-template-columns: 1fr 84px 1fr;
   grid-template-rows: 1fr 1fr;
-  align-items: center;
+  /* Top-align the readings so a corner WITHOUT a "needs air" note lines its
+     number up with a taller corner that has one — centring drifted them apart.
+     The car is re-centred over its two-row span below. */
+  align-items: start;
   gap: 18px 8px;
   padding: 12px 8px 6px;
 }
-.tyre-car { grid-column: 2; grid-row: 1 / span 2; display: flex; justify-content: center; }
+.tyre-car { grid-column: 2; grid-row: 1 / span 2; align-self: center; display: flex; justify-content: center; }
 .tyre-read { display: flex; flex-direction: column; align-items: center; }
 .tyre-read.fl { grid-column: 1; grid-row: 1; }
 .tyre-read.fr { grid-column: 3; grid-row: 1; }
