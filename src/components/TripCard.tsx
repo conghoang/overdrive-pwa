@@ -61,17 +61,17 @@ function Stat(props: {
   const { icon, label, value, sub, unit, delta } = props
   return (
     <div class="tripc-cell">
-      <span class="tripc-ico">{icon}</span>
-      <div class="tripc-txt">
-        <div class="tripc-lbl">{label}</div>
-        <div class="tripc-val">
-          {value}
-          {sub && <small class="tripc-abs"> {sub}</small>}
-          {delta != null && (
-            <small class="tripc-delta"> ({delta > 0 ? '+' : ''}{fmtDec(delta, Number.isInteger(delta) ? 0 : 1)}%)</small>
-          )}
-          {unit && <small class="tripc-unit">{unit}</small>}
-        </div>
+      <div class="tripc-cap">
+        <span class="tripc-ico">{icon}</span>
+        <span class="tripc-lbl">{label}</span>
+      </div>
+      <div class="tripc-val">
+        {value}
+        {sub && <small class="tripc-abs"> {sub}</small>}
+        {delta != null && (
+          <small class="tripc-delta"> ({delta > 0 ? '+' : ''}{fmtDec(delta, Number.isInteger(delta) ? 0 : 1)}%)</small>
+        )}
+        {unit && <small class="tripc-unit">{unit}</small>}
       </div>
     </div>
   )
