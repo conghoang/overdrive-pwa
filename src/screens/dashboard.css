@@ -133,15 +133,16 @@
   display: grid;
   grid-template-columns: 1fr 84px 1fr;
   grid-template-rows: 1fr 1fr;
-  /* Top-align the readings so a corner WITHOUT a "needs air" note lines its
-     number up with a taller corner that has one — centring drifted them apart.
-     The car is re-centred over its two-row span below. */
-  align-items: start;
+  /* Centre the readings in their rows so they sit level with the car's wheels
+     (top-aligning floated them above the wheels on a tall card). The "needs air"
+     note is taken out of flow below (see .tyre-reason), so a noted corner is the
+     same height as a plain one and centring keeps their numbers aligned. */
+  align-items: center;
   gap: 18px 8px;
   padding: 12px 8px 6px;
 }
-.tyre-car { grid-column: 2; grid-row: 1 / span 2; align-self: center; display: flex; justify-content: center; }
-.tyre-read { display: flex; flex-direction: column; }
+.tyre-car { grid-column: 2; grid-row: 1 / span 2; display: flex; justify-content: center; }
+.tyre-read { display: flex; flex-direction: column; position: relative; }
 /* Align each side's figures to the OUTER edge, not centred: centring left a
    narrow number ("36") with more space around it than a wide one ("36.3"), so
    the left and right padding looked mismatched. Outer-aligned, both sides sit
@@ -157,14 +158,22 @@
 .tyre-read.warn .p { color: var(--warning); }
 .tyre-read.alert .p { color: var(--danger); }
 .tyre-read.muted .p { color: var(--muted); }
-/* Names why a corner is coloured, so an orange number is never unexplained. */
+/* Names why a corner is coloured, so an orange number is never unexplained.
+   Positioned just BELOW the reading, out of flow, so it doesn't make a noted
+   corner taller than a plain one — that height difference is what drifted the
+   numbers when they are centred. */
 .tyre-reason {
-  margin-top: 3px;
+  position: absolute;
+  top: 100%;
+  margin-top: 1px;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
+.tyre-read.fl .tyre-reason, .tyre-read.rl .tyre-reason { left: 0; text-align: left; }
+.tyre-read.fr .tyre-reason, .tyre-read.rr .tyre-reason { right: 0; text-align: right; }
 .tyre-read.warn .tyre-reason { color: var(--warning); }
 .tyre-read.alert .tyre-reason { color: var(--danger); }
 .tyre-read.muted .tyre-reason { color: var(--muted); }
