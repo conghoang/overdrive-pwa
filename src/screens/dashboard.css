@@ -48,14 +48,15 @@
   .dash-pair > .card { flex: 1 1 0; min-width: 0; }
 }
 /* Dev build (html.twoup, set in main.tsx): force the pair side by side at any
-   width, with the compact tyre readings so they still fit when cards are narrow. */
+   width. On a phone that makes each card ~180px, so the tyre readings shrink
+   hard to clear the border — this is a layout preview, not a fidelity check. */
 html.twoup .dash-pair { flex-direction: row; align-items: stretch; }
 html.twoup .dash-pair > .card { flex: 1 1 0; min-width: 0; }
-html.twoup .tyre-diagram { grid-template-columns: 1fr 66px 1fr; column-gap: 4px; padding: 10px 4px 4px; }
-html.twoup .tyre-read .p { font-size: 19px; }
-html.twoup .tyre-read .u { font-size: 9px; margin-top: 2px; }
-html.twoup .tyre-reason { font-size: 8.5px; margin-top: 2px; }
-html.twoup .tyre-car svg { width: 58px; }
+html.twoup .tyre-diagram { grid-template-columns: 1fr 44px 1fr; column-gap: 3px; padding: 8px 2px 4px; }
+html.twoup .tyre-read .p { font-size: 15px; }
+html.twoup .tyre-read .u { font-size: 8px; margin-top: 1px; }
+html.twoup .tyre-reason { font-size: 7px; margin-top: 1px; line-height: 1.15; }
+html.twoup .tyre-car svg { width: 42px; }
 
 .tyre-card { display: flex; flex-direction: column; }
 .tyre-card .tyre-diagram { margin-block: auto; }
