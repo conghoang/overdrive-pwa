@@ -41,19 +41,16 @@ export const IconUnlock = ({ size, class: c }: IconProps) =>
 export const IconBolt = ({ size, class: c }: IconProps) =>
   svg(<path d="M13 3L4 14h6l-1 7 9-11h-6z" />, size, c)
 
-// Boxy SUV in profile with the rear tailgate lifted: full body + two wheels, the
-// roof carries back to a hinge where the boot lid swings up as a raised panel, and
-// the rear body drops to the bumper leaving the cargo opening between them.
+// Rear of a car with the boot lid hooked open — the roofline comes in from the
+// left, the raised lid curves up at the rear, one rear wheel below.
 export const IconTrunk = ({ size, class: c }: IconProps) =>
   svg(
     <>
-      <circle cx="7.2" cy="16.2" r="2.2" />
-      <circle cx="16" cy="16.2" r="2.2" />
-      <path d="M2.6 16.2h2.4M9.4 16.2h4.4M18.2 16.2h2.6" />
-      <path d="M2.6 16.2v-4.4a1 1 0 0 1 .7-1l1.3-.4 1.5-3a1.6 1.6 0 0 1 1.4-.9h5.8" />
-      <path d="M20.8 16.2v-3.8a1 1 0 0 0-.7-1l-1.3-.4-.9-1.8" />
-      <path d="M6 10.6h6.4" />
-      <path d="M13.4 7.5l7 1.5-.5 2.3-7-1.5z" />
+      <path d="M3 16.9h3.3" />
+      <path d="M13.5 16.9h5.6a2.1 2.1 0 0 0 2.1-2.3l-.6-4.7a2.5 2.5 0 0 0-2-2.1L11.7 7.5" />
+      <path d="M2.4 4.1c4.6.1 7.4.8 9.3 3.4" />
+      <path d="M11.7 7.5c1.9-1.9 4.2-2.9 7.5-2.8" />
+      <circle cx="9.7" cy="16.9" r="2.9" />
     </>,
     size,
     c,
