@@ -46,11 +46,11 @@ export const IconBolt = ({ size, class: c }: IconProps) =>
 export const IconTrunk = ({ size, class: c }: IconProps) =>
   svg(
     <>
-      <path d="M3 17h3.6" />
-      <path d="M13.2 17H19a2 2 0 0 0 2-2.2l-.5-4.5a2.4 2.4 0 0 0-1.9-2.1L11.4 6.4" />
-      <path d="M3 4.7c4.2 0 6.6.5 8.3 2.6L12 8.4" />
-      <path d="M12 8.4c1.5-1.8 3.6-2.9 6.3-2.9" />
-      <circle cx="10" cy="17" r="2.7" />
+      <path d="M3 16.9h3.3" />
+      <path d="M13.5 16.9h5.6a2.1 2.1 0 0 0 2.1-2.3l-.6-4.7a2.5 2.5 0 0 0-2-2.1L10.6 5.9" />
+      <path d="M2.4 4.1c4.6.1 7.4.8 9 3.3" />
+      <path d="M11.4 7.4c1.8-1.9 4.1-2.9 7.5-2.7" />
+      <circle cx="9.7" cy="16.9" r="2.9" />
     </>,
     size,
     c,
