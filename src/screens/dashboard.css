@@ -31,41 +31,20 @@
 .tile-dual small { font-size: 12px; color: var(--muted); font-weight: 600; }
 .tile-dual .dual-sep { color: var(--muted); font-weight: 700; }
 
-/* Tyre-pressure + location pair: stacked on a phone, side by side once there is
-   room. Flexbox, not grid — grid's stretch did not take on the map card (it kept
-   its content height and sat 14px low), whereas flex's align-items:stretch
-   reliably gives BOTH cards the same top AND bottom. A lone card (no GPS) fills
-   the row via flex:1. The taller card sets the height; the other's main content
-   fills the gap — the map grows, the tyre diagram centres. */
+/* Tyre-pressure + location pair: stacked on phones, side by side only once the
+   screen is genuinely big (foldable/tablet, ≥600px). Two-up on a small screen
+   cramped both cards to no benefit, so it is not done there. Flexbox, not grid —
+   grid's stretch did not take on the map card (it kept its content height and
+   sat 14px low), whereas flex's align-items:stretch reliably gives BOTH cards
+   the same top AND bottom. A lone card (no GPS) fills the row via flex:1. */
 .dash-pair { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; }
 /* The pair spaces its cards with `gap`, so cancel the global `.card + .card`
-   top margin — on the second card that 14px was the whole bug: it pushed the
-   map card down and made flex stretch size it to rowHeight−14, so the two boxes
-   never lined up (bottoms matched, tops did not). */
+   top margin — on the second card that 14px pushed the map card down and made
+   flex stretch size it to rowHeight−14, so the two boxes never lined up. */
 .dash-pair > .card + .card { margin-top: 0; }
-@media (min-width: 500px) {
+@media (min-width: 600px) {
   .dash-pair { flex-direction: row; align-items: stretch; }
   .dash-pair > .card { flex: 1 1 0; min-width: 0; }
-}
-/* Dev build (html.twoup, set in main.tsx): force the pair side by side to
-   preview it — but ONLY on a narrow phone (<500px). At 500px+ the app is already
-   two-up on its own, so forcing the cramped phone sizing there just shrank the
-   tyre car to a dot with huge side gaps on a foldable. Above 500px, leave the
-   normal responsive rules to size everything. */
-@media (max-width: 499px) {
-  html.twoup .dash-pair { flex-direction: row; align-items: stretch; }
-  html.twoup .dash-pair > .card { flex: 1 1 0; min-width: 0; }
-  /* EV + fuel legs side by side too, to preview the full wide hero. Each leg is
-     ~160px here — too narrow for the name plus km plus % (English labels are
-     long), so drop the name (icon + bar colour already say battery vs fuel). */
-  html.twoup .hero-energy { grid-template-columns: 1fr 1fr; }
-  html.twoup .hero-leg-name { display: none; }
-  html.twoup .hero-leg-km { font-size: 15px; }
-  html.twoup .tyre-diagram { grid-template-columns: 1fr 44px 1fr; column-gap: 3px; padding: 8px 2px 4px; }
-  html.twoup .tyre-read .p { font-size: 15px; }
-  html.twoup .tyre-read .u { font-size: 8px; margin-top: 1px; }
-  html.twoup .tyre-reason { font-size: 7px; margin-top: 1px; line-height: 1.15; }
-  html.twoup .tyre-car svg { width: 42px; }
 }
 
 .tyre-card { display: flex; flex-direction: column; }
@@ -194,7 +173,7 @@
    card ~257px) and the ≥1000px two-column masonry (card ~230–268px). A stacked
    phone (<500px) and the widened foldable column (600–999px, card ~280–360px)
    have room, so they keep the large figures. */
-@media (min-width: 500px) and (max-width: 599px), (min-width: 1000px) {
+@media (min-width: 1000px) {
   .tyre-diagram { grid-template-columns: 1fr 66px 1fr; column-gap: 4px; padding: 10px 4px 4px; }
   .tyre-read .p { font-size: 19px; }
   .tyre-read .u { font-size: 9px; margin-top: 2px; }
@@ -226,14 +205,20 @@
 .veh-range { display: flex; align-items: baseline; justify-content: center; gap: 8px; }
 .veh-range-num { font-size: 48px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
 .veh-range-unit { font-size: 18px; color: var(--muted); font-weight: 600; }
-/* The estimated range split into its legs (battery / fuel). One column on a
-   phone; two-up once the card can hold two ~220px legs (a foldable unfolded),
-   the row itself being the breakpoint so a lone BEV leg still fills the width. */
+/* The estimated range split into its legs (battery / fuel), kept two-up at every
+   width. On a phone each leg is ~160px — too tight for the name plus km plus % —
+   so below 500px the name is dropped (icon + bar colour identify it) and the km
+   shrinks. A lone BEV leg spans both columns. */
 .hero-energy {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: 1fr 1fr;
   gap: 14px 18px;
   margin-top: 16px;
+}
+.hero-energy .hero-leg:only-child { grid-column: 1 / -1; }
+@media (max-width: 499px) {
+  .hero-energy .hero-leg-name { display: none; }
+  .hero-energy .hero-leg-km { font-size: 15px; }
 }
 .hero-leg-head { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
 .hero-leg-ico { display: flex; flex: 0 0 auto; }

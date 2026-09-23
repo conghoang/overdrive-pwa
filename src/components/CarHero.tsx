@@ -38,7 +38,7 @@ function EnergyLeg({
       <div class="hero-leg-head">
         <span class="hero-leg-ico" style={{ color }}>{icon}</span>
         <span class="hero-leg-name">{name}</span>
-        <span class="hero-leg-km mono">
+        <span class="hero-leg-km mono" style={{ color }}>
           {km != null ? fmtDistance(km, unit) : '--'}<small> {distanceUnitLabel(unit)}</small>
         </span>
         <span class="hero-leg-pct mono">{hasPct ? `${Math.round(pct as number)}%` : '--'}</span>
@@ -89,7 +89,7 @@ export function CarHero({ s }: { s: StatusResponse }) {
           name={t('energy.battery')}
           km={s.range?.elecRangeKm}
           pct={s.soc?.percent}
-          color="var(--success)"
+          color="var(--m-blue)"
           unit={unit}
         />
         {isPhev && (

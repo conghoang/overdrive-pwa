@@ -11,12 +11,6 @@ import './styles/global.css'
 // Before render, so the first paint is already in the right theme.
 initTheme()
 
-// The dev build forces the tyre + location pair side by side at any width, to
-// preview the foldable two-up layout without a foldable. Production is untouched.
-if (import.meta.env.DEV || import.meta.env.BASE_URL.includes('/dev/')) {
-  document.documentElement.classList.add('twoup')
-}
-
 // Async (IndexedDB): the first paint shows the bundled default and the stored
 // photo swaps in when it resolves.
 void initCarPhoto()
