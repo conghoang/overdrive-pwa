@@ -113,11 +113,10 @@ function StandardCard({ trip }: { trip: TripRow }): JSX.Element {
             value={<span class="mono">{fmtDec(elec, 1)}</span>} unit="kWh/100km"
             sub={typeof kwh === 'number' ? `(${fmtDec(kwh, 1)} kWh)` : undefined} />
         )}
-        {fuel != null && fuel > 0 && (
-          <Stat icon={<IconFuel size={17} />} label={t('trip.consumption')}
-            value={<span class="mono">{fmtDec(fuel, 1)}</span>} unit="L/100km"
-            sub={typeof litres === 'number' ? `(${fmtDec(litres, 1)} L)` : undefined} />
-        )}
+        {/* Always shown (as "--" on an all-electric trip) so the row stays balanced. */}
+        <Stat icon={<IconFuel size={17} />} label={t('trip.consumption')}
+          value={<span class="mono">{fuel != null && fuel > 0 ? fmtDec(fuel, 1) : '--'}</span>} unit="L/100km"
+          sub={fuel != null && fuel > 0 && typeof litres === 'number' ? `(${fmtDec(litres, 1)} L)` : undefined} />
       </div>
 
       {(trip.odometerStartKm != null || trip.socStart != null || trip.fuelPctStart != null) && (
