@@ -164,3 +164,7 @@ button.trip-main { cursor: pointer; }
 .tripc-val .mono { font-weight: 700; }
 .tripc-abs, .tripc-delta { font-size: 13px; font-weight: 600; color: var(--muted); white-space: nowrap; }
 .tripc-unit { display: block; font-size: 12.5px; font-weight: 600; color: var(--muted); margin-top: 1px; }
+
+/* Standard card reads like OverDrive's own screen: sans figures, not the
+   monospace face (SF Mono on iOS turned "9.607 km" into typewriter text). */
+.tripc .mono { font-family: var(--font); font-variant-numeric: tabular-nums; }
