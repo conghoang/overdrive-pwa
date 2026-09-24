@@ -101,23 +101,26 @@ function StandardCard({ trip }: { trip: TripRow }): JSX.Element {
         <div class="tripc-dist mono"><b>{fmtDec(km, km != null && km >= 100 ? 0 : 1)}</b> <small>km</small></div>
       </div>
 
+      {/* Row 1: duration | cost. Row 2: EV | fuel consumption, side by side. */}
       <div class="tripc-top">
         <Stat icon={<IconClock />} label={t('trip.duration')} value={<span class="mono">{hhmm(trip.durationSeconds)}</span>} />
-        <div class="tripc-consum">
-          {elec != null && (
-            <Stat icon={<IconBolt size={17} />} label={t('trip.consumption')}
-              value={<span class="mono">{fmtDec(elec, 1)}</span>} unit="kWh/100km"
-              sub={typeof kwh === 'number' ? `(${fmtDec(kwh, 1)} kWh)` : undefined} />
-          )}
-          {fuel != null && fuel > 0 && (
-            <Stat icon={<IconFuel size={17} />} label={t('trip.consumption')}
-              value={<span class="mono">{fmtDec(fuel, 1)}</span>} unit="L/100km"
-              sub={typeof litres === 'number' ? `(${fmtDec(litres, 1)} L)` : undefined} />
-          )}
-        </div>
+        {trip.tripCost ? (
+          <Stat icon={<IconMoney />} label={t('trip.cost')}
+            value={<span class="mono">{fmtMoney(trip.tripCost, trip.currency || '₫')}</span>} />
+        ) : null}
+        {elec != null && (
+          <Stat icon={<IconBolt size={17} />} label={t('trip.consumption')}
+            value={<span class="mono">{fmtDec(elec, 1)}</span>} unit="kWh/100km"
+            sub={typeof kwh === 'number' ? `(${fmtDec(kwh, 1)} kWh)` : undefined} />
+        )}
+        {fuel != null && fuel > 0 && (
+          <Stat icon={<IconFuel size={17} />} label={t('trip.consumption')}
+            value={<span class="mono">{fmtDec(fuel, 1)}</span>} unit="L/100km"
+            sub={typeof litres === 'number' ? `(${fmtDec(litres, 1)} L)` : undefined} />
+        )}
       </div>
 
-      {(trip.odometerStartKm != null || trip.socStart != null || trip.fuelPctStart != null || !!trip.tripCost) && (
+      {(trip.odometerStartKm != null || trip.socStart != null || trip.fuelPctStart != null) && (
         <div class="tripc-pairs">
           {trip.odometerStartKm != null && (
             <>
@@ -137,10 +140,6 @@ function StandardCard({ trip }: { trip: TripRow }): JSX.Element {
               <Stat icon={<IconCan />} label={t('trip.fuel_end')} value={<span class="mono">{pct(trip.fuelPctEnd)}</span>} delta={fuelDelta} />
             </>
           )}
-          {trip.tripCost ? (
-            <Stat full icon={<IconMoney />} label={t('trip.cost')}
-              value={<span class="mono">{fmtMoney(trip.tripCost, trip.currency || '₫')}</span>} />
-          ) : null}
         </div>
       )}
     </div>
