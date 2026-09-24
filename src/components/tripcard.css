@@ -145,6 +145,7 @@ button.trip-main { cursor: pointer; }
   display: grid; grid-template-columns: 1fr 1fr; gap: 16px 14px; align-items: start;
 }
 .tripc-pairs { margin-top: 16px; }
+.tripc-consum { display: flex; flex-direction: column; gap: 16px; }
 
 .tripc-cell { min-width: 0; }
 .tripc-cell.full { grid-column: 1 / -1; }
