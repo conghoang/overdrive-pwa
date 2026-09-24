@@ -5,7 +5,7 @@ import { lang, t } from '../lib/i18n'
 import { fmtDec, fmtOdo } from '../lib/format'
 import { tripView } from '../lib/settings'
 import { fmtDuration, fmtMoney } from './StatChartCard'
-import { IconBattery, IconBolt, IconFuel, IconGauge } from './icons'
+import { IconBattery, IconBolt, IconFuel, IconGauge, IconRoad } from './icons'
 
 const loc = () => (lang.value === 'vi' ? 'vi-VN' : 'en-US')
 const per100 = (used?: number, km?: number) =>
@@ -101,28 +101,31 @@ function StandardCard({ trip }: { trip: TripRow }): JSX.Element {
         <div class="tripc-dist mono"><b>{fmtDec(km, km != null && km >= 100 ? 0 : 1)}</b> <small>km</small></div>
       </div>
 
+      {/* Flat 2-col flow: duration | EV, avg speed | fuel — no orphaned cell. */}
       <div class="tripc-top">
         <Stat icon={<IconClock />} label={t('trip.duration')} value={<span class="mono">{hhmm(trip.durationSeconds)}</span>} />
-        <div class="tripc-consum">
-          {elec != null && (
-            <Stat icon={<IconBolt size={17} />} label={t('trip.consumption')}
-              value={<span class="mono">{fmtDec(elec, 1)}</span>} unit="kWh/100km"
-              sub={typeof kwh === 'number' ? `(${fmtDec(kwh, 1)} kWh)` : undefined} />
-          )}
-          {fuel != null && fuel > 0 && (
-            <Stat icon={<IconFuel size={17} />} label={t('trip.consumption')}
-              value={<span class="mono">{fmtDec(fuel, 1)}</span>} unit="L/100km"
-              sub={typeof litres === 'number' ? `(${fmtDec(litres, 1)} L)` : undefined} />
-          )}
-        </div>
+        {elec != null && (
+          <Stat icon={<IconBolt size={17} />} label={t('trip.consumption')}
+            value={<span class="mono">{fmtDec(elec, 1)}</span>} unit="kWh/100km"
+            sub={typeof kwh === 'number' ? `(${fmtDec(kwh, 1)} kWh)` : undefined} />
+        )}
+        {trip.avgSpeedKmh != null && (
+          <Stat icon={<IconGauge size={17} />} label={t('trip.avg_speed_full')}
+            value={<span class="mono">{Math.round(trip.avgSpeedKmh)}</span>} unit="km/h" />
+        )}
+        {fuel != null && fuel > 0 && (
+          <Stat icon={<IconFuel size={17} />} label={t('trip.consumption')}
+            value={<span class="mono">{fmtDec(fuel, 1)}</span>} unit="L/100km"
+            sub={typeof litres === 'number' ? `(${fmtDec(litres, 1)} L)` : undefined} />
+        )}
       </div>
 
       {(trip.odometerStartKm != null || trip.socStart != null || trip.fuelPctStart != null || !!trip.tripCost) && (
         <div class="tripc-pairs">
           {trip.odometerStartKm != null && (
             <>
-              <Stat icon={<IconGauge size={17} />} label={t('trip.km_start')} value={<span class="mono">{fmtOdo(trip.odometerStartKm)} km</span>} />
-              <Stat icon={<IconGauge size={17} />} label={t('trip.km_end')} value={<span class="mono">{fmtOdo(trip.odometerEndKm)} km</span>} />
+              <Stat icon={<IconRoad size={17} />} label={t('trip.km_start')} value={<span class="mono">{fmtOdo(trip.odometerStartKm)} km</span>} />
+              <Stat icon={<IconRoad size={17} />} label={t('trip.km_end')} value={<span class="mono">{fmtOdo(trip.odometerEndKm)} km</span>} />
             </>
           )}
           {trip.socStart != null && (
