@@ -315,7 +315,7 @@ const VI: Record<string, string> = {
   'data.no_trips': 'Chưa ghi nhận chuyến đi nào',
   'data.details': 'Chi tiết',
   'trip.title': 'Hành trình',
-  'trip.duration': 'Thời lượng',
+  'trip.duration': 'Thời gian',
   'trip.avg_speed': 'TB',
   'trip.odometer': 'Số km',
   'trip.battery': 'Pin',
