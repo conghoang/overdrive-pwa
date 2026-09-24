@@ -148,6 +148,7 @@ button.trip-main { cursor: pointer; }
 .tripc-consum { display: flex; flex-direction: column; gap: 16px; }
 
 .tripc-cell { min-width: 0; }
+.tripc-cell.full { grid-column: 1 / -1; }
 .tripc-cap { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
 .tripc-ico { flex: 0 0 auto; color: var(--muted); line-height: 0; }
 .tripc-ico.cal { color: var(--m-teal); }

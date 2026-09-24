@@ -52,15 +52,16 @@ const line = (path: JSX.Element) => (
 const IconCal = () => line(<><rect x="3" y="4.5" width="18" height="16" rx="2" /><path d="M3 9h18M8 2.5v4M16 2.5v4" /></>)
 const IconClock = () => line(<><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></>)
 const IconCan = () => line(<><path d="M5 8h9v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z" /><path d="M14 11h3a2 2 0 0 1 2 2v4.5a1.6 1.6 0 0 1-3.2 0V16" /><path d="M7.5 8V6.2A1.2 1.2 0 0 1 8.7 5h1.6" /></>)
+const IconMoney = () => line(<><rect x="2.5" y="6" width="19" height="12" rx="2" /><circle cx="12" cy="12" r="2.6" /><path d="M6 9.5v5M18 9.5v5" /></>)
 
 /** One labelled stat: icon, caption, value (with optional absolute, unit, delta). */
 function Stat(props: {
   icon: JSX.Element; label: string; value: JSX.Element
-  sub?: string; unit?: string; delta?: number | null
+  sub?: string; unit?: string; delta?: number | null; full?: boolean
 }): JSX.Element {
-  const { icon, label, value, sub, unit, delta } = props
+  const { icon, label, value, sub, unit, delta, full } = props
   return (
-    <div class="tripc-cell">
+    <div class={'tripc-cell' + (full ? ' full' : '')}>
       <div class="tripc-cap">
         <span class="tripc-ico">{icon}</span>
         <span class="tripc-lbl">{label}</span>
@@ -116,7 +117,7 @@ function StandardCard({ trip }: { trip: TripRow }): JSX.Element {
         </div>
       </div>
 
-      {(trip.odometerStartKm != null || trip.socStart != null || trip.fuelPctStart != null) && (
+      {(trip.odometerStartKm != null || trip.socStart != null || trip.fuelPctStart != null || !!trip.tripCost) && (
         <div class="tripc-pairs">
           {trip.odometerStartKm != null && (
             <>
@@ -136,6 +137,10 @@ function StandardCard({ trip }: { trip: TripRow }): JSX.Element {
               <Stat icon={<IconCan />} label={t('trip.fuel_end')} value={<span class="mono">{pct(trip.fuelPctEnd)}</span>} delta={fuelDelta} />
             </>
           )}
+          {trip.tripCost ? (
+            <Stat full icon={<IconMoney />} label={t('trip.cost')}
+              value={<span class="mono">{fmtMoney(trip.tripCost, trip.currency || '₫')}</span>} />
+          ) : null}
         </div>
       )}
     </div>
