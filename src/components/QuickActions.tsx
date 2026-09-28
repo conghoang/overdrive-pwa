@@ -5,19 +5,17 @@ import type { ControlResult } from '../lib/types'
 import { authLost, cloudConfigured, connected, refresh } from '../lib/store'
 import { toast, toastResult } from '../lib/toast'
 import { t } from '../lib/i18n'
-import { wicarlink } from '../lib/settings'
+import { holdStart, holdTrunk, wc, wcShell, wicarlink } from '../lib/settings'
 import { vehicleState } from '../lib/store'
 import { trunkAction } from '../lib/trunk'
 import { useHold } from './HoldButton'
 import { IconBolt, IconLock, IconTrunk, IconUnlock } from './icons'
 
-// 51DK commands (same as the WiCarlink buttons): fire an intent at the app.
-const WC_ACTIVITY = 'com.wicarlink.digitalcarkey/.ui.activity.LauncherActivity'
-const wc = (cmd: string) => `am start -n ${WC_ACTIVITY} --es cmd ${cmd}`
-
+// 51DK commands (same as the WiCarlink buttons): broadcast to the running app,
+// or start its activity only if it isn't running — see wcShell.
 async function fire(cmd: string, ok: string) {
   try {
-    toastResult(await api.fireShell(wc(cmd)), ok)
+    toastResult(await api.fireShell(wcShell(wc(cmd))), ok)
   } catch (e) {
     if (e instanceof ApiError && e.status === 403) {
       toast(t('wc.advanced_hint'), 'err')
@@ -90,7 +88,7 @@ async function run(fn: () => Promise<ControlResult>, ok: string) {
  * Unlock and Trunk are hold-to-fire here for the same reason they are on the
  * Controls tab: they physically open the car, and this row sits directly under
  * the car photo where a mis-swipe lands. The 51DK path keeps plain taps — those
- * commands go to the kit's own app, which does its own confirmation.
+ * commands go to the kit's own app; trunk and start can opt into hold in Settings.
  */
 export function QuickActions() {
   const disabled = !connected.value
@@ -127,6 +125,7 @@ export function QuickActions() {
           icon={<IconBolt size={22} />}
           label={t('ctrl.start')}
           disabled={disabled}
+          hold={holdStart.value}
           onFire={() => fire('start', t('ctrl.start'))}
         />
       ) : (
@@ -141,7 +140,7 @@ export function QuickActions() {
         icon={<IconTrunk size={22} />}
         label={wc51 ? t('ctrl.trunk') : t(trunk.labelKey)}
         disabled={disabled}
-        hold={!wc51}
+        hold={!wc51 || holdTrunk.value}
         onFire={() =>
           wc51
             ? fire('trunk', t('ctrl.trunk'))

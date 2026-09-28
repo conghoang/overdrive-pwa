@@ -155,8 +155,58 @@ export interface WcCommand {
 // 51DK / WiCarlink commands. Each fires an intent at the WiCarlink LauncherActivity
 // with a `cmd` extra. These are `am start` (shell) commands, so they need OD's
 // "Advanced actions" enabled (Key Mapping → allowAdvanced). All editable locally.
-const WC_ACTIVITY = 'com.wicarlink.digitalcarkey/.ui.activity.LauncherActivity'
-const wc = (cmd: string): string => `am start -n ${WC_ACTIVITY} --es cmd ${cmd}`
+const WC_PKG = 'com.wicarlink.digitalcarkey'
+const WC_ACTIVITY = `${WC_PKG}/.ui.activity.LauncherActivity`
+export const wc = (cmd: string): string => `am start -n ${WC_ACTIVITY} --es cmd ${cmd}`
+
+/*
+ * How a 51DK command actually goes out.
+ *
+ * The activity form is the only one that revives a force-stopped app (BYD's
+ * `ssc` blocks a broadcast to a dead process), but starting an activity flashes
+ * the head-unit screen every time. When the app is already running, its
+ * exported AdbCmdReceiver takes the same `cmd` extra with no UI at all. So:
+ * broadcast if the process is alive, fall back to the activity only when it
+ * isn't. if/else (not && ||) so one command can never be sent twice.
+ */
+const WC_ACTIVITY_CMD = /^am start -n com\.wicarlink\.digitalcarkey\/\.ui\.activity\.LauncherActivity --es cmd ([A-Za-z0-9_]+)$/
+
+/** The 51DK command word in a stored shell value ("trunk", "start"…), or null. */
+export function wcCmdName(value: string): string | null {
+  return WC_ACTIVITY_CMD.exec(value.trim())?.[1] ?? null
+}
+
+/** Rewrite a stored activity-form 51DK command into the no-flash form; anything else passes through. */
+export function wcShell(value: string): string {
+  const cmd = wcCmdName(value)
+  if (!cmd) return value
+  return `if pidof ${WC_PKG} >/dev/null; then am broadcast -n ${WC_PKG}/.app.AdbCmdReceiver --es cmd ${cmd}; ` +
+    `else am start -n ${WC_ACTIVITY} --es cmd ${cmd}; fi`
+}
+
+/*
+ * Press-and-hold for the 51DK trunk and engine-start commands. Off by default
+ * (a plain tap, as before); owners who want a guard against a stray tap turn
+ * it on per action.
+ */
+const K_HOLD_TRUNK = 'odpwa.holdTrunk'
+const K_HOLD_START = 'odpwa.holdStart'
+function readFlag(k: string): boolean {
+  try { return localStorage.getItem(k) === '1' } catch { return false }
+}
+function writeFlag(k: string, on: boolean): void {
+  try { localStorage.setItem(k, on ? '1' : '0') } catch { /* applies for this session */ }
+}
+export const holdTrunk = signal<boolean>(readFlag(K_HOLD_TRUNK))
+export const holdStart = signal<boolean>(readFlag(K_HOLD_START))
+export function setHoldTrunk(on: boolean): void { holdTrunk.value = on; writeFlag(K_HOLD_TRUNK, on) }
+export function setHoldStart(on: boolean): void { holdStart.value = on; writeFlag(K_HOLD_START, on) }
+
+/** Whether a 51DK command should need press-and-hold, per the settings above. */
+export function wcNeedsHold(value: string): boolean {
+  const cmd = wcCmdName(value)
+  return (cmd === 'trunk' && holdTrunk.value) || (cmd === 'start' && holdStart.value)
+}
 
 export const DEFAULT_WC_COMMANDS: WcCommand[] = [
   { id: 'bton', label: 'Bluetooth on', kind: 'shell', value: wc('bton'), icon: 'bluetooth' },
@@ -235,6 +285,8 @@ export function resetSettings(): void {
   carName.value = ''
   showMap.value = false
   tripView.value = 'compact'
+  holdTrunk.value = false
+  holdStart.value = false
   wicarlink.value = false
   dewarpByView.value = {}
   wcCommands.value = DEFAULT_WC_COMMANDS.map((c) => ({ ...c }))

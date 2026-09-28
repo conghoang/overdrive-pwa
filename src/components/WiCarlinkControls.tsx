@@ -21,7 +21,8 @@ import { ApiError } from '../lib/api'
 import { connected } from '../lib/store'
 import { toast, toastResult } from '../lib/toast'
 import { t } from '../lib/i18n'
-import { DEFAULT_WC_COMMANDS, wcCommands, type WcCommand } from '../lib/settings'
+import { DEFAULT_WC_COMMANDS, wcCommands, wcNeedsHold, wcShell, type WcCommand } from '../lib/settings'
+import { ActionButton } from './HoldButton'
 import { IconBolt, IconLock, IconSliders, IconTrunk, IconUnlock, IconWind } from './icons'
 import { IconApp, IconBack, IconBluetooth, IconCar, IconHome, IconLink, IconNext, IconPlay, IconPower, IconPrev } from './icons-extra'
 import './controls.css'
@@ -87,7 +88,7 @@ export function WiCarlinkGrid() {
       const r =
         cmd.kind === 'openApp'
           ? await api.openApp(cmd.value, cmd.label)
-          : await api.fireShell(cmd.value)
+          : await api.fireShell(wcShell(cmd.value))
       toastResult(r, cmd.label)
     } catch (e) {
       if (e instanceof ApiError && e.status === 403) {
@@ -127,15 +128,15 @@ export function WiCarlinkGrid() {
         {cmds.map((c) => {
           const Icon = iconFor(c.icon)
           return (
-            <button
+            <ActionButton
               key={c.id}
-              class={'action ' + (c.kind === 'openApp' ? 'tone-accent' : 'tone-default')}
+              tone={c.kind === 'openApp' ? 'accent' : 'default'}
               disabled={disabled}
-              onClick={() => fire(c)}
-            >
-              <span class="action-icon"><Icon size={22} /></span>
-              <span class="action-label">{c.label}</span>
-            </button>
+              hold={c.kind === 'shell' && wcNeedsHold(c.value)}
+              icon={<Icon size={22} />}
+              label={c.label}
+              onFire={() => fire(c)}
+            />
           )
         })}
       </div>

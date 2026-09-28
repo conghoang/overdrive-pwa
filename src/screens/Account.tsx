@@ -15,7 +15,7 @@ import { lazyScreen } from '../lib/lazy'
  */
 const WiCarlinkEditor = lazyScreen(() => import('../components/WiCarlinkEditor'), 'WiCarlinkEditor')
 
-import { carName, carPhoto, resetSettings, setCarName, setCarPhoto, setShowMap, setWicarlink, showMap, wicarlink } from '../lib/settings'
+import { carName, carPhoto, holdStart, holdTrunk, resetSettings, setCarName, setCarPhoto, setHoldStart, setHoldTrunk, setShowMap, setWicarlink, showMap, wicarlink } from '../lib/settings'
 import { fileToResizedBlob } from '../lib/image'
 import { toast } from '../lib/toast'
 import { lang, setLang, t } from '../lib/i18n'
@@ -187,6 +187,20 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
         <InfoRow label={t('dev.build')} value={__COMMIT__} mono />
         <InfoRow label={t('dev.units')} value={(s?.distanceUnit || 'km').toUpperCase()} />
         <InfoRow label={t('dev.locale')} value={s?.locale || '--'} />
+      </div>
+
+      {/* Press-and-hold guards for the actions a stray tap shouldn't fire. */}
+      <div class="card" style={{ marginTop: '14px' }}>
+        <div class="card-title">{t('dev.hold_title')}</div>
+        <div class="screen-sub" style={{ marginTop: '-4px' }}>{t('dev.hold_desc')}</div>
+        <div class="srow">
+          <span class="srow-label">{t('dev.hold_trunk')}</span>
+          <Switch on={holdTrunk.value} onChange={setHoldTrunk} />
+        </div>
+        <div class="srow" style={{ paddingBottom: 0 }}>
+          <span class="srow-label">{t('dev.hold_start')}</span>
+          <Switch on={holdStart.value} onChange={setHoldStart} />
+        </div>
       </div>
 
       <div class="card" style={{ marginTop: '14px' }}>
