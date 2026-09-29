@@ -98,12 +98,12 @@
   .fanlabel{font-size:10px;color:var(--mid);font-weight:700;letter-spacing:.04em}.fanlabel b{color:var(--text)}
 
   /* ---- Panel 4: seats (heat + cool) ---- */
-  .seatcol{width:90%;max-width:260px;display:flex;flex-direction:column;gap:16px}
-  .seatname{font-size:15px;font-weight:800;letter-spacing:.02em;text-align:left;margin-bottom:7px}
-  .seatline{display:flex;align-items:center;gap:9px;margin-bottom:5px}
-  .seatline .ic{width:18px;height:18px;flex:0 0 auto;display:flex}
-  .slevels{display:flex;gap:6px;margin-left:auto}
-  .sl{width:26px;height:24px;border-radius:7px;background:var(--surface-2);border:1px solid var(--border);cursor:pointer;transition:.12s}
+  .seatcol{width:100%;display:flex;flex-direction:column;gap:18px;align-items:center}
+  .seatname{font-size:15px;font-weight:800;letter-spacing:.02em;text-align:center;margin-bottom:8px}
+  .seatline{display:flex;align-items:center;justify-content:center;gap:16px}
+  .seatline .ic{width:16px;height:16px;flex:0 0 auto;display:flex}
+  .slevels{display:flex;gap:5px}
+  .sl{width:18px;height:22px;border-radius:5px;background:var(--surface-2);border:1px solid var(--border);cursor:pointer;transition:.12s}
   .sl.on.heat{background:var(--m-orange);border-color:transparent}
   .sl.on.cool{background:var(--accent);border-color:transparent}
 
@@ -291,19 +291,19 @@ function renderTyre(id,t,limits){
 }
 const FLAME='<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#f6a23c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c1 3-2 4-2 7a2 2 0 0 0 4 0c2 2 3 3 3 6a5 5 0 0 1-10 0c0-4 5-6 5-13z"/></svg>';
 const SNOW='<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#35dfc1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9"/></svg>';
-function levelRow(pos,mode,cur){
-  let h='<div class="seatline">'+(mode==='heat'?FLAME:SNOW)+'<div class="slevels">';
+function levelGroup(pos,mode,cur){
+  let h=(mode==='heat'?FLAME:SNOW)+'<div class="slevels">';
   for(let i=1;i<=3;i++) h+='<div class="sl '+mode+(i<=cur?' on':'')+'" data-seat="'+pos+'" data-mode="'+mode+'" data-level="'+(i===cur?0:i)+'"></div>';
-  return h+'</div></div>';
+  return h+'</div>';
 }
 function renderSeats(){
   const col=$('seats');col.innerHTML='';
   for(const pos of[1,2]){
     const name=pos===1?'Driver':'Passenger';
-    let blk='<div class="seatblk"><div class="seatname">'+name+'</div>';
-    blk+=levelRow(pos,'heat',seatHeat[pos-1]||0);
-    if(ventSupported) blk+=levelRow(pos,'cool',seatCool[pos-1]||0);
-    col.insertAdjacentHTML('beforeend',blk+'</div>');
+    let blk='<div class="seatblk"><div class="seatname">'+name+'</div><div class="seatline">';
+    blk+=levelGroup(pos,'heat',seatHeat[pos-1]||0);
+    if(ventSupported) blk+=levelGroup(pos,'cool',seatCool[pos-1]||0);
+    col.insertAdjacentHTML('beforeend',blk+'</div></div>');
   }
 }
 function renderFan(){const fb=$('fanbar');fb.innerHTML='';
