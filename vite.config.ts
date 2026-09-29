@@ -88,8 +88,11 @@ export default defineConfig({
         navigateFallback: 'index.html',
         // See isDevSite above: without this the prod SW answers dev navigations
         // with prod's shell. Empty on the dev build, which owns that path.
-        navigateFallbackDenylist: isDevSite ? [] : [/\/dev\//],
+        // The watch (/watch/) and pairing (/pair/) sub-apps ship their own
+        // service worker + manifest, so keep the main SW out of their scope.
+        navigateFallbackDenylist: isDevSite ? [/\/watch\//, /\/pair\//] : [/\/dev\//, /\/watch\//, /\/pair\//],
         globPatterns: ['**/*.{js,css,html,svg,webp,png,ico,woff2}'],
+        globIgnores: ['**/watch/**', '**/pair/**'],
         // Match precached assets even with the ?v=<commit> cache-buster.
         ignoreURLParametersMatching: [/^v$/],
         cleanupOutdatedCaches: true,

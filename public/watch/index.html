@@ -4,6 +4,12 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
 <title>OverDrive Watch</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#071019" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black" />
+<link rel="apple-touch-icon" href="icon-192.png" />
 <style>
   /* Verbatim from the phone app's tokens.css so the watch is the same product. */
   :root{
@@ -362,6 +368,7 @@ const N=6,dots=$('dots');for(let i=0;i<N;i++)dots.appendChild(document.createEle
 const pager=$('pager');
 function updateDots(){const i=Math.round(pager.scrollLeft/pager.clientWidth);[...dots.children].forEach((d,k)=>d.classList.toggle('on',k===i));}
 pager.addEventListener('scroll',updateDots,{passive:true});updateDots();
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 load();
 </script>
 </body>
