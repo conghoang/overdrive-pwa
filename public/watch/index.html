@@ -94,6 +94,9 @@
 
   /* ---- Panel 3: climate ---- */
   /* Centered cluster that stays inside the round face. */
+  .clima-out{position:absolute;top:11%;left:0;right:0;display:flex;align-items:center;justify-content:center;
+    gap:1.4vmin;font-size:4.8vmin;font-weight:700;color:var(--mid);min-height:5vmin}
+  .clima-out svg{width:5vmin;height:5vmin}
   .clima-power{display:inline-flex;align-items:center;gap:2vmin;height:12vmin;padding:0 6vmin;border-radius:6vmin;
     background:var(--surface-1);border:1px solid var(--border);color:var(--mid);font-weight:800;font-size:4.6vmin;
     letter-spacing:.04em;cursor:pointer;transition:.15s}
@@ -200,6 +203,7 @@
 
   <!-- 3 · Climate -->
   <section class="panel">
+    <div class="clima-out" id="climaOut"></div>
     <div class="clima-power" data-act="clima" id="clima">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9"/></svg>
       <span id="climalabel">AC OFF</span>
@@ -291,6 +295,7 @@ const ub64=(s)=>Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')),c=>c
 const SC=crypto.subtle,EC={name:'ECDH',namedCurve:'P-256'};
 let tempC=22,climaOn=false,fanLevel=0,seatHeat=[0,0],seatCool=[0,0],ventSupported=false,busy=false;
 let wc51=ls('odw.wc51')==='1';
+let outTempC=null;
 const WC_PKG='com.wicarlink.digitalcarkey',WC_ACT=WC_PKG+'/.ui.activity.LauncherActivity';
 // No-flash: broadcast to the running app, fall back to the activity if it's dead.
 const wcCmd=(cmd)=>'if pidof '+WC_PKG+' >/dev/null; then am broadcast -n '+WC_PKG+'/.app.AdbCmdReceiver --es cmd '+cmd+'; else am start -n '+WC_ACT+' --es cmd '+cmd+'; fi';
@@ -383,7 +388,9 @@ function renderStatus(s,st){
 }
 function renderClimate(){$('clima').classList.toggle('on',climaOn);
   const cl=$('climalabel');if(cl)cl.textContent=climaOn?t('ac.on'):t('ac.off');
-  $('temp').innerHTML=tempC+'<small>°</small>';renderFan();}
+  $('temp').innerHTML=tempC+'<small>°</small>';
+  const co=$('climaOut');if(co)co.innerHTML=(typeof outTempC==='number')?(IC_THERMO+' '+Math.round(outTempC)+'°'):'';
+  renderFan();}
 
 function renderQR(id,text){
   const draw=()=>{try{const q=qrcode(0,'M');q.addData(text);q.make();$(id).innerHTML=q.createSvgTag({cellSize:4,margin:0});}catch{}};
@@ -450,6 +457,7 @@ async function load(){
     $('b-unlock').className='cbtn pS'+(lock===2?' warn':'');
     renderControls();
     renderStatus(s,st);
+    outTempC=null;try{const sum=await api('/api/launcher/v1/summary');if(typeof sum.env?.tempC==='number')outTempC=sum.env.tempC;}catch{}
     climaOn=!!st.climate?.acOn;
     if(typeof st.climate?.setpointDriver==='number')tempC=Math.round(st.climate.setpointDriver);
     fanLevel=st.climate?.fanLevel||0;renderClimate();
