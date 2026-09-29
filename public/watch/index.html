@@ -26,6 +26,7 @@
   #pager{display:flex;height:100%;width:100%;overflow-x:auto;overflow-y:hidden;
     scroll-snap-type:x mandatory;scrollbar-width:none}
   #pager::-webkit-scrollbar{display:none}
+  #pager:focus{outline:none}
   :root[data-shape="rect"] .panel{padding:0 5%}
   :root[data-shape="rect"] .ptitle{top:5%}
   :root[data-shape="rect"] #dots{bottom:3%}
@@ -42,6 +43,12 @@
   #dots i.on{opacity:1;background:var(--accent);width:6vmin;border-radius:1vmin}
 
   /* ---- Panel 1: range + battery/fuel bars (the PWA hero) ---- */
+  /* Car hero: centred and nudged up, fully contained inside the round face so
+     the bezel never clips it. A flat low opacity (no gradient) keeps it a quiet
+     backdrop behind the stats. Content sits above it. */
+  #p-status>*:not(.carbg){position:relative;z-index:1}
+  .carbg{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);
+    width:76%;max-width:none;height:auto;opacity:.15;pointer-events:none;z-index:0}
   .veh-range{display:flex;align-items:baseline;justify-content:center;gap:2vmin}
   .veh-range .num{font-size:22vmin;font-weight:700;letter-spacing:-.02em;line-height:1}
   .veh-range .unit{font-size:6.4vmin;color:var(--mid);font-weight:600}
@@ -171,7 +178,8 @@
 
 <div id="pager" hidden>
   <!-- 1 · Status -->
-  <section class="panel">
+  <section class="panel" id="p-status">
+    <img class="carbg" src="car.webp" alt="" aria-hidden="true">
     <div class="veh-range"><span class="num" id="range">--</span><span class="unit" id="unit">km</span></div>
     <div class="legs">
       <div class="leg" id="leg-ev">
@@ -482,7 +490,7 @@ async function load(silent){
     showState('<p>'+t('st.unreach')+'</p><button class="retry" onclick="load()">'+t('st.retry')+'</button>');}
 }
 function showState(h){$('state').innerHTML=h;$('state').hidden=false;$('pager').hidden=true;$('dots').hidden=true;}
-function hideState(){$('state').hidden=true;$('pager').hidden=false;$('dots').hidden=false;}
+function hideState(){$('state').hidden=true;$('pager').hidden=false;$('dots').hidden=false;try{focusPager();}catch{}}
 let toastT;function toast(m,err){const t=$('toast');t.textContent=m;t.className='show'+(err?' err':'');clearTimeout(toastT);toastT=setTimeout(()=>t.className='',1700);}
 async function fire(label,path,body){
   if(busy)return;busy=true;document.body.classList.add('busy');
@@ -519,17 +527,31 @@ renderControls();pager.addEventListener("scroll",updateDots,{passive:true});upda
 // Rotating bezel / crown: Wear OS delivers rotary input as wheel events. Map a
 // detent to the next/previous panel (one step, debounced). Harmless without a dial.
 let _rot=false;
-function onRotary(e){
+function rotaryStep(dir){
   if(pager.hidden)return;                 // ignore while pairing / error screens
-  const d=e.deltaY||e.deltaX;if(!d)return;
-  e.preventDefault();
-  if(_rot)return;_rot=true;setTimeout(()=>_rot=false,300);
+  if(_rot)return;_rot=true;setTimeout(()=>_rot=false,280);
   const w=pager.clientWidth,cur=Math.round(pager.scrollLeft/w);
-  const next=Math.max(0,Math.min(6,cur+(d>0?1:-1)));
+  const next=Math.max(0,Math.min(6,cur+(dir>0?1:-1)));
   pager.scrollTo({left:next*w,behavior:'smooth'});
 }
+function onRotary(e){const d=e.deltaY||e.deltaX;if(!d)return;e.preventDefault();rotaryStep(d>0?1:-1);}
 pager.addEventListener('wheel',onRotary,{passive:false});
 window.addEventListener('wheel',onRotary,{passive:false});
+// Rotary reaches the web layer three ways, depending on the watch/WebView:
+//  1. wheel events (above) — Chrome-based WebViews.
+//  2. focused key/scroll events — the pager must be focusable and hold focus.
+//  3. the native shell calling window.__rotary(dir) directly (most reliable).
+window.__rotary=rotaryStep;
+pager.setAttribute('tabindex','0');
+pager.addEventListener('keydown',(e)=>{
+  if(e.key==='ArrowDown'||e.key==='ArrowRight'||e.key==='PageDown'){e.preventDefault();rotaryStep(1);}
+  else if(e.key==='ArrowUp'||e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();rotaryStep(-1);}
+});
+// Keep the pager focused (unless a text field is active) so rotary key/scroll
+// events keep landing after taps.
+function focusPager(){if(!pager.hidden&&!/^(INPUT|TEXTAREA)$/.test(document.activeElement&&document.activeElement.tagName)){try{pager.focus({preventScroll:true});}catch{}}}
+pager.addEventListener('pointerup',focusPager);
+setInterval(focusPager,1500);
 applyI18n();
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 load();

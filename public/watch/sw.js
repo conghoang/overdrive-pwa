@@ -2,8 +2,8 @@
 // offline. Network-first for same-origin GETs (so updates land), falling back to
 // cache, then to the shell. Never touches the pairing Worker or the car (those
 // are cross-origin and must always hit the network).
-const CACHE = 'odw-shell-v2';
-const SHELL = ['./', './index.html'];
+const CACHE = 'odw-shell-v3';
+const SHELL = ['./', './index.html', './car.webp'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)));
