@@ -47,6 +47,21 @@
   .leg-pct{font-size:11px;font-weight:700;color:var(--mid);min-width:30px;text-align:right}
   .leg-bar{height:8px;border-radius:999px;background:var(--surface-2);overflow:hidden}
   .leg-bar i{display:block;height:100%;border-radius:999px;transition:width .6s cubic-bezier(.22,.61,.36,1)}
+  .outtemp{display:flex;align-items:center;justify-content:center;gap:4px;margin-top:5px;
+    min-height:15px;font-size:12px;font-weight:600;color:var(--mid)}
+  .outtemp svg{width:12px;height:12px}
+
+  /* ---- Settings ---- */
+  .setrow{display:flex;align-items:center;gap:12px;width:88%;max-width:250px;cursor:pointer}
+  .setlab{text-align:left;min-width:0}
+  .setname{font-size:15px;font-weight:700}
+  .setsub{font-size:11px;color:var(--mid);margin-top:2px;line-height:1.3}
+  .switch{flex:0 0 auto;width:46px;height:27px;border-radius:14px;background:var(--surface-2);
+    border:1px solid var(--border);position:relative;transition:background .18s}
+  .switch i{position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:50%;
+    background:var(--mid);transition:transform .18s,background .18s}
+  .switch.on{background:var(--accent);border-color:transparent}
+  .switch.on i{transform:translateX(19px);background:var(--on-accent)}
 
   /* ---- Panel 2: quick buttons (PWA quick-btn) ---- */
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px;width:80%;max-width:224px}
@@ -138,6 +153,7 @@
         <div class="leg-bar"><i id="fuel-bar" style="width:0;background:var(--m-orange)"></i></div>
       </div>
       <div class="leg-head" id="chgline" style="justify-content:center;margin-top:2px;min-height:14px;color:var(--success)"></div>
+      <div class="outtemp" id="outtemp"></div>
     </div>
   </section>
 
@@ -147,7 +163,7 @@
       <div class="qbtn" data-act="lock" id="b-lock"><span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span><span>Lock</span></div>
       <div class="qbtn" data-act="unlock" id="b-unlock"><span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg></span><span>Unlock</span></div>
       <div class="qbtn" data-act="trunk"><span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16.9h3.3"/><path d="M13.5 16.9h5.6a2.1 2.1 0 0 0 2.1-2.3l-.6-4.7a2.5 2.5 0 0 0-2-2.1L11.7 7.5"/><path d="M2.4 4.1c4.6.1 7.4.8 9.3 3.4"/><path d="M11.7 7.5c1.9-1.9 4.2-2.9 7.5-2.8"/><circle cx="9.7" cy="16.9" r="2.9"/></svg></span><span>Trunk</span></div>
-      <div class="qbtn" data-act="flash"><span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 0-7 7c0 3 2 5 2 7h10c0-2 2-4 2-7a7 7 0 0 0-7-7z"/><path d="M9 21h6"/></svg></span><span>Find</span></div>
+      <div class="qbtn" id="b4"></div>
     </div>
   </section>
 
@@ -183,7 +199,19 @@
     </div>
   </section>
 
-  <!-- 6 · Account -->
+  <!-- 6 · Settings -->
+  <section class="panel">
+    <div class="ptitle">Settings</div>
+    <div class="setrow" data-act="wc51">
+      <div class="setlab">
+        <div class="setname">51DK keyless</div>
+        <div class="setsub">Use the BLE key for lock, unlock, trunk &amp; start</div>
+      </div>
+      <div class="switch" id="wcSwitch"><i></i></div>
+    </div>
+  </section>
+
+  <!-- 7 · Account -->
   <section class="panel">
     <div class="ptitle">Account</div>
     <button class="logout" data-act="logout">Sign out</button>
@@ -207,6 +235,20 @@ const b64u=(buf)=>btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/
 const ub64=(s)=>Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
 const SC=crypto.subtle,EC={name:'ECDH',namedCurve:'P-256'};
 let tempC=22,climaOn=false,fanLevel=0,seatHeat=[0,0],seatCool=[0,0],ventSupported=false,busy=false;
+let wc51=ls('odw.wc51')==='1';
+const WC_PKG='com.wicarlink.digitalcarkey',WC_ACT=WC_PKG+'/.ui.activity.LauncherActivity';
+// No-flash: broadcast to the running app, fall back to the activity if it's dead.
+const wcCmd=(cmd)=>'if pidof '+WC_PKG+' >/dev/null; then am broadcast -n '+WC_PKG+'/.app.AdbCmdReceiver --es cmd '+cmd+'; else am start -n '+WC_ACT+' --es cmd '+cmd+'; fi';
+const SVG_FIND='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 0-7 7c0 3 2 5 2 7h10c0-2 2-4 2-7a7 7 0 0 0-7-7z"/><path d="M9 21h6"/></svg>';
+const SVG_START='<svg viewBox="0 0 24 24"><path d="M13 3 6 13h5l-1 8 7-11h-5z" fill="currentColor"/></svg>';
+function renderControls(){
+  const sw=$('wcSwitch');if(sw)sw.classList.toggle('on',wc51);
+  const b4=$('b4');if(!b4)return;
+  if(wc51){b4.dataset.act='start';b4.innerHTML='<span class="qi">'+SVG_START+'</span><span>Start</span>';}
+  else{b4.dataset.act='flash';b4.innerHTML='<span class="qi">'+SVG_FIND+'</span><span>Find</span>';}
+}
+function fireWC(labelText,cmd){return fire(labelText,'/api/keymap/fire',{kind:'shell',cmd:wcCmd(cmd)});}
+const label=(a)=>({lock:'Lock',unlock:'Unlock',trunk:'Trunk',start:'Start',flash:'Find'}[a]||a);
 
 async function api(path,opts={}){
   if(demo) return demoResp(path,opts);
@@ -219,7 +261,7 @@ function demoResp(path,opts){
   if(opts.method==='POST') return Promise.resolve({success:true});
   if(path==='/status') return Promise.resolve({distanceUnit:'km',
     soc:{percent:68},range:{totalRangeKm:495,elecRangeKm:78,fuelRangeKm:417,fuelPercent:55,isPhev:true},
-    charging:{charging:true,plugged:true,chargingPowerKW:7.2}});
+    charging:{charging:true,plugged:true,chargingPowerKW:7.2},env:{tempC:24}});
   if(path.startsWith('/api/vehicle/state')) return Promise.resolve({doors:{overall:1},
     climate:{acOn:true,setpointDriver:22,fanLevel:3},
     seats:{heat:[2,0],cool:[0,1],ventilatedSupported:true},
@@ -326,6 +368,10 @@ async function load(){
     const lock=st.doors?.overall??-1;
     $('b-lock').className='qbtn'+(lock===1?' on':'');
     $('b-unlock').className='qbtn'+(lock===2?' warn':'');
+    renderControls();
+    const ot=(s.env&&typeof s.env.tempC==='number')?s.env.tempC:null;
+    $('outtemp').innerHTML=ot!=null
+      ?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13V5a2 2 0 1 1 4 0v8a4 4 0 1 1-4 0z"/></svg>'+Math.round(ot)+'° outside':'';
     climaOn=!!st.climate?.acOn;
     if(typeof st.climate?.setpointDriver==='number')tempC=Math.round(st.climate.setpointDriver);
     fanLevel=st.climate?.fanLevel||0;renderClimate();
@@ -352,6 +398,8 @@ document.addEventListener('click',(ev)=>{
   if(sl){const mode=sl.dataset.mode==='cool'?'ventilation':'heating';
     fire('Seat','/api/vehicle/seat',{action:mode,position:+sl.dataset.seat,level:+sl.dataset.level});return;}
   const el=ev.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;
+  if(a==='wc51'){wc51=!wc51;lss('odw.wc51',wc51?'1':'0');renderControls();return;}
+  if(wc51&&(a==='lock'||a==='unlock'||a==='trunk'||a==='start')){fireWC(label(a),a);return;}
   if(a==='lock')fire('Lock','/api/vehicle/lock');
   else if(a==='unlock')fire('Unlock','/api/vehicle/unlock');
   else if(a==='trunk')fire('Trunk','/api/vehicle/trunk',{action:'open'});
@@ -364,10 +412,10 @@ document.addEventListener('click',(ev)=>{
   else if(a==='logout'){if(window.OdNative&&OdNative.logout)OdNative.logout();
     else{try{localStorage.removeItem('odw.baseUrl');localStorage.removeItem('odw.jwt');}catch{}location.href=location.pathname;}}
 });
-const N=6,dots=$('dots');for(let i=0;i<N;i++)dots.appendChild(document.createElement('i'));
+const N=7,dots=$('dots');for(let i=0;i<N;i++)dots.appendChild(document.createElement('i'));
 const pager=$('pager');
 function updateDots(){const i=Math.round(pager.scrollLeft/pager.clientWidth);[...dots.children].forEach((d,k)=>d.classList.toggle('on',k===i));}
-pager.addEventListener('scroll',updateDots,{passive:true});updateDots();
+renderControls();pager.addEventListener("scroll",updateDots,{passive:true});updateDots();
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 load();
 </script>
