@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>OverDrive Watch</title>
 <link rel="manifest" href="manifest.webmanifest" />
 <meta name="theme-color" content="#071019" id="themeColor" />
@@ -36,7 +36,9 @@
     --shadow:0 10px 26px rgba(20,40,60,.14);
     color-scheme:light;
   }
-  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  /* touch-action:manipulation kills double-tap-to-zoom on every element (the Wear
+     browser ignores user-scalable=no on its own) while keeping taps and pans. */
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--text);overflow:hidden;
     font-family:system-ui,-apple-system,"Roboto",sans-serif;font-variant-numeric:tabular-nums;
     -webkit-user-select:none;user-select:none}
@@ -691,6 +693,9 @@ function focusPager(){
 pager.addEventListener('pointerup',focusPager);
 centreSink();setInterval(focusPager,1200);
 applyI18n();applyTheme();
+// No zoom on double-tap or pinch gestures (backstop for touch-action).
+document.addEventListener('dblclick',(e)=>e.preventDefault(),{passive:false});
+document.addEventListener('gesturestart',(e)=>e.preventDefault(),{passive:false});
 
 // --- Auto-refresh: the Wear browser won't poll on its own. Silently refresh
 // telemetry on a timer while the app is visible, paired, and idle; and whenever

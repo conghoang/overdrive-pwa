@@ -354,3 +354,11 @@ h1, h2, h3, p { margin: 0; }
   border-radius: var(--radius-lg, 18px);
   margin-top: 14px;
 }
+
+/* Watch pairing how-to (Settings → Integrations) */
+.pair-howto { margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); }
+.pair-howto-title { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.pair-howto ol { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: 13px; line-height: 1.45; }
+.pair-howto li::marker { color: var(--accent); font-weight: 700; }
+.pair-addr { color: var(--accent-bright); font-weight: 700; user-select: all; -webkit-user-select: all; }
+.pair-icon { display: inline-block; width: 1.25em; height: 1.25em; vertical-align: -0.28em; margin: 0 2px; padding: 2px; border-radius: 50%; background: var(--accent); color: var(--app-bg); }

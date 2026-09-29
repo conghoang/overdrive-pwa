@@ -195,6 +195,7 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
             {t('dev.pair_open')}
           </button>
         </div>
+        <PairHowTo />
       </div>
 
       <div class="card" style={{ marginTop: '14px' }}>
@@ -207,6 +208,32 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
       </div>
 
       <p class="screen-sub" style={{ textAlign: 'center', marginTop: '18px' }}>{t('dev.footer')}</p>
+    </div>
+  )
+}
+
+/** The short address a user types into the watch browser to reach the watch app. */
+const WATCH_ADDR = 'w.sl6vn.link'
+
+function PairHowTo() {
+  // Step 1 carries the address; split on the placeholder so it can be emphasised.
+  const [before, after] = t('dev.pair_step1', { addr: '\u0000' }).split('\u0000')
+  const [b3, a3] = t('dev.pair_step3', { icon: '\u0000' }).split('\u0000')
+  return (
+    <div class="pair-howto">
+      <div class="pair-howto-title">{t('dev.pair_how')}</div>
+      <ol>
+        <li>{before}<span class="pair-addr mono">{WATCH_ADDR}</span>{after}</li>
+        <li>{t('dev.pair_step2')}</li>
+        <li>
+          {b3}
+          {/* Same glyph as the watch's check button, so it's recognisable there. */}
+          <svg class="pair-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-label="refresh">
+            <path d="M21 12a9 9 0 1 1-9-9c2.5 0 4.9 1 6.7 2.7L21 8" /><path d="M21 3v5h-5" />
+          </svg>
+          {a3}
+        </li>
+      </ol>
     </div>
   )
 }
