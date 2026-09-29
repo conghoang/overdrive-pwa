@@ -23,7 +23,7 @@
     --accent:#35dfc1; --accent-bright:#35dfc1;
     --success:#56d68c; --m-orange:#f6a23c; --text:#f5f9fc; --mid:#8497a8; --danger:#ff6b6b;
     --on-teal:#071019; --on-accent:#071019;
-    --btn-bg:rgba(12,23,36,.72); --btn-bg-active:rgba(16,31,48,.85);
+    --btn-bg:rgba(12,23,36,.46); --btn-bg-active:rgba(16,31,48,.66);
     --radius:16px; --shadow:0 10px 26px rgba(0,0,0,.34);
     color-scheme:dark;
   }
@@ -32,7 +32,7 @@
     --accent:#22c9ac; --accent-bright:#0e9e88;
     --success:#2ea866; --m-orange:#c9760f; --text:#0b1a24; --mid:#5c6d7a; --danger:#d6453f;
     --on-teal:#04150f; --on-accent:#04150f;
-    --btn-bg:rgba(255,255,255,.66); --btn-bg-active:rgba(219,228,236,.82);
+    --btn-bg:rgba(255,255,255,.4); --btn-bg-active:rgba(219,228,236,.62);
     --shadow:0 10px 26px rgba(20,40,60,.14);
     color-scheme:light;
   }
@@ -81,7 +81,10 @@
      four tyres read behind the four pressures. */
   #p-climate>*:not(.panelbg),#p-seat>*:not(.panelbg){position:relative;z-index:1}
   .panelbg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
-    opacity:.13;pointer-events:none;z-index:0}
+    opacity:.32;pointer-events:none;z-index:0}
+  /* Frosted glass: the translucent button lets the backdrop show through, the
+     blur keeps text/icons legible over it. */
+  .cbtn,.seattile,.stepper button,.clima-power{-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
   .veh-range{display:flex;align-items:baseline;justify-content:center;gap:2vmin}
   .veh-range .num{font-size:22vmin;font-weight:700;letter-spacing:-.02em;line-height:1}
   .veh-range .unit{font-size:6.4vmin;color:var(--mid);font-weight:600}
