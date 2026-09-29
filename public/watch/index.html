@@ -40,9 +40,9 @@
 
   /* ---- Panel 1: range + battery/fuel bars (the PWA hero) ---- */
   .veh-range{display:flex;align-items:baseline;justify-content:center;gap:2vmin}
-  .veh-range .num{font-size:27vmin;font-weight:700;letter-spacing:-.02em;line-height:1}
-  .veh-range .unit{font-size:7vmin;color:var(--mid);font-weight:600}
-  .legs{width:100%;margin-top:7vmin;display:flex;flex-direction:column;gap:5.5vmin}
+  .veh-range .num{font-size:22vmin;font-weight:700;letter-spacing:-.02em;line-height:1}
+  .veh-range .unit{font-size:6.4vmin;color:var(--mid);font-weight:600}
+  .legs{width:90%;margin:5vmin auto 0;display:flex;flex-direction:column;gap:4.5vmin}
   .leg-head{display:flex;align-items:center;gap:2.6vmin;margin-bottom:2.6vmin}
   .leg-ico{display:flex;flex:0 0 auto}.leg-ico svg{width:6.6vmin;height:6.6vmin}
   .leg-km{margin-left:auto;font-size:7.2vmin;font-weight:800;letter-spacing:-.01em}
@@ -51,8 +51,8 @@
   .leg-bar{height:4.2vmin;border-radius:999px;background:var(--surface-2);overflow:hidden}
   .leg-bar i{display:block;height:100%;border-radius:999px;transition:width .6s cubic-bezier(.22,.61,.36,1)}
   /* Critical glance row: charge · temp · power · lock · windows. */
-  .statusrow{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4.5vmin;
-    margin-top:5.5vmin;min-height:7vmin}
+  .statusrow{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4vmin;
+    margin-top:4vmin;min-height:6vmin}
   .schip{display:flex;align-items:center;gap:1.3vmin;font-size:4.6vmin;font-weight:800}
   .schip svg{width:6.2vmin;height:6.2vmin}
 
@@ -373,8 +373,8 @@ function renderStatus(s,st,ot){
   const ch=s.charging||{},items=[];
   if(ch.charging) items.push(_chip(G,IC_BOLT,ch.chargingPowerKW?ch.chargingPowerKW.toFixed(1):''));
   if(typeof ot==='number') items.push(_chip(M,IC_THERMO,Math.round(ot)+'°'));
-  // Green = safe (off/locked/closed), orange = attention (on/unlocked/open).
-  items.push(_chip(s.acc?A:G,IC_POWER));                                  // ignition
+  // Power: green when on, grey when off. Lock/windows: green safe, orange attention.
+  items.push(_chip(s.acc?G:M,IC_POWER));                                  // ignition
   const lk=st.doors?.overall??-1;
   items.push(_chip(lk===2?A:lk===1?G:M, lk===2?IC_UNLOCK:IC_LOCK));       // central lock (-1 unknown = muted)
   const w=st.windows||{};
