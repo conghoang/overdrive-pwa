@@ -54,6 +54,9 @@
   .schip svg{width:6.2vmin;height:6.2vmin}
 
   /* ---- Settings ---- */
+  .seg{display:inline-flex;background:var(--surface-1);border:1px solid var(--border);border-radius:6vmin;padding:1vmin;margin-top:6vmin}
+  .seg button{border:0;background:none;color:var(--mid);font-weight:800;font-size:4.4vmin;padding:1.6vmin 6vmin;border-radius:5vmin;cursor:pointer}
+  .seg button.on{background:var(--accent);color:var(--on-teal)}
   .setrow{display:flex;align-items:center;justify-content:space-between;gap:4vmin;width:84%;max-width:78vmin;cursor:pointer}
   .setname{font-size:5.6vmin;font-weight:700}
   .switch{flex:0 0 auto;width:15vmin;height:9vmin;border-radius:4.5vmin;background:var(--surface-2);
@@ -173,9 +176,9 @@
   <!-- 2 · Controls -->
   <section class="panel">
     <div class="grid2">
-      <div class="qbtn" data-act="lock" id="b-lock"><span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span><span>Lock</span></div>
-      <div class="qbtn" data-act="unlock" id="b-unlock"><span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg></span><span>Unlock</span></div>
-      <div class="qbtn" data-act="trunk"><span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16.9h3.3"/><path d="M13.5 16.9h5.6a2.1 2.1 0 0 0 2.1-2.3l-.6-4.7a2.5 2.5 0 0 0-2-2.1L11.7 7.5"/><path d="M2.4 4.1c4.6.1 7.4.8 9.3 3.4"/><path d="M11.7 7.5c1.9-1.9 4.2-2.9 7.5-2.8"/><circle cx="9.7" cy="16.9" r="2.9"/></svg></span><span>Trunk</span></div>
+      <div class="qbtn" data-act="lock" id="b-lock"><span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span><span data-i18n="b.lock">Lock</span></div>
+      <div class="qbtn" data-act="unlock" id="b-unlock"><span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg></span><span data-i18n="b.unlock">Unlock</span></div>
+      <div class="qbtn" data-act="trunk"><span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16.9h3.3"/><path d="M13.5 16.9h5.6a2.1 2.1 0 0 0 2.1-2.3l-.6-4.7a2.5 2.5 0 0 0-2-2.1L11.7 7.5"/><path d="M2.4 4.1c4.6.1 7.4.8 9.3 3.4"/><path d="M11.7 7.5c1.9-1.9 4.2-2.9 7.5-2.8"/><circle cx="9.7" cy="16.9" r="2.9"/></svg></span><span data-i18n="b.trunk">Trunk</span></div>
       <div class="qbtn" id="b4"></div>
     </div>
   </section>
@@ -193,7 +196,7 @@
       <button data-act="fan-">−</button>
       <div class="fanwrap">
         <div class="fanbar" id="fanbar"></div>
-        <div class="fanlabel">Fan <b id="fannum">–</b></div>
+        <div class="fanlabel"><span data-i18n="fan">Fan</span> <b id="fannum">–</b></div>
       </div>
       <button data-act="fan+">+</button>
     </div>
@@ -201,13 +204,13 @@
 
   <!-- 4 · Seats (heat + cool) -->
   <section class="panel">
-    <div class="ptitle">Seats</div>
+    <div class="ptitle" data-i18n="t.seats">Seats</div>
     <div class="seatcol" id="seats"></div>
   </section>
 
   <!-- 5 · Tyres -->
   <section class="panel">
-    <div class="ptitle">Tyre · kPa</div>
+    <div class="ptitle" data-i18n="t.tyres">Tyre · kPa</div>
     <div class="tyres">
       <div class="ty" id="ty-fl"><b>—</b><small>FL</small></div><div class="ty" id="ty-fr"><b>—</b><small>FR</small></div>
       <div class="ty" id="ty-rl"><b>—</b><small>RL</small></div><div class="ty" id="ty-rr"><b>—</b><small>RR</small></div>
@@ -216,17 +219,18 @@
 
   <!-- 6 · Settings -->
   <section class="panel">
-    <div class="ptitle">Settings</div>
+    <div class="ptitle" data-i18n="t.settings">Settings</div>
     <div class="setrow" data-act="wc51">
-      <span class="setname">51DK keyless</span>
+      <span class="setname" data-i18n="b.wc51">51DK keyless</span>
       <div class="switch" id="wcSwitch"><i></i></div>
     </div>
+    <div class="seg" id="langseg"><button data-lang="en">EN</button><button data-lang="vi">VI</button></div>
   </section>
 
   <!-- 7 · Account -->
   <section class="panel">
-    <div class="ptitle">Account</div>
-    <button class="logout" data-act="logout">Sign out</button>
+    <div class="ptitle" data-i18n="t.account">Account</div>
+    <button class="logout" data-act="logout" data-i18n="b.signout">Sign out</button>
     <div class="leg-pct" style="margin-top:12px" id="devid"></div>
   </section>
 </div>
@@ -240,6 +244,28 @@ const ls=(k)=>{try{return localStorage.getItem(k)}catch{return null}};
 const lss=(k,v)=>{try{localStorage.setItem(k,v)}catch{}};
 const BASE=(qs.get('b')||ls('odw.baseUrl')||'').replace(/\/$/,''),JWT=qs.get('t')||ls('odw.jwt')||'';
 const $=(id)=>document.getElementById(id);
+let lang=ls('odw.lang')||((navigator.language||'').toLowerCase().startsWith('vi')?'vi':'en');
+const T={
+ en:{'t.seats':'Seats','t.tyres':'Tyre \u00b7 kPa','t.settings':'Settings','t.account':'Account',
+     'b.lock':'Lock','b.unlock':'Unlock','b.trunk':'Trunk','b.find':'Find','b.start':'Start',
+     'b.wc51':'51DK keyless','b.signout':'Sign out','ac.on':'AC ON','ac.off':'AC OFF','fan':'Fan',
+     'seat.driver':'Driver','seat.passenger':'Passenger','st.notpaired':'Not paired',
+     'st.pairhint':'Pair from the phone app','st.ended':'Session ended','st.repair':'Re-pair from the phone',
+     'st.unreach':'Can\u2019t reach car','st.retry':'Retry','st.unavail':'Pairing unavailable',
+     'pair.scan':'Scan in the phone app,<br>or enter this code','toast.fail':'failed','seat':'Seat'},
+ vi:{'t.seats':'Gh\u1ebf','t.tyres':'L\u1ed1p \u00b7 kPa','t.settings':'C\u00e0i \u0111\u1eb7t','t.account':'T\u00e0i kho\u1ea3n',
+     'b.lock':'Kh\u00f3a','b.unlock':'M\u1edf kh\u00f3a','b.trunk':'C\u1ed1p','b.find':'T\u00ecm xe','b.start':'Kh\u1edfi \u0111\u1ed9ng',
+     'b.wc51':'51DK kh\u00f4ng ch\u00eca','b.signout':'\u0110\u0103ng xu\u1ea5t','ac.on':'\u0110H B\u1eacT','ac.off':'\u0110H T\u1eaeT','fan':'Qu\u1ea1t',
+     'seat.driver':'Gh\u1ebf l\u00e1i','seat.passenger':'Gh\u1ebf ph\u1ee5','st.notpaired':'Ch\u01b0a gh\u00e9p',
+     'st.pairhint':'Gh\u00e9p t\u1eeb \u1ee9ng d\u1ee5ng \u0111i\u1ec7n tho\u1ea1i','st.ended':'Phi\u00ean \u0111\u00e3 k\u1ebft th\u00fac','st.repair':'Gh\u00e9p l\u1ea1i t\u1eeb \u0111i\u1ec7n tho\u1ea1i',
+     'st.unreach':'Kh\u00f4ng k\u1ebft n\u1ed1i \u0111\u01b0\u1ee3c xe','st.retry':'Th\u1eed l\u1ea1i','st.unavail':'Kh\u00f4ng gh\u00e9p \u0111\u01b0\u1ee3c',
+     'pair.scan':'Qu\u00e9t trong \u1ee9ng d\u1ee5ng,<br>ho\u1eb7c nh\u1eadp m\u00e3 n\u00e0y','toast.fail':'th\u1ea5t b\u1ea1i','seat':'Gh\u1ebf'}
+};
+const t=(k)=>(T[lang]&&T[lang][k])||T.en[k]||k;
+function applyI18n(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.dataset.i18n)});
+  document.querySelectorAll('#langseg button').forEach(bt=>bt.classList.toggle('on',bt.dataset.lang===lang));
+}
 // Pairing bridge (Cloudflare Worker). Override without editing via localStorage.
 const PAIR_API=(ls('odw.pairApi')||'https://watch-pair.sl6vn.link').replace(/\/$/,'');
 const PAIR_PAGE=location.origin+location.pathname.replace(/watch\/?$/,'pair/');
@@ -256,11 +282,11 @@ const SVG_START='<svg viewBox="0 0 24 24"><path d="M13 3 6 13h5l-1 8 7-11h-5z" f
 function renderControls(){
   const sw=$('wcSwitch');if(sw)sw.classList.toggle('on',wc51);
   const b4=$('b4');if(!b4)return;
-  if(wc51){b4.dataset.act='start';b4.innerHTML='<span class="qi">'+SVG_START+'</span><span>Start</span>';}
-  else{b4.dataset.act='flash';b4.innerHTML='<span class="qi">'+SVG_FIND+'</span><span>Find</span>';}
+  if(wc51){b4.dataset.act='start';b4.innerHTML='<span class="qi">'+SVG_START+'</span><span>'+t('b.start')+'</span>';}
+  else{b4.dataset.act='flash';b4.innerHTML='<span class="qi">'+SVG_FIND+'</span><span>'+t('b.find')+'</span>';}
 }
 function fireWC(labelText,cmd){return fire(labelText,'/api/keymap/fire',{kind:'shell',cmd:wcCmd(cmd)});}
-const label=(a)=>({lock:'Lock',unlock:'Unlock',trunk:'Trunk',start:'Start',flash:'Find'}[a]||a);
+const label=(a)=>({lock:t('b.lock'),unlock:t('b.unlock'),trunk:t('b.trunk'),start:t('b.start'),flash:t('b.find')}[a]||a);
 
 async function api(path,opts={}){
   if(demo) return demoResp(path,opts);
@@ -294,7 +320,7 @@ function renderTyre(id,t,limits){
 const FLAME='<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#f6a23c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c1 3-2 4-2 7a2 2 0 0 0 4 0c2 2 3 3 3 6a5 5 0 0 1-10 0c0-4 5-6 5-13z"/></svg>';
 const SNOW='<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#35dfc1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9"/></svg>';
 function seatTile(pos,mode,cur){
-  const name=pos===1?'Driver':'Passenger';
+  const name=pos===1?t('seat.driver'):t('seat.passenger');
   const next=(cur+1)%4;                       // tap cycles 0→1→2→3→0
   let dots='<span class="slvl">';
   for(let i=1;i<=3;i++) dots+='<i class="'+(i<=cur?'f':'')+'"></i>';
@@ -315,7 +341,7 @@ function renderFan(){const fb=$('fanbar');fb.innerHTML='';
   for(let i=1;i<=7;i++){const d=document.createElement('div');d.className='fanseg'+(i<=fanLevel?' on':'');fb.appendChild(d);}
   $('fannum').textContent=fanLevel||'–';}
 function setFan(n){fanLevel=Math.max(0,Math.min(7,n));renderFan();
-  fire('Fan','/api/vehicle/climate',{action:'set_fan',fan:fanLevel});}
+  fire(t('fan'),'/api/vehicle/climate',{action:'set_fan',fan:fanLevel});}
 // Critical glance row on screen 1: charge · temp · power · lock · windows.
 const _ico=(d,fill)=>'<svg viewBox="0 0 24 24" fill="'+(fill?'currentColor':'none')+'" stroke="'+(fill?'none':'currentColor')+'" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'+d+'</svg>';
 const IC_THERMO=_ico('<path d="M10 13V5a2 2 0 1 1 4 0v8a4 4 0 1 1-4 0z"/>');
@@ -340,7 +366,7 @@ function renderStatus(s,st,ot){
   $('statusrow').innerHTML=items.join('');
 }
 function renderClimate(){$('clima').classList.toggle('on',climaOn);
-  const cl=$('climalabel');if(cl)cl.textContent=climaOn?'AC ON':'AC OFF';
+  const cl=$('climalabel');if(cl)cl.textContent=climaOn?t('ac.on'):t('ac.off');
   $('temp').innerHTML=tempC+'<small>°</small>';renderFan();}
 
 function renderQR(id,text){
@@ -358,10 +384,10 @@ async function startPairing(){
     if(!r.code) throw 0;
     const url=PAIR_PAGE+'#c='+r.code+'&k='+watchPub;
     $('state').innerHTML='<div class="pairqr" id="pairqr"></div><div class="paircode">'+r.code+'</div>'
-      +'<div class="sub">Scan in the phone app,<br>or enter this code</div>';
+      +'<div class="sub">'+t('pair.scan')+'</div>';
     renderQR('pairqr',url);
     pollPair(r.code,kp);
-  }catch(e){ showState('<p>Pairing unavailable</p><button class="retry" onclick="startPairing()">Retry</button>'); }
+  }catch(e){ showState('<p>'+t('st.unavail')+'</p><button class="retry" onclick="startPairing()">'+t('st.retry')+'</button>'); }
 }
 function pollPair(code,kp){
   let stop=false;
@@ -419,8 +445,8 @@ async function load(){
     const T=st.tyres||{};renderTyre('ty-fl',T.fl,T.limits);renderTyre('ty-fr',T.fr,T.limits);renderTyre('ty-rl',T.rl,T.limits);renderTyre('ty-rr',T.rr,T.limits);
     $('devid').textContent=demo?'DEMO-SEAL-01':'';
     hideState();
-  }catch(e){if(e.auth)return showState('<p>Session ended</p><p class="sub">Re-pair from the phone</p>');
-    showState('<p>Can’t reach car</p><button class="retry" onclick="load()">Retry</button>');}
+  }catch(e){if(e.auth)return showState('<p>'+t('st.ended')+'</p><p class="sub">'+t('st.repair')+'</p>');
+    showState('<p>'+t('st.unreach')+'</p><button class="retry" onclick="load()">'+t('st.retry')+'</button>');}
 }
 function showState(h){$('state').innerHTML=h;$('state').hidden=false;$('pager').hidden=true;$('dots').hidden=true;}
 function hideState(){$('state').hidden=true;$('pager').hidden=false;$('dots').hidden=false;}
@@ -428,24 +454,26 @@ let toastT;function toast(m,err){const t=$('toast');t.textContent=m;t.className=
 async function fire(label,path,body){
   if(busy)return;busy=true;document.body.classList.add('busy');
   try{const r=await api(path,{method:'POST',body:body?JSON.stringify(body):undefined});
-    toast(r.success===false?(r.error||label+' failed'):label+' ✓',r.success===false);if(r.success!==false)await load();}
-  catch(e){if(e.auth)return showState('<p>Session ended</p><p class="sub">Re-pair from the phone</p>');toast(label+' failed',true);}
+    toast(r.success===false?(r.error||label+' '+t('toast.fail')):label+' ✓',r.success===false);if(r.success!==false)await load();}
+  catch(e){if(e.auth)return showState('<p>'+t('st.ended')+'</p><p class="sub">'+t('st.repair')+'</p>');toast(label+' '+t('toast.fail'),true);}
   finally{busy=false;document.body.classList.remove('busy');}
 }
 document.addEventListener('click',(ev)=>{
+  const lb=ev.target.closest('#langseg button');
+  if(lb){lang=lb.dataset.lang;lss('odw.lang',lang);applyI18n();renderControls();renderClimate();renderSeats();return;}
   const sl=ev.target.closest('.seattile');
   if(sl){const mode=sl.dataset.mode==='cool'?'ventilation':'heating';
-    fire('Seat','/api/vehicle/seat',{action:mode,position:+sl.dataset.seat,level:+sl.dataset.level});return;}
+    fire(t('seat'),'/api/vehicle/seat',{action:mode,position:+sl.dataset.seat,level:+sl.dataset.level});return;}
   const el=ev.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;
   if(a==='wc51'){wc51=!wc51;lss('odw.wc51',wc51?'1':'0');renderControls();return;}
   if(wc51&&(a==='lock'||a==='unlock'||a==='trunk'||a==='start')){fireWC(label(a),a);return;}
   if(a==='lock')fire('Lock','/api/vehicle/lock');
   else if(a==='unlock')fire('Unlock','/api/vehicle/unlock');
   else if(a==='trunk')fire('Trunk','/api/vehicle/trunk',{action:'open'});
-  else if(a==='flash')fire('Find','/api/vehicle/flash');
-  else if(a==='clima')fire(climaOn?'Climate off':'Climate on','/api/vehicle/climate',climaOn?{action:'power_off'}:{action:'power_on',temp:tempC,remoteDurationMinutes:15});
-  else if(a==='temp+'){tempC=Math.min(30,tempC+1);renderClimate();if(climaOn)fire('Temp','/api/vehicle/climate',{action:'set_temp',zone:0,temp:tempC});}
-  else if(a==='temp-'){tempC=Math.max(16,tempC-1);renderClimate();if(climaOn)fire('Temp','/api/vehicle/climate',{action:'set_temp',zone:0,temp:tempC});}
+  else if(a==='flash')fire(t('b.find'),'/api/vehicle/flash');
+  else if(a==='clima')fire(climaOn?t('ac.off'):t('ac.on'),'/api/vehicle/climate',climaOn?{action:'power_off'}:{action:'power_on',temp:tempC,remoteDurationMinutes:15});
+  else if(a==='temp+'){tempC=Math.min(30,tempC+1);renderClimate();if(climaOn)fire('°','/api/vehicle/climate',{action:'set_temp',zone:0,temp:tempC});}
+  else if(a==='temp-'){tempC=Math.max(16,tempC-1);renderClimate();if(climaOn)fire('°','/api/vehicle/climate',{action:'set_temp',zone:0,temp:tempC});}
   else if(a==='fan+')setFan(fanLevel+1);
   else if(a==='fan-')setFan(fanLevel-1);
   else if(a==='logout'){if(window.OdNative&&OdNative.logout)OdNative.logout();
@@ -455,6 +483,7 @@ const N=7,dots=$('dots');for(let i=0;i<N;i++)dots.appendChild(document.createEle
 const pager=$('pager');
 function updateDots(){const i=Math.round(pager.scrollLeft/pager.clientWidth);[...dots.children].forEach((d,k)=>d.classList.toggle('on',k===i));}
 renderControls();pager.addEventListener("scroll",updateDots,{passive:true});updateDots();
+applyI18n();
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 load();
 </script>
