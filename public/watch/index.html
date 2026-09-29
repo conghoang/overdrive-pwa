@@ -71,10 +71,9 @@
   /* Per-panel PWA backdrops (climate/seat/tyre): fill the round face, content on
      top. Interior shots use cover; the chassis (4 wheels) is contained so all
      four tyres read behind the four pressures. */
-  #p-climate>*:not(.panelbg),#p-seat>*:not(.panelbg),#p-tyre>*:not(.panelbg){position:relative;z-index:1}
+  #p-climate>*:not(.panelbg),#p-seat>*:not(.panelbg){position:relative;z-index:1}
   .panelbg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
     opacity:.13;pointer-events:none;z-index:0}
-  #p-tyre .panelbg{object-fit:contain;opacity:.22}
   .veh-range{display:flex;align-items:baseline;justify-content:center;gap:2vmin}
   .veh-range .num{font-size:22vmin;font-weight:700;letter-spacing:-.02em;line-height:1}
   .veh-range .unit{font-size:6.4vmin;color:var(--mid);font-weight:600}
@@ -175,11 +174,15 @@
   .seattile.cool .slvl i.f{background:var(--accent)}
 
   /* ---- Panel 5: tyres ---- */
-  .tyres{display:grid;grid-template-columns:1fr 1fr;gap:6vmin 13vmin;width:80%;max-width:80vmin}
-  .ty{display:flex;flex-direction:column;align-items:center}
-  .ty b{font-size:10vmin;font-weight:800;letter-spacing:-.02em;color:var(--success)}
-  .ty.low b{color:var(--m-orange)}.ty.dim b{color:var(--mid)}
-  .ty small{font-size:3.8vmin;letter-spacing:.1em;color:var(--mid);font-weight:700;margin-top:1vmin}
+  /* Top-down car with each reading at its real corner (per the OD layout). */
+  .tyremap{position:relative;width:100%;height:100%}
+  .carmap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);height:58%;width:auto}
+  .tyval{position:absolute;display:flex;flex-direction:column;align-items:center;line-height:1}
+  .tyval b{font-size:8.6vmin;font-weight:800;letter-spacing:-.02em;color:var(--success)}
+  .tyval.low b{color:var(--m-orange)}.tyval.dim b{color:var(--mid)}
+  .tyval small{font-size:3.2vmin;letter-spacing:.14em;color:var(--mid);font-weight:700;margin-top:.8vmin}
+  .tyval.fl{top:19%;left:13%}.tyval.fr{top:19%;right:13%}
+  .tyval.rl{bottom:19%;left:13%}.tyval.rr{bottom:19%;right:13%}
 
   /* ---- Panel 6: logout ---- */
   .logout{width:80%;max-width:64vmin;height:15vmin;border-radius:8vmin;background:transparent;
@@ -268,11 +271,22 @@
     <img class="panelbg" src="bg-seat.webp" alt="" aria-hidden="true">    <div class="seatcol" id="seats"></div>
   </section>
 
-  <!-- 5 · Tyres -->
+  <!-- 5 · Tyres — top-down car, each reading at its real corner (live from OD) -->
   <section class="panel" id="p-tyre">
-    <img class="panelbg" src="bg-tyre.webp" alt="" aria-hidden="true">    <div class="tyres">
-      <div class="ty" id="ty-fl"><b>—</b><small>FL</small></div><div class="ty" id="ty-fr"><b>—</b><small>FR</small></div>
-      <div class="ty" id="ty-rl"><b>—</b><small>RL</small></div><div class="ty" id="ty-rr"><b>—</b><small>RR</small></div>
+    <div class="tyremap">
+      <svg class="carmap" viewBox="0 0 120 190" fill="none" aria-hidden="true">
+        <rect x="30" y="6" width="60" height="178" rx="26" fill="var(--surface-2)" stroke="var(--border)" stroke-width="1.5"/>
+        <rect x="17" y="34" width="14" height="34" rx="6" fill="var(--mid)"/>
+        <rect x="89" y="34" width="14" height="34" rx="6" fill="var(--mid)"/>
+        <rect x="17" y="122" width="14" height="34" rx="6" fill="var(--mid)"/>
+        <rect x="89" y="122" width="14" height="34" rx="6" fill="var(--mid)"/>
+        <rect x="40" y="28" width="40" height="60" rx="15" fill="var(--surface-1)"/>
+        <rect x="44" y="104" width="32" height="30" rx="12" fill="var(--surface-1)" opacity=".55"/>
+      </svg>
+      <div class="tyval fl" id="ty-fl"><b>—</b><small>PSI</small></div>
+      <div class="tyval fr" id="ty-fr"><b>—</b><small>PSI</small></div>
+      <div class="tyval rl" id="ty-rl"><b>—</b><small>PSI</small></div>
+      <div class="tyval rr" id="ty-rr"><b>—</b><small>PSI</small></div>
     </div>
   </section>
 
@@ -371,23 +385,35 @@ async function api(path,opts={}){
 }
 function demoResp(path,opts){
   if(opts.method==='POST') return Promise.resolve({success:true});
-  if(path==='/status') return Promise.resolve({distanceUnit:'km',
+  if(path==='/status') return Promise.resolve({distanceUnit:'km',pressureUnit:'psi',
     acc:false,soc:{percent:68},range:{totalRangeKm:495,elecRangeKm:78,fuelRangeKm:417,fuelPercent:55,isPhev:true},
     charging:{charging:true,plugged:true,chargingPowerKW:7.2},env:{tempC:24}});
   if(path.startsWith('/api/launcher/v1/summary')) return Promise.resolve({env:{tempC:24}});
   if(path.startsWith('/api/vehicle/state')) return Promise.resolve({doors:{overall:1},windows:{lf:0,rf:0,lr:0,rr:0,sunroof:0,sunshade:0},
     climate:{acOn:true,setpointDriver:22,fanLevel:3},
     seats:{heat:[2,0],cool:[0,1],ventilatedSupported:true},
-    tyres:{available:true,fl:{kPa:240,pressureState:0},fr:{kPa:238,pressureState:0},
-      rl:{kPa:205,pressureState:1},rr:{kPa:242,pressureState:0},limits:{frontLow:220,rearLow:220}}});
+    tyres:{available:true,fl:{kPa:240,psi:34.8,pressureState:0},fr:{kPa:238,psi:34.5,pressureState:0},
+      rl:{kPa:205,psi:29.7,pressureState:1},rr:{kPa:242,psi:35.1,pressureState:0},limits:{frontLow:220,rearLow:220}}});
   return Promise.resolve({});
 }
 const pctClamp=(p)=>Math.max(0,Math.min(100,p||0));
 const kpa=(t)=>t&&typeof t.kPa==='number'?Math.round(t.kPa):null;
+// Pressure unit is configured in OD (/status.pressureUnit). We never convert —
+// OD sends the value in each unit (t.psi / t.kPa); we display the configured one.
+let pressureUnit='kpa';
+const pUnitLabel=(u)=>u==='psi'?'psi':u==='bar'?'bar':'kPa';
+function fmtPressure(t,u){
+  if(!t||t.available===false||t.kPa==null)return '--';
+  if(u==='psi')return String(t.psi??Math.round(t.kPa*0.1450377*10)/10);
+  if(u==='bar')return (t.kPa/100).toFixed(2);
+  return String(Math.round(t.kPa));
+}
 function renderTyre(id,t,limits){
-  const el=$(id),b=el.querySelector('b'),v=kpa(t);el.className='ty';
+  const el=$(id),b=el.querySelector('b'),s=el.querySelector('small'),v=kpa(t);
+  el.className='tyval '+id.slice(-2);
+  s.textContent=pUnitLabel(pressureUnit);          // unit label as configured in OD
   if(v==null||t?.available===false){b.textContent='—';el.classList.add('dim');return;}
-  b.textContent=v;
+  b.textContent=fmtPressure(t,pressureUnit);        // OD's value in the configured unit — no conversion
   const low=(limits&&((id.includes('f')&&v<(limits.frontLow||0))||(id.includes('r')&&v<(limits.rearLow||0))))||(t.pressureState&&t.pressureState!==0);
   if(low) el.classList.add('low');
 }
@@ -500,6 +526,7 @@ async function load(silent){
   try{
     const s=await api('/status');let st={};try{st=await api('/api/vehicle/state');}catch{}
     const unit=s.distanceUnit||'km',r=s.range||{},ch=s.charging||{};
+    pressureUnit=s.pressureUnit||'kpa';
     $('range').textContent=(r.totalRangeKm??r.elecRangeKm??'--');$('unit').textContent=unit;
     // EV leg
     $('ev-km').innerHTML=(r.elecRangeKm??'--')+'<small> '+unit+'</small>';
