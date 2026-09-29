@@ -368,11 +368,10 @@ const IC_UNLOCK=_ico('<rect x="5" y="11" width="14" height="10" rx="2"/><path d=
 const IC_WIN=_ico('<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 12h16M12 4v16"/>');
 const IC_BOLT=_ico('<path d="M13 3 6 13h5l-1 8 7-11h-5z"/>',true);
 const _chip=(color,svg,val)=>'<span class="schip" style="color:'+color+'">'+svg+(val?'<b>'+val+'</b>':'')+'</span>';
-function renderStatus(s,st,ot){
-  const T='var(--accent)',G='var(--success)',A='var(--m-orange)',M='var(--mid)';
+function renderStatus(s,st){
+  const G='var(--success)',A='var(--m-orange)',M='var(--mid)';
   const ch=s.charging||{},items=[];
   if(ch.charging) items.push(_chip(G,IC_BOLT,ch.chargingPowerKW?ch.chargingPowerKW.toFixed(1):''));
-  if(typeof ot==='number') items.push(_chip(M,IC_THERMO,Math.round(ot)+'°'));
   // Power: green when on, grey when off. Lock/windows: green safe, orange attention.
   items.push(_chip(s.acc?G:M,IC_POWER));                                  // ignition
   const lk=st.doors?.overall??-1;
@@ -450,10 +449,7 @@ async function load(){
     $('b-lock').className='cbtn pN'+(lock===1?' on':'');
     $('b-unlock').className='cbtn pS'+(lock===2?' warn':'');
     renderControls();
-    // Outside temp lives on the launcher summary, not /status.
-    let sum={};try{sum=await api('/api/launcher/v1/summary');}catch{}
-    const ot=(sum.env&&typeof sum.env.tempC==='number')?sum.env.tempC:null;
-    renderStatus(s,st,ot);
+    renderStatus(s,st);
     climaOn=!!st.climate?.acOn;
     if(typeof st.climate?.setpointDriver==='number')tempC=Math.round(st.climate.setpointDriver);
     fanLevel=st.climate?.fanLevel||0;renderClimate();
