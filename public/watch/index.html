@@ -528,15 +528,17 @@ function pollPair(code,kp){
         const aes=await SC.deriveKey({name:'ECDH',public:phonePubKey},kp.privateKey,{name:'AES-GCM',length:256},false,['decrypt']);
         const pt=await SC.decrypt({name:'AES-GCM',iv:ub64(r.iv)},aes,ub64(r.ct));
         const sess=JSON.parse(new TextDecoder().decode(pt));
+        if(!sess.baseUrl||!sess.jwt) throw 0;
         lss('odw.baseUrl',sess.baseUrl);lss('odw.jwt',sess.jwt);if(sess.deviceId)lss('odw.deviceId',sess.deviceId);
-        location.reload();
+        showState('<div class="paircode" style="color:var(--success)">✓</div><div class="sub">Paired</div>');
+        setTimeout(()=>location.reload(),600);
       }catch(e){ showState('<p>Pairing failed</p><button class="retry" onclick="startPairing()">Retry</button>'); }
       return;
     }
     if(r.status==='expired'){stop=true;return startPairing();}
-    setTimeout(tick,1600);
+    setTimeout(tick,1200);
   };
-  setTimeout(tick,1600);
+  setTimeout(tick,900);
 }
 // silent=true: refresh data in place without the full-screen spinner. Used after
 // a control action so the panel updates without blanking the UI and snapping the
