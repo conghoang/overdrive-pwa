@@ -29,6 +29,18 @@
   .spin{width:26px;height:26px;border:3px solid var(--accent);border-right-color:transparent;
     border-radius:50%;animation:spin .7s linear infinite;margin:6px auto}
   @keyframes spin{to{transform:rotate(360deg)}}
+  .scanbtn{display:flex;align-items:center;justify-content:center;gap:8px}
+  .scanbtn svg{width:20px;height:20px}
+  .or{display:flex;align-items:center;gap:10px;color:var(--mid);font-size:12px;font-weight:600}
+  .or::before,.or::after{content:'';flex:1;height:1px;background:var(--border)}
+  .ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+  /* Full-screen camera scanner */
+  #scanview{position:fixed;inset:0;background:#000;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  #cam{width:100%;height:100%;object-fit:cover}
+  .scanframe{position:absolute;width:62vw;max-width:280px;aspect-ratio:1;border:3px solid var(--accent);
+    border-radius:22px;box-shadow:0 0 0 100vmax rgba(0,0,0,.45)}
+  .scantip{position:absolute;top:12%;left:0;right:0;color:#fff;font-size:14px;font-weight:600;text-shadow:0 1px 3px #000}
+  #scancancel{position:absolute;bottom:8%;width:auto;padding:0 26px;background:rgba(255,255,255,.14);color:#fff}
   [hidden]{display:none!important}
 </style>
 </head>
@@ -42,12 +54,25 @@
     <div class="msg" id="automsg">Pairing…</div>
   </div>
 
-  <!-- Manual (type the 6-char code shown on the watch) -->
+  <!-- Manual: scan the watch QR, or type the 6-char code -->
   <div class="card" id="manual" hidden>
+    <button id="scan" class="scanbtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"/></svg>
+      Scan QR
+    </button>
+    <div class="or">or</div>
     <label for="code">Code shown on watch</label>
     <input id="code" inputmode="latin" autocomplete="off" maxlength="6" placeholder="——————" />
-    <button id="go">Pair</button>
+    <button id="go" class="ghost">Pair with code</button>
     <div class="msg" id="msg"></div>
+  </div>
+
+  <!-- Camera scanner -->
+  <div id="scanview" hidden>
+    <video id="cam" playsinline muted></video>
+    <div class="scantip">Point at the QR on your watch</div>
+    <div class="scanframe"></div>
+    <button id="scancancel">Cancel</button>
   </div>
 
   <p id="hint">Scan the QR on your watch, or enter its 6-character code.</p>
@@ -108,9 +133,44 @@ async function manualPair(){
   finally{$('go').disabled=false;}
 }
 
+// ---- In-page QR scanner (BarcodeDetector, jsQR fallback) ----
+function parseScan(text){
+  try{ const p=new URLSearchParams(new URL(text).hash.slice(1)); if(p.get('c')&&p.get('k')) return {c:p.get('c').toUpperCase(),k:p.get('k')}; }catch{}
+  return null;
+}
+function loadJsQR(){return new Promise((res,rej)=>{ if(window.jsQR)return res();
+  const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
+async function startScan(){
+  let stream;
+  try{ stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}}); }
+  catch(e){ $('manual').hidden=false;$('msg').className='msg err';$('msg').textContent='Camera unavailable — enter the code instead.'; return; }
+  $('scanview').hidden=false;
+  const v=$('cam');v.srcObject=stream;await v.play().catch(()=>{});
+  const stop=()=>{stream.getTracks().forEach(t=>t.stop());$('scanview').hidden=true;};
+  $('scancancel').onclick=stop;
+  let detector=('BarcodeDetector' in window)?new BarcodeDetector({formats:['qr_code']}):null;
+  if(!detector){ try{await loadJsQR();}catch{} }
+  const cv=document.createElement('canvas'),cx=cv.getContext('2d',{willReadFrequently:true});
+  let done=false;
+  const tick=async()=>{
+    if(done||$('scanview').hidden)return;
+    let text=null;
+    try{
+      if(detector){ const c=await detector.detect(v); if(c&&c[0])text=c[0].rawValue; }
+      else if(window.jsQR&&v.videoWidth){ cv.width=v.videoWidth;cv.height=v.videoHeight;cx.drawImage(v,0,0);
+        const img=cx.getImageData(0,0,cv.width,cv.height);const r=jsQR(img.data,img.width,img.height);if(r)text=r.data; }
+    }catch{}
+    const parsed=text&&parseScan(text);
+    if(parsed){ done=true;stop();return auto(parsed.c,parsed.k); }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
 const h=new URLSearchParams(location.hash.slice(1));
 if(h.get('c')&&h.get('k')){ auto(h.get('c').toUpperCase(),h.get('k')); }
 else { $('manual').hidden=false; }
+$('scan').addEventListener('click',startScan);
 $('go').addEventListener('click',manualPair);
 $('code').addEventListener('keydown',(e)=>{if(e.key==='Enter')manualPair();});
 </script>

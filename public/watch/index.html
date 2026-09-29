@@ -262,6 +262,7 @@ function demoResp(path,opts){
   if(path==='/status') return Promise.resolve({distanceUnit:'km',
     soc:{percent:68},range:{totalRangeKm:495,elecRangeKm:78,fuelRangeKm:417,fuelPercent:55,isPhev:true},
     charging:{charging:true,plugged:true,chargingPowerKW:7.2},env:{tempC:24}});
+  if(path.startsWith('/api/launcher/v1/summary')) return Promise.resolve({env:{tempC:24}});
   if(path.startsWith('/api/vehicle/state')) return Promise.resolve({doors:{overall:1},
     climate:{acOn:true,setpointDriver:22,fanLevel:3},
     seats:{heat:[2,0],cool:[0,1],ventilatedSupported:true},
@@ -369,7 +370,9 @@ async function load(){
     $('b-lock').className='qbtn'+(lock===1?' on':'');
     $('b-unlock').className='qbtn'+(lock===2?' warn':'');
     renderControls();
-    const ot=(s.env&&typeof s.env.tempC==='number')?s.env.tempC:null;
+    // Outside temp lives on the launcher summary, not /status.
+    let sum={};try{sum=await api('/api/launcher/v1/summary');}catch{}
+    const ot=(sum.env&&typeof sum.env.tempC==='number')?sum.env.tempC:null;
     $('outtemp').innerHTML=ot!=null
       ?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13V5a2 2 0 1 1 4 0v8a4 4 0 1 1-4 0z"/></svg>'+Math.round(ot)+'° outside':'';
     climaOn=!!st.climate?.acOn;
