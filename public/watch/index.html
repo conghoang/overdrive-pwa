@@ -23,7 +23,7 @@
     --accent:#35dfc1; --accent-bright:#35dfc1;
     --success:#56d68c; --m-orange:#f6a23c; --text:#f5f9fc; --mid:#8497a8; --danger:#ff6b6b;
     --on-teal:#071019; --on-accent:#071019;
-    --btn-bg:rgba(12,23,36,.46); --btn-bg-active:rgba(16,31,48,.66);
+    --btn-bg:rgba(12,23,36,.66); --btn-bg-active:rgba(16,31,48,.8);
     --radius:16px; --shadow:0 10px 26px rgba(0,0,0,.34);
     color-scheme:dark;
   }
@@ -32,7 +32,7 @@
     --accent:#22c9ac; --accent-bright:#0e9e88;
     --success:#2ea866; --m-orange:#c9760f; --text:#0b1a24; --mid:#5c6d7a; --danger:#d6453f;
     --on-teal:#04150f; --on-accent:#04150f;
-    --btn-bg:rgba(255,255,255,.4); --btn-bg-active:rgba(219,228,236,.62);
+    --btn-bg:rgba(255,255,255,.66); --btn-bg-active:rgba(219,228,236,.82);
     --shadow:0 10px 26px rgba(20,40,60,.14);
     color-scheme:light;
   }
@@ -58,7 +58,7 @@
   #ptr{position:fixed;top:0;left:50%;transform:translate(-50%,-70px);z-index:40;
     width:11vmin;height:11vmin;border-radius:50%;background:var(--btn-bg);opacity:0;
     display:flex;align-items:center;justify-content:center;pointer-events:none;
-    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+    pointer-events:none}
   #ptr .ptr-spin{width:6vmin;height:6vmin;border:.7vmin solid var(--mid);
     border-top-color:var(--accent);border-radius:50%}
   #ptr.spin .ptr-spin{animation:spin .7s linear infinite}
@@ -88,13 +88,9 @@
      four tyres read behind the four pressures. */
   #p-climate>*:not(.panelbg),#p-seat>*:not(.panelbg){position:relative;z-index:1}
   .panelbg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;z-index:0}
-  /* Frosted glass: the translucent button lets the backdrop show through, the
-     blur keeps text/icons legible over it. */
-  .cbtn,.seattile,.stepper button,.clima-power,.seg,.switch,.logout{-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
-  /* During a swipe, drop the expensive per-frame blur (surfaces stay translucent)
-     so the animation stays smooth; it returns the moment the panel settles. */
-  body.sliding .cbtn,body.sliding .seattile,body.sliding .stepper button,body.sliding .clima-power,
-  body.sliding .seg,body.sliding .switch,body.sliding .logout{-webkit-backdrop-filter:none;backdrop-filter:none}
+  /* Buttons are a plain translucent surface — the backdrop still shows through,
+     but with no backdrop-filter blur, so there's zero per-frame GPU work. The
+     slightly higher opacity keeps text/icons legible without the blur. */
   /* Contain each panel so the pager composites instead of repainting siblings. */
   .panel{contain:layout paint}
   .veh-range{display:flex;align-items:baseline;justify-content:center;gap:2vmin}
@@ -630,8 +626,8 @@ document.addEventListener('click',(ev)=>{
 const N=7,dots=$('dots');for(let i=0;i<N;i++)dots.appendChild(document.createElement('i'));
 const pager=$('pager');
 function updateDots(){const i=Math.round(pager.scrollLeft/pager.clientWidth);[...dots.children].forEach((d,k)=>d.classList.toggle('on',k===i));}
-// backdrop-filter re-blurs every button against the moving backdrop each frame,
-// which janks the swipe. Suspend it while sliding; restore once the panel settles.
+// Track a swipe in progress (body.sliding) so the auto-refresh never re-renders
+// mid-animation. Cleared 150ms after the last scroll event.
 let _slideT;
 function onPagerScroll(){
   updateDots();
