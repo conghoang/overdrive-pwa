@@ -91,8 +91,11 @@
   .logout:active{background:rgba(255,107,107,.12)}
 
   .state{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:10px;padding:18%;text-align:center;background:var(--bg);z-index:10}
-  .state p{margin:0;font-size:14px}.state .sub{color:var(--mid);font-size:12px}
+    gap:10px;padding:16%;text-align:center;background:var(--bg);z-index:10}
+  .state p{margin:0;font-size:14px}.state .sub{color:var(--mid);font-size:12px;line-height:1.35}
+  .pairqr{background:#fff;padding:7px;border-radius:12px;line-height:0;width:130px;height:130px}
+  .pairqr svg{width:100%;height:100%;display:block}
+  .paircode{font-size:26px;font-weight:800;letter-spacing:.16em;color:var(--accent);margin-top:2px}
   .retry{padding:9px 20px;border-radius:20px;background:var(--accent);color:var(--bg);border:0;font-weight:700}
   #toast{position:fixed;left:50%;bottom:13%;transform:translateX(-50%) translateY(16px);background:var(--surface-2);
     border:1px solid var(--border);padding:7px 15px;border-radius:16px;font-size:12.5px;font-weight:600;opacity:0;
@@ -188,8 +191,15 @@
 <script>
 const qs=new URLSearchParams(location.search),demo=qs.has('demo');
 const ls=(k)=>{try{return localStorage.getItem(k)}catch{return null}};
+const lss=(k,v)=>{try{localStorage.setItem(k,v)}catch{}};
 const BASE=(qs.get('b')||ls('odw.baseUrl')||'').replace(/\/$/,''),JWT=qs.get('t')||ls('odw.jwt')||'';
 const $=(id)=>document.getElementById(id);
+// Pairing bridge (Cloudflare Worker). Override without editing via localStorage.
+const PAIR_API=(ls('odw.pairApi')||'https://overdrive-pair.example.workers.dev').replace(/\/$/,'');
+const PAIR_PAGE=location.origin+location.pathname.replace(/watch\/?$/,'pair/');
+const b64u=(buf)=>btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const ub64=(s)=>Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
+const SC=crypto.subtle,EC={name:'ECDH',namedCurve:'P-256'};
 let tempC=22,climaOn=false,fanLevel=0,seatHeat=[0,0],seatCool=[0,0],ventSupported=false,busy=false;
 
 async function api(path,opts={}){
@@ -244,8 +254,50 @@ function setFan(n){fanLevel=Math.max(0,Math.min(7,n));renderFan();
   fire('Fan','/api/vehicle/climate',{action:'set_fan',fan:fanLevel});}
 function renderClimate(){$('clima').classList.toggle('on',climaOn);$('temp').innerHTML=tempC+'<small>°</small>';renderFan();}
 
+function renderQR(id,text){
+  const draw=()=>{try{const q=qrcode(0,'M');q.addData(text);q.make();$(id).innerHTML=q.createSvgTag({cellSize:4,margin:0});}catch{}};
+  if(window.qrcode)return draw();
+  const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js';
+  s.onload=draw;s.onerror=()=>{};document.head.appendChild(s);
+}
+async function startPairing(){
+  showState('<div class="spin"></div>');
+  try{
+    const kp=await SC.generateKey(EC,false,['deriveKey']);
+    const watchPub=b64u(await SC.exportKey('raw',kp.publicKey));
+    const r=await fetch(PAIR_API+'/new',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({watchPub})}).then(x=>x.json());
+    if(!r.code) throw 0;
+    const url=PAIR_PAGE+'#c='+r.code+'&k='+watchPub;
+    $('state').innerHTML='<div class="pairqr" id="pairqr"></div><div class="paircode">'+r.code+'</div>'
+      +'<div class="sub">Scan in the phone app,<br>or enter this code</div>';
+    renderQR('pairqr',url);
+    pollPair(r.code,kp);
+  }catch(e){ showState('<p>Pairing unavailable</p><button class="retry" onclick="startPairing()">Retry</button>'); }
+}
+function pollPair(code,kp){
+  let stop=false;
+  const tick=async()=>{
+    if(stop)return;
+    let r;try{r=await fetch(PAIR_API+'/get?code='+code).then(x=>x.json());}catch{return setTimeout(tick,1600);}
+    if(r.status==='ready'){
+      stop=true;
+      try{
+        const phonePubKey=await SC.importKey('raw',ub64(r.phonePub),EC,false,[]);
+        const aes=await SC.deriveKey({name:'ECDH',public:phonePubKey},kp.privateKey,{name:'AES-GCM',length:256},false,['decrypt']);
+        const pt=await SC.decrypt({name:'AES-GCM',iv:ub64(r.iv)},aes,ub64(r.ct));
+        const sess=JSON.parse(new TextDecoder().decode(pt));
+        lss('odw.baseUrl',sess.baseUrl);lss('odw.jwt',sess.jwt);if(sess.deviceId)lss('odw.deviceId',sess.deviceId);
+        location.reload();
+      }catch(e){ showState('<p>Pairing failed</p><button class="retry" onclick="startPairing()">Retry</button>'); }
+      return;
+    }
+    if(r.status==='expired'){stop=true;return startPairing();}
+    setTimeout(tick,1600);
+  };
+  setTimeout(tick,1600);
+}
 async function load(){
-  if(!demo&&(!BASE||!JWT)) return showState('<p>Not paired</p><p class="sub">Pair from the phone app</p>');
+  if(!demo&&(!BASE||!JWT)) return startPairing();
   showState('<div class="spin"></div>');
   try{
     const s=await api('/status');let st={};try{st=await api('/api/vehicle/state');}catch{}

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Pair a watch · OverDrive</title>
+<style>
+  :root{--bg:#071019;--surface:#0c1724;--border:rgba(168,198,220,.12);--accent:#35dfc1;
+    --on-accent:#071019;--text:#f5f9fc;--mid:#8497a8;--danger:#ff6b6b;--ok:#56d68c}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100dvh;background:var(--bg);color:var(--text);
+    font-family:system-ui,-apple-system,"Roboto",sans-serif;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;padding:32px 22px;gap:18px;text-align:center}
+  .bolt{width:40px;height:40px}
+  h1{font-size:20px;font-weight:800;margin:0}
+  p{margin:0;color:var(--mid);font-size:14px;line-height:1.45;max-width:30ch}
+  .card{width:100%;max-width:340px;background:var(--surface);border:1px solid var(--border);
+    border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:14px}
+  label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);font-weight:700;text-align:left}
+  input{width:100%;background:#0a1622;border:1px solid var(--border);border-radius:12px;color:var(--text);
+    font-size:24px;font-weight:800;letter-spacing:.22em;text-align:center;padding:14px 10px;text-transform:uppercase}
+  input:focus{outline:none;border-color:var(--accent)}
+  button{width:100%;height:50px;border:0;border-radius:25px;background:var(--accent);color:var(--on-accent);
+    font-size:16px;font-weight:800;cursor:pointer}
+  button:disabled{opacity:.5}
+  .msg{font-size:14px;font-weight:600;min-height:20px}
+  .msg.ok{color:var(--ok)}.msg.err{color:var(--danger)}
+  .big{font-size:44px;line-height:1}
+  .spin{width:26px;height:26px;border:3px solid var(--accent);border-right-color:transparent;
+    border-radius:50%;animation:spin .7s linear infinite;margin:6px auto}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+  <svg class="bolt" viewBox="0 0 24 24"><path d="M13 2.5 5 13.2h5.2l-1 8.3 8-11.2h-5.2z" fill="#35dfc1"/></svg>
+  <h1>Pair a watch</h1>
+
+  <!-- Auto (opened by scanning the watch QR) -->
+  <div id="auto" hidden>
+    <div class="spin" id="autospin"></div>
+    <div class="msg" id="automsg">Pairing…</div>
+  </div>
+
+  <!-- Manual (type the 6-char code shown on the watch) -->
+  <div class="card" id="manual" hidden>
+    <label for="code">Code shown on watch</label>
+    <input id="code" inputmode="latin" autocomplete="off" maxlength="6" placeholder="——————" />
+    <button id="go">Pair</button>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <p id="hint">Scan the QR on your watch, or enter its 6-character code.</p>
+
+<script>
+const ls=(k)=>{try{return localStorage.getItem(k)}catch{return null}};
+const PAIR_API=(ls('odw.pairApi')||'https://overdrive-pair.example.workers.dev').replace(/\/$/,'');
+const $=(id)=>document.getElementById(id);
+const b64u=(buf)=>btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const ub64=(s)=>Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
+const SC=crypto.subtle,EC={name:'ECDH',namedCurve:'P-256'};
+
+// The phone's live session (same origin as the OverDrive PWA → shared storage).
+function session(){
+  const baseUrl=ls('odpwa.baseUrl'),jwt=ls('odpwa.jwt');
+  if(!baseUrl||!jwt||baseUrl==='demo') return null;
+  return {baseUrl,jwt,deviceId:ls('odpwa.deviceId')||''};
+}
+
+async function sealAndSend(code,watchPub){
+  const sess=session();
+  if(!sess) throw new Error('Open OverDrive and sign in on this phone first.');
+  const kp=await SC.generateKey(EC,false,['deriveKey']);
+  const phonePub=b64u(await SC.exportKey('raw',kp.publicKey));
+  const watchKey=await SC.importKey('raw',ub64(watchPub),EC,false,[]);
+  const aes=await SC.deriveKey({name:'ECDH',public:watchKey},kp.privateKey,{name:'AES-GCM',length:256},false,['encrypt']);
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=await SC.encrypt({name:'AES-GCM',iv},aes,new TextEncoder().encode(JSON.stringify(sess)));
+  const r=await fetch(PAIR_API+'/put',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({code,phonePub,iv:b64u(iv),ct:b64u(ct)})}).then(x=>x.json());
+  if(r.status==='expired') throw new Error('That code expired — start again on the watch.');
+  if(!r.ok) throw new Error('Pairing failed. Try again.');
+}
+
+// Auto path: opened via QR with #c=<code>&k=<watchPub>
+async function auto(code,watchPub){
+  $('hint').hidden=true;$('auto').hidden=false;
+  try{
+    await sealAndSend(code,watchPub);
+    $('autospin').hidden=true;$('automsg').className='msg ok';
+    $('automsg').innerHTML='✓ Paired<br><span style="color:var(--mid);font-weight:400">Your watch is connecting…</span>';
+  }catch(e){
+    $('autospin').hidden=true;$('automsg').className='msg err';$('automsg').textContent=e.message;
+    setTimeout(()=>{$('auto').hidden=true;$('manual').hidden=false;$('hint').hidden=false;},1800);
+  }
+}
+
+async function manualPair(){
+  const code=$('code').value.trim().toUpperCase();
+  if(code.length<6){$('msg').className='msg err';$('msg').textContent='Enter the 6-character code.';return;}
+  $('go').disabled=true;$('msg').className='msg';$('msg').textContent='Pairing…';
+  try{
+    const pub=await fetch(PAIR_API+'/pub?code='+code).then(x=>x.json());
+    if(pub.status==='expired') throw new Error('That code expired — start again on the watch.');
+    await sealAndSend(code,pub.watchPub);
+    $('msg').className='msg ok';$('msg').textContent='✓ Paired — check your watch.';
+  }catch(e){$('msg').className='msg err';$('msg').textContent=e.message;}
+  finally{$('go').disabled=false;}
+}
+
+const h=new URLSearchParams(location.hash.slice(1));
+if(h.get('c')&&h.get('k')){ auto(h.get('c').toUpperCase(),h.get('k')); }
+else { $('manual').hidden=false; }
+$('go').addEventListener('click',manualPair);
+$('code').addEventListener('keydown',(e)=>{if(e.key==='Enter')manualPair();});
+</script>
+</body>
+</html>
