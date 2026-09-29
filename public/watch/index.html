@@ -212,12 +212,12 @@
   .logout:active{background:rgba(255,107,107,.12)}
 
   .state{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:10px;padding:16%;text-align:center;background:var(--bg);z-index:10}
+    gap:2.5vmin;padding:8% 16%;text-align:center;background:var(--bg);z-index:10}
   .state p{margin:0;font-size:4.8vmin}.state .sub{color:var(--mid);font-size:3.8vmin;line-height:1.4}
-  .pairqr{background:#fff;padding:2vmin;border-radius:4vmin;line-height:0;width:44vmin;height:44vmin}
+  .pairqr{background:#fff;padding:2vmin;border-radius:4vmin;line-height:0;width:38vmin;height:38vmin}
   .pairqr svg{width:100%;height:100%;display:block}
-  .paircode{font-size:9vmin;font-weight:800;letter-spacing:.16em;color:var(--accent);margin-top:1vmin}
-  .retry{margin-top:4vmin;padding:3vmin 8vmin;border-radius:8vmin;background:var(--accent);color:var(--on-accent);border:0;font-weight:800;font-size:4.6vmin}
+  .paircode{font-size:8vmin;font-weight:800;letter-spacing:.16em;color:var(--accent);line-height:1}
+  .retry{margin-top:1vmin;padding:3vmin 8vmin;border-radius:8vmin;background:var(--accent);color:var(--on-accent);border:0;font-weight:800;font-size:4.6vmin}
   #toast{position:fixed;left:50%;bottom:13%;transform:translateX(-50%) translateY(16px);background:var(--surface-2);
     border:1px solid var(--border);padding:7px 15px;border-radius:16px;font-size:12.5px;font-weight:600;opacity:0;
     transition:.2s;pointer-events:none;z-index:20;max-width:74%}
@@ -519,7 +519,6 @@ async function startPairing(){
     // QR is just the 6-char code — scanned in the phone's pair page, which fetches
     // this session's public key from the worker by that code. Minimal, sparse QR.
     $('state').innerHTML='<div class="pairqr" id="pairqr"></div><div class="paircode">'+r.code+'</div>'
-      +'<div class="sub">'+t('pair.scan')+'</div>'
       +'<button class="retry" onclick="checkPair()">'+t('pair.check')+'</button>';
     renderQR('pairqr',r.code);
     pollPair(r.code,kp);
