@@ -29,7 +29,10 @@
   :root[data-shape="rect"] .panel{padding:0 5%}
   :root[data-shape="rect"] .ptitle{top:5%}
   :root[data-shape="rect"] #dots{bottom:3%}
-  .panel{flex:0 0 100%;height:100%;scroll-snap-align:center;position:relative;
+  /* scroll-snap-stop:always: a fast flick can carry momentum past a snap point
+     and skip a panel. This forces the scroll to rest on the very next panel, so
+     one swipe = one screen. */
+  .panel{flex:0 0 100%;height:100%;scroll-snap-align:center;scroll-snap-stop:always;position:relative;
     display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 10%;text-align:center}
   .ptitle{position:absolute;top:11%;left:0;right:0;font-size:4.6vmin;letter-spacing:.12em;
     font-weight:800;text-transform:uppercase;color:var(--mid)}
@@ -44,7 +47,7 @@
   .veh-range .unit{font-size:6.4vmin;color:var(--mid);font-weight:600}
   .legs{width:90%;margin:5vmin auto 0;display:flex;flex-direction:column;gap:4.5vmin}
   .leg-head{display:flex;align-items:center;gap:2.6vmin;margin-bottom:2.6vmin}
-  .leg-ico{display:flex;flex:0 0 auto}.leg-ico svg{width:6.6vmin;height:6.6vmin}
+  .leg-ico{display:flex;flex:0 0 auto}.leg-ico svg{width:8.2vmin;height:8.2vmin}
   .leg-km{margin-left:auto;font-size:7.2vmin;font-weight:800;letter-spacing:-.01em}
   .leg-km small{font-size:4.2vmin;opacity:.7;font-weight:600}
   .leg-pct{font-size:4.6vmin;font-weight:700;color:var(--mid);min-width:12vmin;text-align:right}
@@ -54,7 +57,7 @@
   .statusrow{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4vmin;
     margin-top:4vmin;min-height:6vmin}
   .schip{display:flex;align-items:center;gap:1.3vmin;font-size:4.6vmin;font-weight:800}
-  .schip svg{width:6.2vmin;height:6.2vmin}
+  .schip svg{width:7.8vmin;height:7.8vmin}
 
   /* ---- Settings ---- */
   .seg{display:inline-flex;background:var(--surface-1);border:1px solid var(--border);border-radius:6vmin;padding:1vmin;margin-top:6vmin}
@@ -76,7 +79,7 @@
     border:1px solid var(--border);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;
     color:var(--accent-bright);cursor:pointer;transition:background .12s,border-color .15s}
   .cbtn:active{background:var(--surface-2)}
-  .cbtn svg{width:14vmin;height:14vmin}
+  .cbtn svg{width:17vmin;height:17vmin}
   .cbtn.on{border-color:var(--success);color:var(--success)}
   .cbtn.warn{border-color:var(--m-orange);color:var(--m-orange)}
   .pN{top:4%;left:50%;transform:translateX(-50%)}
@@ -96,11 +99,11 @@
   /* Centered cluster that stays inside the round face. */
   .clima-out{position:absolute;top:11%;left:0;right:0;display:flex;align-items:center;justify-content:center;
     gap:1.4vmin;font-size:4.8vmin;font-weight:700;color:var(--mid);min-height:5vmin}
-  .clima-out svg{width:5vmin;height:5vmin}
+  .clima-out svg{width:6.2vmin;height:6.2vmin}
   .clima-power{display:inline-flex;align-items:center;gap:2vmin;height:12vmin;padding:0 6vmin;border-radius:6vmin;
     background:var(--surface-1);border:1px solid var(--border);color:var(--mid);font-weight:800;font-size:4.6vmin;
     letter-spacing:.04em;cursor:pointer;transition:.15s}
-  .clima-power svg{width:6vmin;height:6vmin}
+  .clima-power svg{width:7.4vmin;height:7.4vmin}
   .clima-power.on{background:var(--accent);color:var(--on-teal);border-color:transparent}
   .stepper{display:flex;align-items:center;justify-content:center;gap:3.4vmin}
   .stepper.temp-row{margin-top:5vmin}
@@ -125,7 +128,7 @@
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.8vmin;
     color:var(--text);cursor:pointer;transition:transform .08s,border-color .15s}
   .seattile:active{transform:scale(.95)}
-  .seattile svg{width:8.5vmin;height:8.5vmin}
+  .seattile svg{width:10.5vmin;height:10.5vmin}
   .seattile .stname{font-size:3.8vmin;font-weight:700;color:var(--mid)}
   .seattile.on.heat{border-color:var(--m-orange)}
   .seattile.on.cool{border-color:var(--accent)}
@@ -263,8 +266,11 @@ const ls=(k)=>{try{return localStorage.getItem(k)}catch{return null}};
 const lss=(k,v)=>{try{localStorage.setItem(k,v)}catch{}};
 const BASE=(qs.get('b')||ls('odw.baseUrl')||'').replace(/\/$/,''),JWT=qs.get('t')||ls('odw.jwt')||'';
 const $=(id)=>document.getElementById(id);
-function detectShape(){const mq=window.matchMedia;const round=!!mq&&(mq('(shape: round)').matches||mq('(round)').matches);document.documentElement.dataset.shape=round?'round':'rect';}
-detectShape();try{matchMedia('(shape: round)').addEventListener('change',detectShape);}catch{}
+// Round is the safe default: the shape media feature is unsupported on many Wear
+// WebViews, so only switch to the square layout when a device *positively* reports
+// rectangular. (Assuming rect on an unknown watch would wrongly square a round one.)
+function detectShape(){const mq=window.matchMedia;const rect=!!mq&&mq('(shape: rect)').matches;document.documentElement.dataset.shape=rect?'rect':'round';}
+detectShape();try{matchMedia('(shape: rect)').addEventListener('change',detectShape);}catch{}
 let lang=ls('odw.lang')||((navigator.language||'').toLowerCase().startsWith('vi')?'vi':'en');
 const T={
  en:{'t.seats':'Seats','t.tyres':'Tyre \u00b7 kPa','t.settings':'Settings','t.account':'Account',
