@@ -53,6 +53,9 @@
     scroll-snap-type:x mandatory;scrollbar-width:none}
   #pager::-webkit-scrollbar{display:none}
   #pager:focus{outline:none}
+  /* Pager only pans sideways: the browser never claims a vertical drag, so the
+     pull-to-refresh listener can stay passive (no main-thread swipe blocking). */
+  #pager,#pager *{touch-action:pan-x}
   /* Invisible vertical scroller behind everything: receives rotary/bezel input.
      z-index:-1 keeps it clear of touch; it just needs focus + room to scroll. */
   #rotsink{position:fixed;inset:0;overflow-y:scroll;overscroll-behavior:contain;
@@ -108,7 +111,8 @@
   .leg-km small{font-size:4.2vmin;opacity:.7;font-weight:600}
   .leg-pct{font-size:4.6vmin;font-weight:700;color:var(--mid);min-width:12vmin;text-align:right}
   .leg-bar{height:4.2vmin;border-radius:999px;background:var(--surface-2);overflow:hidden}
-  .leg-bar i{display:block;height:100%;border-radius:999px;transition:width .6s cubic-bezier(.22,.61,.36,1)}
+  .leg-bar i{display:block;width:100%;height:100%;border-radius:999px;transform:translateX(-100%);
+    transition:transform .6s cubic-bezier(.22,.61,.36,1)}
   /* Critical glance row: charge · temp · power · lock · windows. */
   .statusrow{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4vmin;
     margin-top:4vmin;min-height:6vmin}
@@ -230,7 +234,7 @@
     border:1px solid var(--border);padding:7px 15px;border-radius:16px;font-size:12.5px;font-weight:600;opacity:0;
     transition:.2s;pointer-events:none;z-index:20;max-width:74%}
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}#toast.err{color:var(--danger)}
-  .busy{opacity:.55;pointer-events:none}
+  .pending{opacity:.5}
   .spin{width:16vmin;height:16vmin;border:6px solid var(--accent);border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite}
   [hidden]{display:none!important}
   @keyframes spin{to{transform:rotate(360deg)}}
@@ -251,7 +255,7 @@
           <span class="leg-km" id="ev-km" style="color:var(--success)">--<small> km</small></span>
           <span class="leg-pct" id="ev-pct">--</span>
         </div>
-        <div class="leg-bar"><i id="ev-bar" style="width:0;background:var(--success)"></i></div>
+        <div class="leg-bar"><i id="ev-bar" style="background:var(--success)"></i></div>
       </div>
       <div class="leg" id="leg-fuel" hidden>
         <div class="leg-head">
@@ -259,7 +263,7 @@
           <span class="leg-km" id="fuel-km" style="color:var(--m-orange)">--<small> km</small></span>
           <span class="leg-pct" id="fuel-pct">--</span>
         </div>
-        <div class="leg-bar"><i id="fuel-bar" style="width:0;background:var(--m-orange)"></i></div>
+        <div class="leg-bar"><i id="fuel-bar" style="background:var(--m-orange)"></i></div>
       </div>
       <div class="statusrow" id="statusrow"></div>
     </div>
@@ -359,13 +363,17 @@ function detectShape(){const mq=window.matchMedia;const rect=!!mq&&mq('(shape: r
 detectShape();try{matchMedia('(shape: rect)').addEventListener('change',detectShape);}catch{}
 let lang=ls('odw.lang')||((navigator.language||'').toLowerCase().startsWith('vi')?'vi':'en');
 let theme=ls('odw.theme')||'dark';
+// Point each backdrop at its pre-baked file for this theme (fade + bg composited in).
+function applyBg(){document.querySelectorAll('[data-bg]').forEach(i=>{const s=i.dataset.bg+'-'+theme+'.webp';if(i.getAttribute('src')!==s)i.src=s;});}
+applyBg();   // kick off the image fetches immediately
+// #9: write innerHTML only when the markup actually changed (refreshes are mostly no-ops).
+function setHTML(el,h){if(el&&el._h!==h){el._h=h;el.innerHTML=h;}}
 function applyTheme(){
   if(theme==='light')document.documentElement.dataset.theme='light';
   else delete document.documentElement.dataset.theme;
   const m=$('themeColor');if(m)m.content=theme==='light'?'#e9eef3':'#071019';
   document.querySelectorAll('#themeseg button').forEach(bt=>bt.classList.toggle('on',bt.dataset.theme===theme));
-  // Swap to the pre-baked backdrop for this theme (fade + bg already composited).
-  document.querySelectorAll('[data-bg]').forEach(i=>{const s=i.dataset.bg+'-'+theme+'.webp';if(i.getAttribute('src')!==s)i.src=s;});
+  applyBg();
 }
 const T={
  en:{'t.seats':'Seats','t.tyres':'Tyre \u00b7 kPa','t.settings':'Settings','t.account':'Account',
@@ -407,18 +415,23 @@ const SVG_START='<svg viewBox="0 0 24 24"><path d="M13 3 6 13h5l-1 8 7-11h-5z" f
 function renderControls(){
   const sw=$('wcSwitch');if(sw)sw.classList.toggle('on',wc51);
   const b4=$('b4');if(!b4)return;
-  if(wc51){b4.dataset.act='start';b4.setAttribute('aria-label',t('b.start'));b4.innerHTML=SVG_START;}
-  else{b4.dataset.act='flash';b4.setAttribute('aria-label',t('b.find'));b4.innerHTML=SVG_FIND;}
+  if(wc51){b4.dataset.act='start';b4.setAttribute('aria-label',t('b.start'));setHTML(b4,SVG_START);}
+  else{b4.dataset.act='flash';b4.setAttribute('aria-label',t('b.find'));setHTML(b4,SVG_FIND);}
 }
 function fireWC(labelText,cmd){return fire(labelText,'/api/keymap/fire',{kind:'shell',cmd:wcCmd(cmd)});}
 const label=(a)=>({lock:t('b.lock'),unlock:t('b.unlock'),trunk:t('b.trunk'),start:t('b.start'),flash:t('b.find')}[a]||a);
 
+// Reads give up after 8s; commands get 15s (the car may need to wake up first).
 async function api(path,opts={}){
   if(demo) return demoResp(path,opts);
-  const res=await fetch(BASE+path,{method:opts.method||'GET',
-    headers:Object.assign({Authorization:'Bearer '+JWT},opts.body?{'Content-Type':'application/json'}:{}),body:opts.body});
-  if(res.status===401){const e=new Error('auth');e.auth=1;throw e;}
-  const ct=res.headers.get('content-type')||'';return ct.includes('json')?res.json():{};
+  const method=opts.method||'GET',ac=new AbortController();
+  const timer=setTimeout(()=>ac.abort(),method==='GET'?8000:15000);
+  try{
+    const res=await fetch(BASE+path,{method,signal:ac.signal,
+      headers:Object.assign({Authorization:'Bearer '+JWT},opts.body?{'Content-Type':'application/json'}:{}),body:opts.body});
+    if(res.status===401){const e=new Error('auth');e.auth=1;throw e;}
+    const ct=res.headers.get('content-type')||'';return ct.includes('json')?await res.json():{};
+  }finally{clearTimeout(timer);}
 }
 function demoResp(path,opts){
   if(opts.method==='POST') return Promise.resolve({success:true});
@@ -472,13 +485,21 @@ function renderSeats(){
     tiles.push(seatTile(pos,'heat',seatHeat[pos-1]||0));
     if(ventSupported) tiles.push(seatTile(pos,'cool',seatCool[pos-1]||0));
   }
-  col.innerHTML=tiles.join('');
+  setHTML(col,tiles.join(''));
 }
-function renderFan(){const fb=$('fanbar');fb.innerHTML='';
-  for(let i=1;i<=7;i++){const d=document.createElement('div');d.className='fanseg'+(i<=fanLevel?' on':'');fb.appendChild(d);}
-  $('fannum').textContent=fanLevel||'–';}
+function renderFan(){let h='';for(let i=1;i<=7;i++)h+='<div class="fanseg'+(i<=fanLevel?' on':'')+'"></div>';
+  setHTML($('fanbar'),h);$('fannum').textContent=fanLevel||'–';}
+// #6: steppers update the screen instantly but send ONE request with the final
+// value ~450ms after the last tap. Before, taps landing while a request was in
+// flight were dropped (busy) and the follow-up refresh snapped the value back.
+const _pend={temp:false,fan:false},_debT={};
+function queueSend(key,send){
+  _pend[key]=true;clearTimeout(_debT[key]);
+  const run=()=>{if(busy){_debT[key]=setTimeout(run,300);return;}_pend[key]=false;send();};
+  _debT[key]=setTimeout(run,450);
+}
 function setFan(n){fanLevel=Math.max(0,Math.min(7,n));renderFan();
-  fire(t('fan'),'/api/vehicle/climate',{action:'set_fan',fan:fanLevel});}
+  queueSend('fan',()=>fire(t('fan'),'/api/vehicle/climate',{action:'set_fan',fan:fanLevel}));}
 // Critical glance row on screen 1: charge · temp · power · lock · windows.
 const _ico=(d,fill)=>'<svg viewBox="0 0 24 24" fill="'+(fill?'currentColor':'none')+'" stroke="'+(fill?'none':'currentColor')+'" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'+d+'</svg>';
 const IC_THERMO=_ico('<path d="M10 13V5a2 2 0 1 1 4 0v8a4 4 0 1 1-4 0z"/>');
@@ -499,12 +520,12 @@ function renderStatus(s,st){
   const w=st.windows||{};
   const open=['lf','rf','lr','rr','sunroof','sunshade'].some(k=>(w[k]||0)>0);
   items.push(_chip(open?A:G,IC_WIN));                                     // windows
-  $('statusrow').innerHTML=items.join('');
+  setHTML($('statusrow'),items.join(''));
 }
 function renderClimate(){$('clima').classList.toggle('on',climaOn);
   const cl=$('climalabel');if(cl)cl.textContent=climaOn?t('ac.on'):t('ac.off');
-  $('temp').innerHTML=tempC+'<small>°</small>';
-  const co=$('climaOut');if(co)co.innerHTML=(typeof outTempC==='number')?(IC_THERMO+' '+Math.round(outTempC)+'°'):'';
+  setHTML($('temp'),tempC+'<small>°</small>');
+  setHTML($('climaOut'),(typeof outTempC==='number')?(IC_THERMO+' '+Math.round(outTempC)+'°'):'');
   renderFan();}
 
 function renderQR(id,text){
@@ -567,23 +588,36 @@ window.addEventListener('focus',checkPair);
 // silent=true: refresh data in place without the full-screen spinner. Used after
 // a control action so the panel updates without blanking the UI and snapping the
 // pager back to the first screen (which looked like a full page reload).
-async function load(silent){
+// #5: only one load runs at a time — timer, foreground, pull-to-refresh and the
+// post-action refresh share it instead of stacking duplicate requests.
+let _loadP=null;
+function load(silent){if(!_loadP)_loadP=_load(silent).finally(()=>{_loadP=null;});return _loadP;}
+// Outside temperature barely moves: fetch it at most every 5 minutes.
+let _sumAt=0;const SUM_TTL=300000;
+async function _load(silent){
   if(!demo&&(!BASE||!JWT)) return startPairing();
   if(!silent) showState('<div class="spin"></div>');
   try{
-    const s=await api('/status');let st={};try{st=await api('/api/vehicle/state');}catch{}
-    const unit=s.distanceUnit||'km',r=s.range||{},ch=s.charging||{};
+    // #2: the three reads run in parallel (was three round-trips back to back,
+    // with the summary blocking climate/seats/tyres in the middle).
+    const wantSum=!_sumAt||Date.now()-_sumAt>SUM_TTL;
+    const [sR,stR,sumR]=await Promise.allSettled([api('/status'),api('/api/vehicle/state'),
+      wantSum?api('/api/launcher/v1/summary'):Promise.resolve(null)]);
+    if(sR.status==='rejected') throw sR.reason;
+    const s=sR.value,st=stR.status==='fulfilled'?stR.value:{};
+    if(wantSum&&sumR.status==='fulfilled'&&typeof sumR.value?.env?.tempC==='number'){outTempC=sumR.value.env.tempC;_sumAt=Date.now();}
+    const unit=s.distanceUnit||'km',r=s.range||{};
     pressureUnit=s.pressureUnit||'kpa';
     $('range').textContent=(r.totalRangeKm??r.elecRangeKm??'--');$('unit').textContent=unit;
     // EV leg
-    $('ev-km').innerHTML=(r.elecRangeKm??'--')+'<small> '+unit+'</small>';
+    setHTML($('ev-km'),(r.elecRangeKm??'--')+'<small> '+unit+'</small>');
     $('ev-pct').textContent=s.soc?.percent!=null?Math.round(s.soc.percent)+'%':'--';
-    $('ev-bar').style.width=pctClamp(s.soc?.percent)+'%';
+    $('ev-bar').style.transform='translateX('+(pctClamp(s.soc?.percent)-100)+'%)';
     // Fuel leg (PHEV)
     if(r.isPhev){$('leg-fuel').hidden=false;
-      $('fuel-km').innerHTML=(r.fuelRangeKm??'--')+'<small> '+unit+'</small>';
+      setHTML($('fuel-km'),(r.fuelRangeKm??'--')+'<small> '+unit+'</small>');
       $('fuel-pct').textContent=r.fuelPercent!=null?Math.round(r.fuelPercent)+'%':'--';
-      $('fuel-bar').style.width=pctClamp(r.fuelPercent)+'%';}
+      $('fuel-bar').style.transform='translateX('+(pctClamp(r.fuelPercent)-100)+'%)';}
     else $('leg-fuel').hidden=true;
 
     const lock=st.doors?.overall??-1;
@@ -591,10 +625,11 @@ async function load(silent){
     $('b-unlock').className='cbtn pS'+(lock===2?' warn':'');
     renderControls();
     renderStatus(s,st);
-    outTempC=null;try{const sum=await api('/api/launcher/v1/summary');if(typeof sum.env?.tempC==='number')outTempC=sum.env.tempC;}catch{}
     climaOn=!!st.climate?.acOn;
-    if(typeof st.climate?.setpointDriver==='number')tempC=Math.round(st.climate.setpointDriver);
-    fanLevel=st.climate?.fanLevel||0;renderClimate();
+    // Don't overwrite a value the user is still adjusting (debounced send pending).
+    if(!_pend.temp&&typeof st.climate?.setpointDriver==='number')tempC=Math.round(st.climate.setpointDriver);
+    if(!_pend.fan)fanLevel=st.climate?.fanLevel||0;
+    renderClimate();
     const h=st.seats?.heat||[],c=st.seats?.cool||[];seatHeat=[h[0]||0,h[1]||0];seatCool=[c[0]||0,c[1]||0];
     ventSupported=!!st.seats?.ventilatedSupported;renderSeats();
     const T=st.tyres||{};renderTyre('ty-fl',T.fl,T.limits);renderTyre('ty-fr',T.fr,T.limits);renderTyre('ty-rl',T.rl,T.limits);renderTyre('ty-rr',T.rr,T.limits);
@@ -609,14 +644,17 @@ async function load(silent){
 function showState(h){$('state').innerHTML=h;$('state').hidden=false;$('pager').hidden=true;$('dots').hidden=true;}
 function hideState(){$('state').hidden=true;$('pager').hidden=false;$('dots').hidden=false;try{focusPager();}catch{}}
 let toastT;function toast(m,err){const t=$('toast');t.textContent=m;t.className='show'+(err?' err':'');clearTimeout(toastT);toastT=setTimeout(()=>t.className='',1700);}
+let _tapEl=null;   // control the user just tapped — shown as pending during its request
 async function fire(label,path,body){
-  if(busy)return;busy=true;document.body.classList.add('busy');
+  if(busy)return;busy=true;
+  const el=_tapEl;_tapEl=null;if(el)el.classList.add('pending');
   try{const r=await api(path,{method:'POST',body:body?JSON.stringify(body):undefined});
     toast(r.success===false?(r.error||label+' '+t('toast.fail')):label+' ✓',r.success===false);if(r.success!==false)await load(true);}
   catch(e){if(e.auth)return showState('<p>'+t('st.ended')+'</p><p class="sub">'+t('st.repair')+'</p>');toast(label+' '+t('toast.fail'),true);}
-  finally{busy=false;document.body.classList.remove('busy');}
+  finally{busy=false;if(el)el.classList.remove('pending');}
 }
 document.addEventListener('click',(ev)=>{
+  _tapEl=ev.target.closest('button,[data-act]');
   const lb=ev.target.closest('#langseg button');
   if(lb){lang=lb.dataset.lang;lss('odw.lang',lang);applyI18n();renderControls();renderClimate();renderSeats();return;}
   const tb=ev.target.closest('#themeseg button');
@@ -632,8 +670,8 @@ document.addEventListener('click',(ev)=>{
   else if(a==='trunk')fire('Trunk','/api/vehicle/trunk',{action:'open'});
   else if(a==='flash')fire(t('b.find'),'/api/vehicle/flash');
   else if(a==='clima')fire(climaOn?t('ac.off'):t('ac.on'),'/api/vehicle/climate',climaOn?{action:'power_off'}:{action:'power_on',temp:tempC,remoteDurationMinutes:15});
-  else if(a==='temp+'){tempC=Math.min(30,tempC+1);renderClimate();if(climaOn)fire('°','/api/vehicle/climate',{action:'set_temp',zone:0,temp:tempC});}
-  else if(a==='temp-'){tempC=Math.max(16,tempC-1);renderClimate();if(climaOn)fire('°','/api/vehicle/climate',{action:'set_temp',zone:0,temp:tempC});}
+  else if(a==='temp+'||a==='temp-'){tempC=Math.max(16,Math.min(30,tempC+(a==='temp+'?1:-1)));renderClimate();
+    if(climaOn)queueSend('temp',()=>fire('°','/api/vehicle/climate',{action:'set_temp',zone:0,temp:tempC}));}
   else if(a==='fan+')setFan(fanLevel+1);
   else if(a==='fan-')setFan(fanLevel-1);
   else if(a==='logout'){if(window.OdNative&&OdNative.logout)OdNative.logout();
@@ -642,13 +680,13 @@ document.addEventListener('click',(ev)=>{
 const N=7,dots=$('dots');for(let i=0;i<N;i++)dots.appendChild(document.createElement('i'));
 const pager=$('pager');
 function updateDots(){const i=Math.round(pager.scrollLeft/pager.clientWidth);[...dots.children].forEach((d,k)=>d.classList.toggle('on',k===i));}
-// Track a swipe in progress (body.sliding) so the auto-refresh never re-renders
-// mid-animation. Cleared 150ms after the last scroll event.
-let _slideT;
+// Track a swipe in progress so the auto-refresh never re-renders mid-animation.
+// A plain flag (not a body class) — nothing in CSS needs it. Cleared 150ms after
+// the last scroll event.
+let _slideT,_sliding=false;
 function onPagerScroll(){
   updateDots();
-  const c=document.body.classList;if(!c.contains('sliding'))c.add('sliding');
-  clearTimeout(_slideT);_slideT=setTimeout(()=>c.remove('sliding'),150);
+  _sliding=true;clearTimeout(_slideT);_slideT=setTimeout(()=>{_sliding=false;},150);
 }
 renderControls();pager.addEventListener("scroll",onPagerScroll,{passive:true});updateDots();
 // Rotating bezel / crown: Wear OS delivers rotary input as wheel events. Map a
@@ -693,8 +731,13 @@ function focusPager(){
   }
   try{if(window.scrollX)window.scrollTo(0,0);}catch{}
 }
+// Event-driven, not a timer: re-take focus when the sink loses it (a tap focuses
+// the button) and after taps / returning to the app. The old 1.2s interval woke
+// the CPU ~50x a minute for the life of the app.
+rotsink.addEventListener('blur',()=>setTimeout(focusPager,0));
 pager.addEventListener('pointerup',focusPager);
-centreSink();setInterval(focusPager,1200);
+window.addEventListener('focus',focusPager);
+centreSink();
 applyI18n();applyTheme();
 // No zoom on double-tap or pinch gestures (backstop for touch-action).
 document.addEventListener('dblclick',(e)=>e.preventDefault(),{passive:false});
@@ -703,7 +746,7 @@ document.addEventListener('gesturestart',(e)=>e.preventDefault(),{passive:false}
 // --- Auto-refresh: the Wear browser won't poll on its own. Silently refresh
 // telemetry on a timer while the app is visible, paired, and idle; and whenever
 // the app comes back to the foreground.
-const canRefresh=()=>!document.hidden&&!pager.hidden&&!busy&&!document.body.classList.contains('sliding')&&(demo||(BASE&&JWT));
+const canRefresh=()=>!document.hidden&&!pager.hidden&&!busy&&!_sliding&&(demo||(BASE&&JWT));
 setInterval(()=>{if(canRefresh())load(true);},20000);
 document.addEventListener('visibilitychange',()=>{if(canRefresh())load(true);});
 
@@ -719,12 +762,11 @@ document.addEventListener('touchmove',(e)=>{
   const dy=e.touches[0].clientY-_pY,dx=e.touches[0].clientX-_pX;
   if(!_pOn){if(dy>10&&dy>Math.abs(dx)*1.5)_pOn=true;else return;}
   if(dy<=0){ptrReset();return;}
-  e.preventDefault();
   const pull=Math.min(dy*0.5,90);_pReady=pull>=60;
   ptr.style.transition='none';
   ptr.style.transform='translate(-50%,'+(pull-60)+'px) rotate('+(pull*3)+'deg)';
   ptr.style.opacity=Math.min(1,pull/45);
-},{passive:false});
+},{passive:true});   // #4: passive — the pager is touch-action:pan-x, so there's no vertical default to cancel
 document.addEventListener('touchend',()=>{
   if(!_pOn)return;_pOn=false;
   ptr.style.transition='transform .2s ease-out,opacity .2s ease-out';
