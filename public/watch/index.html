@@ -27,35 +27,35 @@
     scroll-snap-type:x mandatory;scrollbar-width:none}
   #pager::-webkit-scrollbar{display:none}
   .panel{flex:0 0 100%;height:100%;scroll-snap-align:center;position:relative;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 12%;text-align:center}
-  .ptitle{position:absolute;top:9%;left:0;right:0;font-size:11px;letter-spacing:.12em;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 10%;text-align:center}
+  .ptitle{position:absolute;top:12%;left:0;right:0;font-size:13px;letter-spacing:.12em;
     font-weight:800;text-transform:uppercase;color:var(--mid)}
 
   #dots{position:fixed;bottom:5.5%;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:5}
-  #dots i{width:5px;height:5px;border-radius:50%;background:var(--mid);opacity:.4;transition:.2s}
-  #dots i.on{opacity:1;background:var(--accent);width:13px;border-radius:3px}
+  #dots i{width:6px;height:6px;border-radius:50%;background:var(--mid);opacity:.4;transition:.2s}
+  #dots i.on{opacity:1;background:var(--accent);width:16px;border-radius:3px}
 
   /* ---- Panel 1: range + battery/fuel bars (the PWA hero) ---- */
-  .veh-range{display:flex;align-items:baseline;justify-content:center;gap:6px}
-  .veh-range .num{font-size:min(15vw,46px);font-weight:700;letter-spacing:-.02em;line-height:1}
-  .veh-range .unit{font-size:16px;color:var(--mid);font-weight:600}
-  .legs{width:96%;margin-top:18px;display:flex;flex-direction:column;gap:13px}
-  .leg-head{display:flex;align-items:center;gap:7px;margin-bottom:6px}
-  .leg-ico{display:flex;flex:0 0 auto}.leg-ico svg{width:15px;height:15px}
-  .leg-km{margin-left:auto;font-size:16px;font-weight:800;letter-spacing:-.01em}
-  .leg-km small{font-size:11px;opacity:.7;font-weight:600}
-  .leg-pct{font-size:11px;font-weight:700;color:var(--mid);min-width:30px;text-align:right}
-  .leg-bar{height:8px;border-radius:999px;background:var(--surface-2);overflow:hidden}
+  .veh-range{display:flex;align-items:baseline;justify-content:center;gap:7px}
+  .veh-range .num{font-size:clamp(52px,20vw,78px);font-weight:700;letter-spacing:-.02em;line-height:1}
+  .veh-range .unit{font-size:20px;color:var(--mid);font-weight:600}
+  .legs{width:100%;margin-top:26px;display:flex;flex-direction:column;gap:18px}
+  .leg-head{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+  .leg-ico{display:flex;flex:0 0 auto}.leg-ico svg{width:19px;height:19px}
+  .leg-km{margin-left:auto;font-size:21px;font-weight:800;letter-spacing:-.01em}
+  .leg-km small{font-size:13px;opacity:.7;font-weight:600}
+  .leg-pct{font-size:14px;font-weight:700;color:var(--mid);min-width:38px;text-align:right}
+  .leg-bar{height:12px;border-radius:999px;background:var(--surface-2);overflow:hidden}
   .leg-bar i{display:block;height:100%;border-radius:999px;transition:width .6s cubic-bezier(.22,.61,.36,1)}
-  .outtemp{display:flex;align-items:center;justify-content:center;gap:4px;margin-top:5px;
-    min-height:15px;font-size:12px;font-weight:600;color:var(--mid)}
-  .outtemp svg{width:12px;height:12px}
+  .outtemp{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:14px;
+    min-height:18px;font-size:15px;font-weight:700;color:var(--mid)}
+  .outtemp svg{width:15px;height:15px}
 
   /* ---- Settings ---- */
   .setrow{display:flex;align-items:center;gap:12px;width:88%;max-width:250px;cursor:pointer}
   .setlab{text-align:left;min-width:0}
-  .setname{font-size:15px;font-weight:700}
-  .setsub{font-size:11px;color:var(--mid);margin-top:2px;line-height:1.3}
+  .setname{font-size:16px;font-weight:700}
+  .setsub{font-size:12px;color:var(--mid);margin-top:3px;line-height:1.35}
   .switch{flex:0 0 auto;width:46px;height:27px;border-radius:14px;background:var(--surface-2);
     border:1px solid var(--border);position:relative;transition:background .18s}
   .switch i{position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:50%;
@@ -64,47 +64,55 @@
   .switch.on i{transform:translateX(19px);background:var(--on-accent)}
 
   /* ---- Panel 2: quick buttons (PWA quick-btn) ---- */
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px;width:80%;max-width:224px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:11px;width:86%;max-width:250px}
   .qbtn{aspect-ratio:1;border-radius:var(--radius);background:var(--surface-1);
     border:1px solid var(--border);box-shadow:var(--shadow);display:flex;flex-direction:column;
-    align-items:center;justify-content:center;gap:6px;color:var(--text);cursor:pointer;transition:transform .08s}
+    align-items:center;justify-content:center;gap:8px;color:var(--text);cursor:pointer;transition:transform .08s}
   .qbtn:active{transform:scale(.95)}
-  .qbtn .qi{color:var(--accent-bright);display:flex}.qbtn .qi svg{width:25px;height:25px}
-  .qbtn span{font-size:11px;font-weight:600}
+  .qbtn .qi{color:var(--accent-bright);display:flex}.qbtn .qi svg{width:32px;height:32px}
+  .qbtn span{font-size:13px;font-weight:600}
   .qbtn.on{border-color:var(--success)}.qbtn.on .qi{color:var(--success)}
   .qbtn.warn{border-color:var(--m-orange)}.qbtn.warn .qi{color:var(--m-orange)}
 
   /* ---- Panel 3: climate ---- */
-  .power{width:80px;height:80px;border-radius:50%;background:var(--surface-1);border:1px solid var(--border);
-    box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;color:var(--text);cursor:pointer;transition:.15s}
-  .power.on{background:var(--accent);color:var(--bg);border-color:transparent;box-shadow:0 0 0 5px rgba(53,223,193,.15)}
-  .power svg{width:34px;height:34px}
-  .stepper{display:flex;align-items:center;gap:14px;margin-top:12px}
-  .stepper button{width:40px;height:40px;border-radius:50%;background:var(--surface-1);border:1px solid var(--border);
-    color:var(--text);font-size:22px;font-weight:600;cursor:pointer}.stepper button:active{background:var(--surface-2)}
-  .temp{font-size:28px;font-weight:800;letter-spacing:-.03em;min-width:66px}.temp small{font-size:.5em;color:var(--mid)}
-  .fanwrap{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:88px}
+  /* Centered cluster that stays inside the round face. */
+  .clima-power{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 18px;border-radius:19px;
+    background:var(--surface-1);border:1px solid var(--border);color:var(--mid);font-weight:800;font-size:13px;
+    letter-spacing:.04em;cursor:pointer;transition:.15s}
+  .clima-power svg{width:18px;height:18px}
+  .clima-power.on{background:var(--accent);color:var(--on-teal);border-color:transparent}
+  .stepper{display:flex;align-items:center;justify-content:center;gap:12px}
+  .stepper.temp-row{margin-top:16px}
+  .stepper.fan-row{margin-top:14px;gap:10px}
+  .stepper button{flex:0 0 auto;border-radius:50%;background:var(--surface-1);border:1px solid var(--border);
+    color:var(--text);font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .temp-row button{width:44px;height:44px;font-size:24px}
+  .fan-row button{width:36px;height:36px;font-size:20px}
+  .stepper button:active{background:var(--surface-2)}
+  .temp{font-size:40px;font-weight:800;letter-spacing:-.03em;min-width:76px;line-height:1}
+  .temp small{font-size:.42em;color:var(--mid);vertical-align:top}
+  .fanwrap{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:84px}
   .fanbar{display:flex;gap:3px}
-  .fanseg{width:8px;height:16px;border-radius:3px;background:var(--surface-2);transition:.12s}
+  .fanseg{width:9px;height:18px;border-radius:3px;background:var(--surface-2);transition:.12s}
   .fanseg.on{background:var(--accent)}
-  .fanlabel{font-size:11px;color:var(--mid);font-weight:700}.fanlabel b{color:var(--text)}
+  .fanlabel{font-size:10px;color:var(--mid);font-weight:700;letter-spacing:.04em}.fanlabel b{color:var(--text)}
 
   /* ---- Panel 4: seats (heat + cool) ---- */
-  .seatcol{width:88%;max-width:250px;display:flex;flex-direction:column;gap:11px}
-  .seatname{font-size:12px;font-weight:800;letter-spacing:.02em;text-align:left;margin-bottom:5px}
+  .seatcol{width:90%;max-width:260px;display:flex;flex-direction:column;gap:16px}
+  .seatname{font-size:15px;font-weight:800;letter-spacing:.02em;text-align:left;margin-bottom:7px}
   .seatline{display:flex;align-items:center;gap:9px;margin-bottom:5px}
-  .seatline .ic{width:15px;height:15px;flex:0 0 auto;display:flex}
-  .slevels{display:flex;gap:5px;margin-left:auto}
-  .sl{width:20px;height:19px;border-radius:6px;background:var(--surface-2);border:1px solid var(--border);cursor:pointer;transition:.12s}
+  .seatline .ic{width:18px;height:18px;flex:0 0 auto;display:flex}
+  .slevels{display:flex;gap:6px;margin-left:auto}
+  .sl{width:26px;height:24px;border-radius:7px;background:var(--surface-2);border:1px solid var(--border);cursor:pointer;transition:.12s}
   .sl.on.heat{background:var(--m-orange);border-color:transparent}
   .sl.on.cool{background:var(--accent);border-color:transparent}
 
   /* ---- Panel 5: tyres ---- */
-  .tyres{display:grid;grid-template-columns:1fr 1fr;gap:14px 34px;width:72%;max-width:208px}
+  .tyres{display:grid;grid-template-columns:1fr 1fr;gap:20px 40px;width:78%;max-width:230px}
   .ty{display:flex;flex-direction:column;align-items:center}
-  .ty b{font-size:21px;font-weight:800;letter-spacing:-.02em;color:var(--success)}
+  .ty b{font-size:27px;font-weight:800;letter-spacing:-.02em;color:var(--success)}
   .ty.low b{color:var(--m-orange)}.ty.dim b{color:var(--mid)}
-  .ty small{font-size:9px;letter-spacing:.1em;color:var(--mid);font-weight:700;margin-top:2px}
+  .ty small{font-size:11px;letter-spacing:.1em;color:var(--mid);font-weight:700;margin-top:3px}
 
   /* ---- Panel 6: logout ---- */
   .logout{width:80%;max-width:196px;height:48px;border-radius:24px;background:transparent;
@@ -169,12 +177,14 @@
 
   <!-- 3 · Climate -->
   <section class="panel">
-    <div class="ptitle">Climate</div>
-    <div class="power" data-act="clima" id="clima"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9"/></svg></div>
-    <div class="stepper">
+    <div class="clima-power" data-act="clima" id="clima">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9"/></svg>
+      <span id="climalabel">AC OFF</span>
+    </div>
+    <div class="stepper temp-row">
       <button data-act="temp-">−</button><div class="temp" id="temp">22<small>°</small></div><button data-act="temp+">+</button>
     </div>
-    <div class="stepper" style="margin-top:12px">
+    <div class="stepper fan-row">
       <button data-act="fan-">−</button>
       <div class="fanwrap">
         <div class="fanbar" id="fanbar"></div>
@@ -301,7 +311,9 @@ function renderFan(){const fb=$('fanbar');fb.innerHTML='';
   $('fannum').textContent=fanLevel||'–';}
 function setFan(n){fanLevel=Math.max(0,Math.min(7,n));renderFan();
   fire('Fan','/api/vehicle/climate',{action:'set_fan',fan:fanLevel});}
-function renderClimate(){$('clima').classList.toggle('on',climaOn);$('temp').innerHTML=tempC+'<small>°</small>';renderFan();}
+function renderClimate(){$('clima').classList.toggle('on',climaOn);
+  const cl=$('climalabel');if(cl)cl.textContent=climaOn?'AC ON':'AC OFF';
+  $('temp').innerHTML=tempC+'<small>°</small>';renderFan();}
 
 function renderQR(id,text){
   const draw=()=>{try{const q=qrcode(0,'M');q.addData(text);q.make();$(id).innerHTML=q.createSvgTag({cellSize:4,margin:0});}catch{}};
