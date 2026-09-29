@@ -330,12 +330,13 @@ function renderStatus(s,st,ot){
   const ch=s.charging||{},items=[];
   if(ch.charging) items.push(_chip(G,IC_BOLT,ch.chargingPowerKW?ch.chargingPowerKW.toFixed(1):''));
   if(typeof ot==='number') items.push(_chip(M,IC_THERMO,Math.round(ot)+'°'));
-  items.push(_chip(s.acc?T:M,IC_POWER));                                  // power/ignition
+  // Green = safe (off/locked/closed), orange = attention (on/unlocked/open).
+  items.push(_chip(s.acc?A:G,IC_POWER));                                  // ignition
   const lk=st.doors?.overall??-1;
-  items.push(_chip(lk===1?G:lk===2?A:M, lk===2?IC_UNLOCK:IC_LOCK));       // central lock
+  items.push(_chip(lk===2?A:lk===1?G:M, lk===2?IC_UNLOCK:IC_LOCK));       // central lock (-1 unknown = muted)
   const w=st.windows||{};
   const open=['lf','rf','lr','rr','sunroof','sunshade'].some(k=>(w[k]||0)>0);
-  items.push(_chip(open?A:M,IC_WIN));                                     // windows
+  items.push(_chip(open?A:G,IC_WIN));                                     // windows
   $('statusrow').innerHTML=items.join('');
 }
 function renderClimate(){$('clima').classList.toggle('on',climaOn);
