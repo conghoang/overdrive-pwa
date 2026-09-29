@@ -440,9 +440,12 @@ function pollPair(code,kp){
   };
   setTimeout(tick,1600);
 }
-async function load(){
+// silent=true: refresh data in place without the full-screen spinner. Used after
+// a control action so the panel updates without blanking the UI and snapping the
+// pager back to the first screen (which looked like a full page reload).
+async function load(silent){
   if(!demo&&(!BASE||!JWT)) return startPairing();
-  showState('<div class="spin"></div>');
+  if(!silent) showState('<div class="spin"></div>');
   try{
     const s=await api('/status');let st={};try{st=await api('/api/vehicle/state');}catch{}
     const unit=s.distanceUnit||'km',r=s.range||{},ch=s.charging||{};
@@ -471,8 +474,11 @@ async function load(){
     ventSupported=!!st.seats?.ventilatedSupported;renderSeats();
     const T=st.tyres||{};renderTyre('ty-fl',T.fl,T.limits);renderTyre('ty-fr',T.fr,T.limits);renderTyre('ty-rl',T.rl,T.limits);renderTyre('ty-rr',T.rr,T.limits);
     $('devid').textContent=demo?'DEMO-SEAL-01':'';
-    hideState();
+    if(!silent) hideState();
   }catch(e){if(e.auth)return showState('<p>'+t('st.ended')+'</p><p class="sub">'+t('st.repair')+'</p>');
+    // A silent refresh already has a working screen up — don't replace it with a
+    // full error page over a transient blip; a toast is enough.
+    if(silent)return toast(t('st.unreach'),true);
     showState('<p>'+t('st.unreach')+'</p><button class="retry" onclick="load()">'+t('st.retry')+'</button>');}
 }
 function showState(h){$('state').innerHTML=h;$('state').hidden=false;$('pager').hidden=true;$('dots').hidden=true;}
@@ -481,7 +487,7 @@ let toastT;function toast(m,err){const t=$('toast');t.textContent=m;t.className=
 async function fire(label,path,body){
   if(busy)return;busy=true;document.body.classList.add('busy');
   try{const r=await api(path,{method:'POST',body:body?JSON.stringify(body):undefined});
-    toast(r.success===false?(r.error||label+' '+t('toast.fail')):label+' ✓',r.success===false);if(r.success!==false)await load();}
+    toast(r.success===false?(r.error||label+' '+t('toast.fail')):label+' ✓',r.success===false);if(r.success!==false)await load(true);}
   catch(e){if(e.auth)return showState('<p>'+t('st.ended')+'</p><p class="sub">'+t('st.repair')+'</p>');toast(label+' '+t('toast.fail'),true);}
   finally{busy=false;document.body.classList.remove('busy');}
 }
