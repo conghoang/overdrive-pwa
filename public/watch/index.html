@@ -5,18 +5,34 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
 <title>OverDrive Watch</title>
 <link rel="manifest" href="manifest.webmanifest" />
-<meta name="theme-color" content="#071019" />
+<meta name="theme-color" content="#071019" id="themeColor" />
+<script>
+  // Apply the saved theme before first paint so there's no light/dark flash.
+  try{var _th=localStorage.getItem('odw.theme');if(_th==='light'){document.documentElement.dataset.theme='light';
+    var _m=document.getElementById('themeColor')||document.querySelector('meta[name=theme-color]');if(_m)_m.content='#e9eef3';}}catch(e){}
+</script>
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black" />
 <link rel="apple-touch-icon" href="icon-192.png" />
 <style>
   /* Verbatim from the phone app's tokens.css so the watch is the same product. */
+  /* Dark is the default (bare :root); light overrides only the colour tokens. */
   :root{
     --bg:#071019; --surface-1:#0c1724; --surface-2:#101f30; --border:rgba(168,198,220,.12);
     --accent:#35dfc1; --accent-bright:#35dfc1;
     --success:#56d68c; --m-orange:#f6a23c; --text:#f5f9fc; --mid:#8497a8; --danger:#ff6b6b;
+    --on-teal:#071019; --on-accent:#071019;
     --radius:16px; --shadow:0 10px 26px rgba(0,0,0,.34);
+    color-scheme:dark;
+  }
+  :root[data-theme="light"]{
+    --bg:#e9eef3; --surface-1:#ffffff; --surface-2:#dbe4ec; --border:rgba(18,44,66,.16);
+    --accent:#22c9ac; --accent-bright:#0e9e88;
+    --success:#2ea866; --m-orange:#c9760f; --text:#0b1a24; --mid:#5c6d7a; --danger:#d6453f;
+    --on-teal:#04150f; --on-accent:#04150f;
+    --shadow:0 10px 26px rgba(20,40,60,.14);
+    color-scheme:light;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--text);overflow:hidden;
@@ -255,6 +271,7 @@
       <div class="switch" id="wcSwitch"><i></i></div>
     </div>
     <div class="seg" id="langseg"><button data-lang="en">EN</button><button data-lang="vi">VI</button></div>
+    <div class="seg" id="themeseg"><button data-theme="dark" data-i18n="theme.dark">Dark</button><button data-theme="light" data-i18n="theme.light">Light</button></div>
   </section>
 
   <!-- 7 · Account -->
@@ -280,6 +297,13 @@ const $=(id)=>document.getElementById(id);
 function detectShape(){const mq=window.matchMedia;const rect=!!mq&&mq('(shape: rect)').matches;document.documentElement.dataset.shape=rect?'rect':'round';}
 detectShape();try{matchMedia('(shape: rect)').addEventListener('change',detectShape);}catch{}
 let lang=ls('odw.lang')||((navigator.language||'').toLowerCase().startsWith('vi')?'vi':'en');
+let theme=ls('odw.theme')||'dark';
+function applyTheme(){
+  if(theme==='light')document.documentElement.dataset.theme='light';
+  else delete document.documentElement.dataset.theme;
+  const m=$('themeColor');if(m)m.content=theme==='light'?'#e9eef3':'#071019';
+  document.querySelectorAll('#themeseg button').forEach(bt=>bt.classList.toggle('on',bt.dataset.theme===theme));
+}
 const T={
  en:{'t.seats':'Seats','t.tyres':'Tyre \u00b7 kPa','t.settings':'Settings','t.account':'Account',
      'b.lock':'Lock','b.unlock':'Unlock','b.trunk':'Trunk','b.find':'Find','b.start':'Start',
@@ -287,14 +311,16 @@ const T={
      'seat.driver':'Driver','seat.passenger':'Passenger','st.notpaired':'Not paired',
      'st.pairhint':'Pair from the phone app','st.ended':'Session ended','st.repair':'Re-pair from the phone',
      'st.unreach':'Can\u2019t reach car','st.retry':'Retry','st.unavail':'Pairing unavailable',
-     'pair.scan':'Scan in the phone app,<br>or enter this code','toast.fail':'failed','seat':'Seat'},
+     'pair.scan':'Scan in the phone app,<br>or enter this code','toast.fail':'failed','seat':'Seat',
+     'theme.dark':'Dark','theme.light':'Light'},
  vi:{'t.seats':'Gh\u1ebf','t.tyres':'L\u1ed1p \u00b7 kPa','t.settings':'C\u00e0i \u0111\u1eb7t','t.account':'T\u00e0i kho\u1ea3n',
      'b.lock':'Kh\u00f3a','b.unlock':'M\u1edf kh\u00f3a','b.trunk':'C\u1ed1p','b.find':'T\u00ecm xe','b.start':'Kh\u1edfi \u0111\u1ed9ng',
      'b.wc51':'51DK kh\u00f4ng ch\u00eca','b.signout':'\u0110\u0103ng xu\u1ea5t','ac.on':'\u0110H B\u1eacT','ac.off':'\u0110H T\u1eaeT','fan':'Qu\u1ea1t',
      'seat.driver':'Gh\u1ebf l\u00e1i','seat.passenger':'Gh\u1ebf ph\u1ee5','st.notpaired':'Ch\u01b0a gh\u00e9p',
      'st.pairhint':'Gh\u00e9p t\u1eeb \u1ee9ng d\u1ee5ng \u0111i\u1ec7n tho\u1ea1i','st.ended':'Phi\u00ean \u0111\u00e3 k\u1ebft th\u00fac','st.repair':'Gh\u00e9p l\u1ea1i t\u1eeb \u0111i\u1ec7n tho\u1ea1i',
      'st.unreach':'Kh\u00f4ng k\u1ebft n\u1ed1i \u0111\u01b0\u1ee3c xe','st.retry':'Th\u1eed l\u1ea1i','st.unavail':'Kh\u00f4ng gh\u00e9p \u0111\u01b0\u1ee3c',
-     'pair.scan':'Qu\u00e9t trong \u1ee9ng d\u1ee5ng,<br>ho\u1eb7c nh\u1eadp m\u00e3 n\u00e0y','toast.fail':'th\u1ea5t b\u1ea1i','seat':'Gh\u1ebf'}
+     'pair.scan':'Qu\u00e9t trong \u1ee9ng d\u1ee5ng,<br>ho\u1eb7c nh\u1eadp m\u00e3 n\u00e0y','toast.fail':'th\u1ea5t b\u1ea1i','seat':'Gh\u1ebf',
+     'theme.dark':'T\u1ed1i','theme.light':'S\u00e1ng'}
 };
 const t=(k)=>(T[lang]&&T[lang][k])||T.en[k]||k;
 function applyI18n(){
@@ -502,6 +528,8 @@ async function fire(label,path,body){
 document.addEventListener('click',(ev)=>{
   const lb=ev.target.closest('#langseg button');
   if(lb){lang=lb.dataset.lang;lss('odw.lang',lang);applyI18n();renderControls();renderClimate();renderSeats();return;}
+  const tb=ev.target.closest('#themeseg button');
+  if(tb){theme=tb.dataset.theme;lss('odw.theme',theme);applyTheme();return;}
   const sl=ev.target.closest('.seattile');
   if(sl){const mode=sl.dataset.mode==='cool'?'ventilation':'heating';
     fire(t('seat'),'/api/vehicle/seat',{action:mode,position:+sl.dataset.seat,level:+sl.dataset.level});return;}
@@ -552,7 +580,7 @@ pager.addEventListener('keydown',(e)=>{
 function focusPager(){if(!pager.hidden&&!/^(INPUT|TEXTAREA)$/.test(document.activeElement&&document.activeElement.tagName)){try{pager.focus({preventScroll:true});}catch{}}}
 pager.addEventListener('pointerup',focusPager);
 setInterval(focusPager,1500);
-applyI18n();
+applyI18n();applyTheme();
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 load();
 </script>
