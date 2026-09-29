@@ -2,7 +2,7 @@
 // offline. Network-first for same-origin GETs (so updates land), falling back to
 // cache, then to the shell. Never touches the pairing Worker or the car (those
 // are cross-origin and must always hit the network).
-const CACHE = 'odw-shell-v22';
+const CACHE = 'odw-shell-v23';
 const SHELL = ['./', './index.html',
   './bg-car-dark.webp', './bg-car-light.webp',
   './bg-climate-dark.webp', './bg-climate-light.webp',
