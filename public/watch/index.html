@@ -54,23 +54,29 @@
   .qbtn.warn{border-color:var(--m-orange)}.qbtn.warn .qi{color:var(--m-orange)}
 
   /* ---- Panel 3: climate ---- */
-  .power{width:92px;height:92px;border-radius:50%;background:var(--surface-1);border:1px solid var(--border);
+  .power{width:80px;height:80px;border-radius:50%;background:var(--surface-1);border:1px solid var(--border);
     box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;color:var(--text);cursor:pointer;transition:.15s}
-  .power.on{background:var(--accent);color:var(--bg);border-color:transparent;box-shadow:0 0 0 6px rgba(53,223,193,.15)}
-  .power svg{width:38px;height:38px}
-  .stepper{display:flex;align-items:center;gap:16px;margin-top:16px}
-  .stepper button{width:42px;height:42px;border-radius:50%;background:var(--surface-1);border:1px solid var(--border);
+  .power.on{background:var(--accent);color:var(--bg);border-color:transparent;box-shadow:0 0 0 5px rgba(53,223,193,.15)}
+  .power svg{width:34px;height:34px}
+  .stepper{display:flex;align-items:center;gap:14px;margin-top:12px}
+  .stepper button{width:40px;height:40px;border-radius:50%;background:var(--surface-1);border:1px solid var(--border);
     color:var(--text);font-size:22px;font-weight:600;cursor:pointer}.stepper button:active{background:var(--surface-2)}
-  .temp{font-size:30px;font-weight:800;letter-spacing:-.03em;min-width:70px}.temp small{font-size:.5em;color:var(--mid)}
+  .temp{font-size:28px;font-weight:800;letter-spacing:-.03em;min-width:66px}.temp small{font-size:.5em;color:var(--mid)}
+  .fanwrap{margin-top:13px;display:flex;flex-direction:column;align-items:center;gap:5px}
+  .fanbar{display:flex;gap:4px}
+  .fanseg{width:12px;height:20px;border-radius:5px;background:var(--surface-2);border:1px solid var(--border);cursor:pointer;transition:.12s}
+  .fanseg.on{background:var(--accent);border-color:transparent}
+  .fanlabel{font-size:11px;color:var(--mid);font-weight:700}.fanlabel b{color:var(--text)}
 
-  /* ---- Panel 4: seats ---- */
-  .seatrow{display:flex;align-items:center;justify-content:space-between;width:84%;max-width:230px;
-    padding:12px 0;border-bottom:1px solid var(--border)}.seatrow:last-child{border-bottom:0}
-  .seatrow .lab{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
-  .seatrow .lab svg{width:17px;height:17px;color:var(--mid)}
-  .levels{display:flex;gap:5px}
-  .lvl{width:22px;height:26px;border-radius:7px;background:var(--surface-2);border:1px solid var(--border);cursor:pointer;transition:.12s}
-  .lvl.on{background:var(--m-orange);border-color:transparent}
+  /* ---- Panel 4: seats (heat + cool) ---- */
+  .seatcol{width:88%;max-width:250px;display:flex;flex-direction:column;gap:11px}
+  .seatname{font-size:12px;font-weight:800;letter-spacing:.02em;text-align:left;margin-bottom:5px}
+  .seatline{display:flex;align-items:center;gap:9px;margin-bottom:5px}
+  .seatline .ic{width:15px;height:15px;flex:0 0 auto;display:flex}
+  .slevels{display:flex;gap:5px;margin-left:auto}
+  .sl{width:20px;height:19px;border-radius:6px;background:var(--surface-2);border:1px solid var(--border);cursor:pointer;transition:.12s}
+  .sl.on.heat{background:var(--m-orange);border-color:transparent}
+  .sl.on.cool{background:var(--accent);border-color:transparent}
 
   /* ---- Panel 5: tyres ---- */
   .tyres{display:grid;grid-template-columns:1fr 1fr;gap:14px 34px;width:72%;max-width:208px}
@@ -143,15 +149,16 @@
     <div class="stepper">
       <button data-act="temp-">−</button><div class="temp" id="temp">22<small>°</small></div><button data-act="temp+">+</button>
     </div>
+    <div class="fanwrap">
+      <div class="fanbar" id="fanbar"></div>
+      <div class="fanlabel">Fan <b id="fannum">–</b></div>
+    </div>
   </section>
 
-  <!-- 4 · Seats -->
+  <!-- 4 · Seats (heat + cool) -->
   <section class="panel">
-    <div class="ptitle">Seat heat</div>
-    <div style="width:100%;display:flex;flex-direction:column;align-items:center">
-      <div class="seatrow"><div class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v7a3 3 0 0 0 3 3h4"/><path d="M18 8v10a2 2 0 0 1-2 2H9"/></svg>Driver</div><div class="levels" id="seat1"></div></div>
-      <div class="seatrow"><div class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v7a3 3 0 0 0 3 3h4"/><path d="M18 8v10a2 2 0 0 1-2 2H9"/></svg>Passenger</div><div class="levels" id="seat2"></div></div>
-    </div>
+    <div class="ptitle">Seats</div>
+    <div class="seatcol" id="seats"></div>
   </section>
 
   <!-- 5 · Tyres -->
@@ -179,7 +186,7 @@ const qs=new URLSearchParams(location.search),demo=qs.has('demo');
 const ls=(k)=>{try{return localStorage.getItem(k)}catch{return null}};
 const BASE=(qs.get('b')||ls('odw.baseUrl')||'').replace(/\/$/,''),JWT=qs.get('t')||ls('odw.jwt')||'';
 const $=(id)=>document.getElementById(id);
-let tempC=22,climaOn=false,seatHeat=[0,0],busy=false;
+let tempC=22,climaOn=false,fanLevel=0,seatHeat=[0,0],seatCool=[0,0],ventSupported=false,busy=false;
 
 async function api(path,opts={}){
   if(demo) return demoResp(path,opts);
@@ -194,7 +201,8 @@ function demoResp(path,opts){
     soc:{percent:68},range:{totalRangeKm:495,elecRangeKm:78,fuelRangeKm:417,fuelPercent:55,isPhev:true},
     charging:{charging:true,plugged:true,chargingPowerKW:7.2}});
   if(path.startsWith('/api/vehicle/state')) return Promise.resolve({doors:{overall:1},
-    climate:{acOn:true,setpointDriver:22},seats:{heat:[2,0]},
+    climate:{acOn:true,setpointDriver:22,fanLevel:3},
+    seats:{heat:[2,0],cool:[0,1],ventilatedSupported:true},
     tyres:{available:true,fl:{kPa:240,pressureState:0},fr:{kPa:238,pressureState:0},
       rl:{kPa:205,pressureState:1},rr:{kPa:242,pressureState:0},limits:{frontLow:220,rearLow:220}}});
   return Promise.resolve({});
@@ -208,10 +216,27 @@ function renderTyre(id,t,limits){
   const low=(limits&&((id.includes('f')&&v<(limits.frontLow||0))||(id.includes('r')&&v<(limits.rearLow||0))))||(t.pressureState&&t.pressureState!==0);
   if(low) el.classList.add('low');
 }
-function renderSeats(){for(const pos of[1,2]){const w=$('seat'+pos);w.innerHTML='';const lvl=seatHeat[pos-1]||0;
-  for(let i=1;i<=3;i++){const d=document.createElement('div');d.className='lvl'+(i<=lvl?' on':'');
-    d.dataset.seat=pos;d.dataset.level=String(i===lvl?0:i);w.appendChild(d);}}}
-function renderClimate(){$('clima').classList.toggle('on',climaOn);$('temp').innerHTML=tempC+'<small>°</small>';}
+const FLAME='<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#f6a23c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c1 3-2 4-2 7a2 2 0 0 0 4 0c2 2 3 3 3 6a5 5 0 0 1-10 0c0-4 5-6 5-13z"/></svg>';
+const SNOW='<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#35dfc1" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9"/></svg>';
+function levelRow(pos,mode,cur){
+  let h='<div class="seatline">'+(mode==='heat'?FLAME:SNOW)+'<div class="slevels">';
+  for(let i=1;i<=3;i++) h+='<div class="sl '+mode+(i<=cur?' on':'')+'" data-seat="'+pos+'" data-mode="'+mode+'" data-level="'+(i===cur?0:i)+'"></div>';
+  return h+'</div></div>';
+}
+function renderSeats(){
+  const col=$('seats');col.innerHTML='';
+  for(const pos of[1,2]){
+    const name=pos===1?'Driver':'Passenger';
+    let blk='<div class="seatblk"><div class="seatname">'+name+'</div>';
+    blk+=levelRow(pos,'heat',seatHeat[pos-1]||0);
+    if(ventSupported) blk+=levelRow(pos,'cool',seatCool[pos-1]||0);
+    col.insertAdjacentHTML('beforeend',blk+'</div>');
+  }
+}
+function renderFan(){const fb=$('fanbar');fb.innerHTML='';
+  for(let i=1;i<=7;i++){const d=document.createElement('div');d.className='fanseg'+(i<=fanLevel?' on':'');d.dataset.fan=String(i);fb.appendChild(d);}
+  $('fannum').textContent=fanLevel||'–';}
+function renderClimate(){$('clima').classList.toggle('on',climaOn);$('temp').innerHTML=tempC+'<small>°</small>';renderFan();}
 
 async function load(){
   if(!demo&&(!BASE||!JWT)) return showState('<p>Not paired</p><p class="sub">Pair from the phone app</p>');
@@ -237,8 +262,11 @@ async function load(){
     const lock=st.doors?.overall??-1;
     $('b-lock').className='qbtn'+(lock===1?' on':'');
     $('b-unlock').className='qbtn'+(lock===2?' warn':'');
-    climaOn=!!st.climate?.acOn;if(typeof st.climate?.setpointDriver==='number')tempC=Math.round(st.climate.setpointDriver);renderClimate();
-    const h=st.seats?.heat||[];seatHeat=[h[0]||0,h[1]||0];renderSeats();
+    climaOn=!!st.climate?.acOn;
+    if(typeof st.climate?.setpointDriver==='number')tempC=Math.round(st.climate.setpointDriver);
+    fanLevel=st.climate?.fanLevel||0;renderClimate();
+    const h=st.seats?.heat||[],c=st.seats?.cool||[];seatHeat=[h[0]||0,h[1]||0];seatCool=[c[0]||0,c[1]||0];
+    ventSupported=!!st.seats?.ventilatedSupported;renderSeats();
     const T=st.tyres||{};renderTyre('ty-fl',T.fl,T.limits);renderTyre('ty-fr',T.fr,T.limits);renderTyre('ty-rl',T.rl,T.limits);renderTyre('ty-rr',T.rr,T.limits);
     $('devid').textContent=demo?'DEMO-SEAL-01':'';
     hideState();
@@ -256,8 +284,11 @@ async function fire(label,path,body){
   finally{busy=false;document.body.classList.remove('busy');}
 }
 document.addEventListener('click',(ev)=>{
-  const lvl=ev.target.closest('.lvl');
-  if(lvl){fire('Seat','/api/vehicle/seat',{action:'heating',position:+lvl.dataset.seat,level:+lvl.dataset.level});return;}
+  const sl=ev.target.closest('.sl');
+  if(sl){const mode=sl.dataset.mode==='cool'?'ventilation':'heating';
+    fire('Seat','/api/vehicle/seat',{action:mode,position:+sl.dataset.seat,level:+sl.dataset.level});return;}
+  const fs=ev.target.closest('.fanseg');
+  if(fs){fanLevel=+fs.dataset.fan;renderFan();fire('Fan','/api/vehicle/climate',{action:'set_fan',fan:+fs.dataset.fan});return;}
   const el=ev.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;
   if(a==='lock')fire('Lock','/api/vehicle/lock');
   else if(a==='unlock')fire('Unlock','/api/vehicle/unlock');
