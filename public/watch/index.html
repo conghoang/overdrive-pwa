@@ -54,10 +54,8 @@
   .schip svg{width:6.2vmin;height:6.2vmin}
 
   /* ---- Settings ---- */
-  .setrow{display:flex;align-items:center;gap:4vmin;width:90%;max-width:82vmin;cursor:pointer}
-  .setlab{text-align:left;min-width:0}
-  .setname{font-size:5vmin;font-weight:700}
-  .setsub{font-size:3.8vmin;color:var(--mid);margin-top:1vmin;line-height:1.35}
+  .setrow{display:flex;align-items:center;justify-content:space-between;gap:4vmin;width:84%;max-width:78vmin;cursor:pointer}
+  .setname{font-size:5.6vmin;font-weight:700}
   .switch{flex:0 0 auto;width:15vmin;height:9vmin;border-radius:4.5vmin;background:var(--surface-2);
     border:1px solid var(--border);position:relative;transition:background .18s}
   .switch i{position:absolute;top:1vmin;left:1vmin;width:7vmin;height:7vmin;border-radius:50%;
@@ -220,10 +218,7 @@
   <section class="panel">
     <div class="ptitle">Settings</div>
     <div class="setrow" data-act="wc51">
-      <div class="setlab">
-        <div class="setname">51DK keyless</div>
-        <div class="setsub">Use the BLE key for lock, unlock, trunk &amp; start</div>
-      </div>
+      <span class="setname">51DK keyless</span>
       <div class="switch" id="wcSwitch"><i></i></div>
     </div>
   </section>
