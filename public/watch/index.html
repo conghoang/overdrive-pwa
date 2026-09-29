@@ -26,6 +26,9 @@
   #pager{display:flex;height:100%;width:100%;overflow-x:auto;overflow-y:hidden;
     scroll-snap-type:x mandatory;scrollbar-width:none}
   #pager::-webkit-scrollbar{display:none}
+  :root[data-shape="rect"] .panel{padding:0 5%}
+  :root[data-shape="rect"] .ptitle{top:5%}
+  :root[data-shape="rect"] #dots{bottom:3%}
   .panel{flex:0 0 100%;height:100%;scroll-snap-align:center;position:relative;
     display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 10%;text-align:center}
   .ptitle{position:absolute;top:11%;left:0;right:0;font-size:4.6vmin;letter-spacing:.12em;
@@ -248,6 +251,8 @@ const ls=(k)=>{try{return localStorage.getItem(k)}catch{return null}};
 const lss=(k,v)=>{try{localStorage.setItem(k,v)}catch{}};
 const BASE=(qs.get('b')||ls('odw.baseUrl')||'').replace(/\/$/,''),JWT=qs.get('t')||ls('odw.jwt')||'';
 const $=(id)=>document.getElementById(id);
+function detectShape(){const mq=window.matchMedia;const round=!!mq&&(mq('(shape: round)').matches||mq('(round)').matches);document.documentElement.dataset.shape=round?'round':'rect';}
+detectShape();try{matchMedia('(shape: round)').addEventListener('change',detectShape);}catch{}
 let lang=ls('odw.lang')||((navigator.language||'').toLowerCase().startsWith('vi')?'vi':'en');
 const T={
  en:{'t.seats':'Seats','t.tyres':'Tyre \u00b7 kPa','t.settings':'Settings','t.account':'Account',
