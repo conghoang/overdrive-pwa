@@ -84,7 +84,7 @@
     opacity:.32;pointer-events:none;z-index:0}
   /* Frosted glass: the translucent button lets the backdrop show through, the
      blur keeps text/icons legible over it. */
-  .cbtn,.seattile,.stepper button,.clima-power{-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+  .cbtn,.seattile,.stepper button,.clima-power,.seg,.switch,.logout{-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
   .veh-range{display:flex;align-items:baseline;justify-content:center;gap:2vmin}
   .veh-range .num{font-size:22vmin;font-weight:700;letter-spacing:-.02em;line-height:1}
   .veh-range .unit{font-size:6.4vmin;color:var(--mid);font-weight:600}
@@ -103,7 +103,7 @@
   .schip svg{width:7.8vmin;height:7.8vmin}
 
   /* ---- Settings ---- */
-  .seg{display:inline-flex;background:var(--surface-1);border:1px solid var(--border);border-radius:6vmin;padding:1vmin;margin-top:6vmin}
+  .seg{display:inline-flex;background:var(--btn-bg);border:1px solid var(--border);border-radius:6vmin;padding:1vmin;margin-top:6vmin}
   .seg button{border:0;background:none;color:var(--mid);font-weight:800;font-size:4.4vmin;padding:1.6vmin 6vmin;border-radius:5vmin;cursor:pointer}
   .seg button.on{background:var(--accent);color:var(--on-teal)}
   /* Icon segs (theme): the glyph replaces the label; keep the pill height by
@@ -112,7 +112,7 @@
   #themeseg svg{width:6vmin;height:6vmin;display:block}
   .setrow{display:flex;align-items:center;justify-content:space-between;gap:4vmin;width:84%;max-width:78vmin;cursor:pointer}
   .setname{font-size:5.6vmin;font-weight:700}
-  .switch{flex:0 0 auto;width:15vmin;height:9vmin;border-radius:4.5vmin;background:var(--surface-2);
+  .switch{flex:0 0 auto;width:15vmin;height:9vmin;border-radius:4.5vmin;background:var(--btn-bg);
     border:1px solid var(--border);position:relative;transition:background .18s}
   .switch i{position:absolute;top:1vmin;left:1vmin;width:7vmin;height:7vmin;border-radius:50%;
     background:var(--mid);transition:transform .18s,background .18s}
@@ -196,7 +196,7 @@
   .tyval.rl{bottom:19%;left:13%}.tyval.rr{bottom:19%;right:13%}
 
   /* ---- Panel 6: logout ---- */
-  .logout{width:80%;max-width:64vmin;height:15vmin;border-radius:8vmin;background:transparent;
+  .logout{width:80%;max-width:64vmin;height:15vmin;border-radius:8vmin;background:var(--btn-bg);
     border:1px solid var(--danger);color:var(--danger);font-size:5vmin;font-weight:700;cursor:pointer}
   .logout:active{background:rgba(255,107,107,.12)}
 
