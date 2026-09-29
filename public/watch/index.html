@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<title>OverDrive Watch</title>
+<style>
+  /* OverDrive identity, straight from the phone app's tokens. */
+  :root{
+    --bg:#071019; --surface:#0c1724; --surface-2:#101f30; --border:rgba(168,198,220,.11);
+    --track:#17293b; --teal:#35dfc1; --teal-bright:#6bf7de; --on-teal:#071019;
+    --amber:#f6a23c; --on-amber:#201203; --text:#f5f9fc; --mid:#8497a8; --danger:#ff6b6b;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:system-ui,-apple-system,"Roboto",sans-serif;overflow:hidden;
+    font-variant-numeric:tabular-nums;-webkit-user-select:none;user-select:none}
+  /* Round-screen safe area: keep everything inside the inscribed circle. */
+  #app{position:relative;height:100%;width:100%;display:flex;flex-direction:column;
+    align-items:center;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;
+    padding:9% 12% 14%;}
+  #app::-webkit-scrollbar{display:none}
+
+  /* ---- Battery gauge ---- */
+  .gauge{position:relative;width:78%;max-width:220px;aspect-ratio:1;margin-top:2%}
+  .gauge svg{width:100%;height:100%;transform:rotate(135deg)}
+  .gauge circle{fill:none;stroke-linecap:round}
+  .g-track{stroke:var(--track)}
+  .g-val{stroke:var(--teal);transition:stroke-dashoffset .9s cubic-bezier(.16,1,.3,1),stroke .3s}
+  .g-comet{stroke:var(--teal-bright);opacity:0;stroke-linecap:round}
+  .charging .g-comet{opacity:1;animation:comet 1.7s linear infinite}
+  .center{position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;text-align:center}
+  .soc{font-size:min(19vw,52px);font-weight:800;letter-spacing:-.04em;line-height:.95;color:var(--teal)}
+  .soc.low{color:var(--amber)}
+  .soc small{font-size:.4em;font-weight:700;vertical-align:top;margin-left:1px}
+  .range{font-size:min(4.2vw,15px);color:var(--mid);font-weight:600;margin-top:2px}
+  .charge{display:flex;align-items:center;gap:3px;color:var(--teal);
+    font-size:min(3.6vw,13px);font-weight:700;margin-top:2px;min-height:15px}
+  .charge svg{width:12px;height:12px}
+
+  /* ---- Controls ---- */
+  .controls{width:100%;display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:6%}
+  .split{display:flex;width:96%;height:46px;border-radius:23px;background:var(--surface);
+    border:1px solid var(--border);overflow:hidden}
+  .split .half{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+    font-size:13px;font-weight:600;color:var(--text);cursor:pointer;border-radius:23px;
+    transition:background .15s,color .15s}
+  .split .half:active{background:var(--surface-2)}
+  .split .divider{width:1px;background:var(--border);align-self:center;height:22px}
+  .split .half.on-teal{background:var(--teal);color:var(--on-teal);font-weight:800}
+  .split .half.on-amber{background:var(--amber);color:var(--on-amber);font-weight:800}
+  .half svg{width:16px;height:16px}
+  .glabel{font-size:10px;letter-spacing:.12em;color:var(--mid);font-weight:700;margin:6px 0 -2px}
+  .btn{width:90%;height:44px;border-radius:22px;background:var(--surface);
+    border:1px solid var(--border);color:var(--text);font-size:14px;font-weight:600;
+    display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer}
+  .btn:active{background:var(--surface-2)}
+  .btn svg{width:17px;height:17px}
+  .busy{pointer-events:none;opacity:.6}
+  .spin{width:16px;height:16px;border:2px solid currentColor;border-right-color:transparent;
+    border-radius:50%;animation:spin .7s linear infinite}
+
+  /* ---- States ---- */
+  .state{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;text-align:center;gap:10px;padding:18%}
+  .state p{margin:0;color:var(--text);font-size:14px}
+  .state .sub{color:var(--mid);font-size:12px}
+  .retry{padding:9px 20px;border-radius:20px;background:var(--teal);color:var(--on-teal);
+    border:0;font-weight:700;font-size:13px}
+  [hidden]{display:none!important}
+
+  /* ---- Toast ---- */
+  #toast{position:fixed;left:50%;bottom:4%;transform:translateX(-50%) translateY(20px);
+    background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+    padding:7px 15px;border-radius:16px;font-size:12.5px;font-weight:600;opacity:0;
+    transition:opacity .2s,transform .2s;pointer-events:none;max-width:80%;text-align:center}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #toast.err{color:var(--danger)}
+
+  @keyframes comet{from{stroke-dashoffset:var(--comet-from)}to{stroke-dashoffset:var(--comet-to)}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){.g-val,.charging .g-comet{transition:none;animation:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Loading / error states -->
+  <div class="state" id="state" hidden></div>
+
+  <!-- Main -->
+  <div id="main" hidden style="width:100%;display:flex;flex-direction:column;align-items:center">
+    <div class="gauge" id="gauge">
+      <svg viewBox="0 0 100 100">
+        <circle class="g-track" cx="50" cy="50" r="43" stroke-width="7"/>
+        <circle class="g-val"   cx="50" cy="50" r="43" stroke-width="7"/>
+        <circle class="g-comet" cx="50" cy="50" r="43" stroke-width="7"/>
+      </svg>
+      <div class="center">
+        <div class="soc" id="soc">--<small>%</small></div>
+        <div class="range" id="range">range —</div>
+        <div class="charge" id="charge"></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="split" id="lockSplit">
+        <div class="half" data-act="lock" id="lockHalf">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Locked
+        </div>
+        <div class="divider"></div>
+        <div class="half" data-act="unlock" id="unlockHalf">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>Unlocked
+        </div>
+      </div>
+
+      <div class="glabel">CLIMATE</div>
+      <div class="split">
+        <div class="half" data-act="climate-on">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9"/></svg>On
+        </div>
+        <div class="divider"></div>
+        <div class="half" data-act="climate-off">Off</div>
+      </div>
+
+      <button class="btn" data-act="trunk">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16.9h3.3"/><path d="M13.5 16.9h5.6a2.1 2.1 0 0 0 2.1-2.3l-.6-4.7a2.5 2.5 0 0 0-2-2.1L11.7 7.5"/><path d="M2.4 4.1c4.6.1 7.4.8 9.3 3.4"/><path d="M11.7 7.5c1.9-1.9 4.2-2.9 7.5-2.8"/><circle cx="9.7" cy="16.9" r="2.9"/></svg>Open trunk
+      </button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+// ---- Session: injected by the native wrapper (localStorage) or ?b=&t= or ?demo=1 ----
+const qs = new URLSearchParams(location.search);
+const demo = qs.has('demo');
+const ls = (k) => { try { return localStorage.getItem(k) } catch { return null } };
+const BASE = (qs.get('b') || ls('odw.baseUrl') || '').replace(/\/$/,'');
+const JWT  = qs.get('t') || ls('odw.jwt') || '';
+
+const $ = (id) => document.getElementById(id);
+const R = 43, C = 2 * Math.PI * R, SWEEP = 0.75;           // 270° gauge
+// track shows the full 270°; value fills a fraction of it.
+for (const el of document.querySelectorAll('.g-track,.g-val,.g-comet')) {
+  el.style.strokeDasharray = (SWEEP*C) + ' ' + C;
+}
+document.documentElement.style.setProperty('--comet-from', C + 'px');
+
+function setGauge(frac, low, charging) {
+  frac = Math.max(0, Math.min(1, frac||0));
+  const val = $('gauge').querySelector('.g-val');
+  val.style.strokeDashoffset = (SWEEP*C) * (1 - frac);
+  val.style.stroke = low ? 'var(--amber)' : 'var(--teal)';
+  $('gauge').classList.toggle('charging', !!charging);
+  if (charging) {
+    const filled = SWEEP*C*frac;
+    document.documentElement.style.setProperty('--comet-from', C + 'px');
+    document.documentElement.style.setProperty('--comet-to', (C - filled) + 'px');
+    const comet = $('gauge').querySelector('.g-comet');
+    comet.style.strokeDasharray = '14 ' + (C - 14);
+  }
+}
+
+async function api(path, opts={}) {
+  if (demo) return demoResp(path, opts);
+  const res = await fetch(BASE + path, {
+    method: opts.method || 'GET',
+    headers: Object.assign({ Authorization: 'Bearer ' + JWT },
+      opts.body ? { 'Content-Type':'application/json' } : {}),
+    body: opts.body,
+  });
+  if (res.status === 401) { const e = new Error('auth'); e.auth = true; throw e; }
+  const ct = res.headers.get('content-type') || '';
+  return ct.includes('json') ? res.json() : {};
+}
+function demoResp(path, opts) {
+  if (opts.method === 'POST') return Promise.resolve({ success:true });
+  if (path === '/status') return Promise.resolve({
+    soc:{percent:68}, range:{totalRangeKm:495, isPhev:true},
+    charging:{charging:true, plugged:true, chargingPowerKW:7.2} });
+  if (path.startsWith('/api/vehicle/state')) return Promise.resolve({ doors:{overall:1} });
+  return Promise.resolve({});
+}
+
+function showState(html) { $('state').innerHTML = html; $('state').hidden = false; $('main').hidden = true; }
+function showMain() { $('state').hidden = true; $('main').hidden = false; }
+
+let toastT;
+function toast(msg, err) {
+  const t = $('toast'); t.textContent = msg; t.className = 'show' + (err ? ' err' : '');
+  clearTimeout(toastT); toastT = setTimeout(() => t.className = '', 1800);
+}
+
+let lockState = -1;
+function renderLock() {
+  const l = $('lockHalf'), u = $('unlockHalf');
+  l.className = 'half' + (lockState === 1 ? ' on-teal' : '');
+  u.className = 'half' + (lockState === 2 ? ' on-amber' : '');
+}
+
+async function load() {
+  if (!demo && (!BASE || !JWT)) {
+    return showState('<p>Not paired</p><p class="sub">Pair from the phone app</p>');
+  }
+  showState('<div class="spin" style="color:var(--teal)"></div>');
+  try {
+    const s = await api('/status');
+    let locked = -1;
+    try { locked = (await api('/api/vehicle/state')).doors?.overall ?? -1; } catch {}
+    const soc = s.soc?.percent, range = s.range?.totalRangeKm, ch = s.charging || {};
+    const low = typeof soc === 'number' && soc <= 15;
+    showMain();
+    $('soc').innerHTML = (soc ?? '--') + '<small>%</small>';
+    $('soc').className = 'soc' + (low ? ' low' : '');
+    $('range').textContent = range != null ? range + ' km' : 'range —';
+    $('charge').innerHTML = (ch.charging || ch.plugged)
+      ? '<svg viewBox="0 0 24 24"><path d="M13 2.5 5 13.2h5.2l-1 8.3 8-11.2h-5.2z" fill="currentColor"/></svg>'
+        + (ch.charging ? (ch.chargingPowerKW ? ch.chargingPowerKW.toFixed(1)+' kW' : 'Charging') : 'Plugged in')
+      : '';
+    setGauge((soc||0)/100, low, ch.charging);
+    lockState = locked; renderLock();
+  } catch (e) {
+    if (e.auth) return showState('<p>Session ended</p><p class="sub">Re-pair from the phone</p>');
+    showState('<p>Can’t reach car</p><button class="retry" onclick="load()">Retry</button>');
+  }
+}
+
+let busy = false;
+async function act(el, name, path, opts, label) {
+  if (busy) return; busy = true;
+  const html = el.innerHTML; el.classList.add('busy');
+  if (el.classList.contains('btn') || el.classList.contains('half'))
+    el.innerHTML = '<div class="spin"></div>';
+  try {
+    const r = await api(path, opts);
+    toast((r.success === false ? (r.error || label + ' failed') : label + ' ✓'), r.success === false);
+    if (r.success !== false) { await load(); }
+  } catch (e) {
+    if (e.auth) return showState('<p>Session ended</p><p class="sub">Re-pair from the phone</p>');
+    toast(label + ' failed', true);
+  } finally {
+    busy = false; el.classList.remove('busy'); if ($(el.id)) el.innerHTML = html;
+    // reload() already rebuilt the split; only restore standalone buttons
+  }
+}
+
+document.addEventListener('click', (ev) => {
+  const el = ev.target.closest('[data-act]'); if (!el) return;
+  const a = el.dataset.act;
+  const P = (p, m, b) => act(el, a, p, { method:m, body:b }, label(a));
+  if (a === 'lock') P('/api/vehicle/lock','POST');
+  else if (a === 'unlock') P('/api/vehicle/unlock','POST');
+  else if (a === 'trunk') P('/api/vehicle/trunk','POST', JSON.stringify({action:'open'}));
+  else if (a === 'climate-on') P('/api/vehicle/climate','POST', JSON.stringify({action:'power_on'}));
+  else if (a === 'climate-off') P('/api/vehicle/climate','POST', JSON.stringify({action:'power_off'}));
+});
+function label(a){return {lock:'Lock',unlock:'Unlock',trunk:'Trunk','climate-on':'Climate on','climate-off':'Climate off'}[a]||a}
+
+load();
+</script>
+</body>
+</html>
