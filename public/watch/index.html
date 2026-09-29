@@ -78,18 +78,16 @@
   #dots i.on{opacity:1;background:var(--accent);width:6vmin;border-radius:1vmin}
 
   /* ---- Panel 1: range + battery/fuel bars (the PWA hero) ---- */
-  /* Car hero: centred and nudged up, fully contained inside the round face so
-     the bezel never clips it. A flat low opacity (no gradient) keeps it a quiet
-     backdrop behind the stats. Content sits above it. */
+  /* Backdrops are pre-baked per theme: square, display-sized, with the fade and
+     the theme background already composited in. The browser just blits an opaque
+     bitmap — no runtime opacity layer, crop, or scale work. */
   #p-status>*:not(.carbg){position:relative;z-index:1}
-  .carbg{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);
-    width:76%;max-width:none;height:auto;opacity:.15;pointer-events:none;z-index:0}
+  .carbg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;z-index:0}
   /* Per-panel PWA backdrops (climate/seat/tyre): fill the round face, content on
      top. Interior shots use cover; the chassis (4 wheels) is contained so all
      four tyres read behind the four pressures. */
   #p-climate>*:not(.panelbg),#p-seat>*:not(.panelbg){position:relative;z-index:1}
-  .panelbg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
-    opacity:.32;pointer-events:none;z-index:0}
+  .panelbg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;z-index:0}
   /* Frosted glass: the translucent button lets the backdrop show through, the
      blur keeps text/icons legible over it. */
   .cbtn,.seattile,.stepper button,.clima-power,.seg,.switch,.logout{-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
@@ -158,8 +156,11 @@
 
   /* ---- Panel 3: climate ---- */
   /* Centered cluster that stays inside the round face. */
-  .clima-out{position:absolute;top:11%;left:0;right:0;display:flex;align-items:center;justify-content:center;
-    gap:1.4vmin;font-size:4.8vmin;font-weight:700;color:var(--mid);min-height:5vmin}
+  /* In the flex flow (first item) so it always sits at the top of the cluster,
+     never overlapping the AC pill. Hidden when there's no reading. */
+  .clima-out{display:flex;align-items:center;justify-content:center;gap:1.4vmin;
+    font-size:4.8vmin;font-weight:700;color:var(--mid);margin-bottom:2.5vmin}
+  .clima-out:empty{display:none}
   .clima-out svg{width:6.2vmin;height:6.2vmin}
   .clima-power{display:inline-flex;align-items:center;gap:2vmin;height:12vmin;padding:0 6vmin;border-radius:6vmin;
     background:var(--btn-bg);border:1px solid var(--border);color:var(--mid);font-weight:800;font-size:4.6vmin;
@@ -237,7 +238,7 @@
 <div id="pager" hidden>
   <!-- 1 · Status -->
   <section class="panel" id="p-status">
-    <img class="carbg" src="car.webp" alt="" aria-hidden="true">
+    <img class="carbg" data-bg="bg-car" alt="" aria-hidden="true">
     <div class="veh-range"><span class="num" id="range">--</span><span class="unit" id="unit">km</span></div>
     <div class="legs">
       <div class="leg" id="leg-ev">
@@ -272,7 +273,7 @@
 
   <!-- 3 · Climate -->
   <section class="panel" id="p-climate">
-    <img class="panelbg" src="bg-climate.webp" alt="" aria-hidden="true">
+    <img class="panelbg" data-bg="bg-climate" alt="" aria-hidden="true">
     <div class="clima-out" id="climaOut"></div>
     <div class="clima-power" data-act="clima" id="clima">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9"/></svg>
@@ -293,7 +294,7 @@
 
   <!-- 4 · Seats (heat + cool) -->
   <section class="panel" id="p-seat">
-    <img class="panelbg" src="bg-seat.webp" alt="" aria-hidden="true">    <div class="seatcol" id="seats"></div>
+    <img class="panelbg" data-bg="bg-seat" alt="" aria-hidden="true">    <div class="seatcol" id="seats"></div>
   </section>
 
   <!-- 5 · Tyres — top-down car, each reading at its real corner (live from OD) -->
@@ -359,6 +360,8 @@ function applyTheme(){
   else delete document.documentElement.dataset.theme;
   const m=$('themeColor');if(m)m.content=theme==='light'?'#e9eef3':'#071019';
   document.querySelectorAll('#themeseg button').forEach(bt=>bt.classList.toggle('on',bt.dataset.theme===theme));
+  // Swap to the pre-baked backdrop for this theme (fade + bg already composited).
+  document.querySelectorAll('[data-bg]').forEach(i=>{const s=i.dataset.bg+'-'+theme+'.webp';if(i.getAttribute('src')!==s)i.src=s;});
 }
 const T={
  en:{'t.seats':'Seats','t.tyres':'Tyre \u00b7 kPa','t.settings':'Settings','t.account':'Account',
