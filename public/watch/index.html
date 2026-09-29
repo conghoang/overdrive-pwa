@@ -23,6 +23,7 @@
     --accent:#35dfc1; --accent-bright:#35dfc1;
     --success:#56d68c; --m-orange:#f6a23c; --text:#f5f9fc; --mid:#8497a8; --danger:#ff6b6b;
     --on-teal:#071019; --on-accent:#071019;
+    --btn-bg:rgba(12,23,36,.72); --btn-bg-active:rgba(16,31,48,.85);
     --radius:16px; --shadow:0 10px 26px rgba(0,0,0,.34);
     color-scheme:dark;
   }
@@ -31,6 +32,7 @@
     --accent:#22c9ac; --accent-bright:#0e9e88;
     --success:#2ea866; --m-orange:#c9760f; --text:#0b1a24; --mid:#5c6d7a; --danger:#d6453f;
     --on-teal:#04150f; --on-accent:#04150f;
+    --btn-bg:rgba(255,255,255,.66); --btn-bg-active:rgba(219,228,236,.82);
     --shadow:0 10px 26px rgba(20,40,60,.14);
     color-scheme:light;
   }
@@ -117,10 +119,10 @@
   /* ---- Panel 2: quick buttons (PWA quick-btn) ---- */
   /* Cardinal-cross control buttons, icon only. */
   .cross{position:absolute;inset:0}
-  .cbtn{position:absolute;width:31vmin;height:31vmin;border-radius:50%;background:var(--surface-1);
+  .cbtn{position:absolute;width:31vmin;height:31vmin;border-radius:50%;background:var(--btn-bg);
     border:1px solid var(--border);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;
     color:var(--accent-bright);cursor:pointer;transition:background .12s,border-color .15s}
-  .cbtn:active{background:var(--surface-2)}
+  .cbtn:active{background:var(--btn-bg-active)}
   .cbtn svg{width:17vmin;height:17vmin}
   .cbtn.on{border-color:var(--success);color:var(--success)}
   .cbtn.warn{border-color:var(--m-orange);color:var(--m-orange)}
@@ -143,18 +145,18 @@
     gap:1.4vmin;font-size:4.8vmin;font-weight:700;color:var(--mid);min-height:5vmin}
   .clima-out svg{width:6.2vmin;height:6.2vmin}
   .clima-power{display:inline-flex;align-items:center;gap:2vmin;height:12vmin;padding:0 6vmin;border-radius:6vmin;
-    background:var(--surface-1);border:1px solid var(--border);color:var(--mid);font-weight:800;font-size:4.6vmin;
+    background:var(--btn-bg);border:1px solid var(--border);color:var(--mid);font-weight:800;font-size:4.6vmin;
     letter-spacing:.04em;cursor:pointer;transition:.15s}
   .clima-power svg{width:7.4vmin;height:7.4vmin}
   .clima-power.on{background:var(--accent);color:var(--on-teal);border-color:transparent}
   .stepper{display:flex;align-items:center;justify-content:center;gap:3.4vmin}
   .stepper.temp-row{margin-top:5vmin}
   .stepper.fan-row{margin-top:4vmin;gap:3vmin}
-  .stepper button{flex:0 0 auto;border-radius:50%;background:var(--surface-1);border:1px solid var(--border);
+  .stepper button{flex:0 0 auto;border-radius:50%;background:var(--btn-bg);border:1px solid var(--border);
     color:var(--text);font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center}
   .temp-row button{width:16vmin;height:16vmin;font-size:8vmin}
   .fan-row button{width:12.5vmin;height:12.5vmin;font-size:6.5vmin}
-  .stepper button:active{background:var(--surface-2)}
+  .stepper button:active{background:var(--btn-bg-active)}
   .temp{font-size:16vmin;font-weight:800;letter-spacing:-.03em;min-width:24vmin;line-height:1}
   .temp small{font-size:.42em;color:var(--mid);vertical-align:top}
   .fanwrap{display:flex;flex-direction:column;align-items:center;gap:1.4vmin;min-width:26vmin}
@@ -166,7 +168,7 @@
   /* ---- Panel 4: seats (heat + cool) ---- */
   /* Big tap-to-cycle tiles — one target per seat/mode, no tiny pills. */
   .seatgrid{display:grid;grid-template-columns:1fr 1fr;gap:3.4vmin;width:88%;max-width:82vmin}
-  .seattile{min-height:31vmin;border-radius:var(--radius);background:var(--surface-1);border:1px solid var(--border);
+  .seattile{min-height:31vmin;border-radius:var(--radius);background:var(--btn-bg);border:1px solid var(--border);
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.8vmin;
     color:var(--text);cursor:pointer;transition:transform .08s,border-color .15s}
   .seattile:active{transform:scale(.95)}
@@ -184,7 +186,7 @@
   .tyremap{position:relative;width:100%;height:100%}
   .carmap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);height:58%;width:auto}
   .tyval{position:absolute;display:flex;flex-direction:column;align-items:center;line-height:1}
-  .tyval b{font-size:8.6vmin;font-weight:800;letter-spacing:-.02em;color:var(--success)}
+  .tyval b{font-size:10vmin;font-weight:800;letter-spacing:-.02em;color:var(--success)}
   .tyval.low b{color:var(--m-orange)}.tyval.dim b{color:var(--mid)}
   .tyval small{font-size:3.2vmin;letter-spacing:.14em;color:var(--mid);font-weight:700;margin-top:.8vmin}
   .tyval.fl{top:19%;left:13%}.tyval.fr{top:19%;right:13%}
