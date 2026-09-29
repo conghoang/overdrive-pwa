@@ -54,6 +54,14 @@
     opacity:0;z-index:-1;scrollbar-width:none;outline:none}
   #rotsink::-webkit-scrollbar{display:none}
   #rotsink>div{height:300%}
+  /* Pull-to-refresh indicator (the Wear browser has no reload). */
+  #ptr{position:fixed;top:0;left:50%;transform:translate(-50%,-70px);z-index:40;
+    width:11vmin;height:11vmin;border-radius:50%;background:var(--btn-bg);opacity:0;
+    display:flex;align-items:center;justify-content:center;pointer-events:none;
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+  #ptr .ptr-spin{width:6vmin;height:6vmin;border:.7vmin solid var(--mid);
+    border-top-color:var(--accent);border-radius:50%}
+  #ptr.spin .ptr-spin{animation:spin .7s linear infinite}
   :root[data-shape="rect"] .panel{padding:0 5%}
   :root[data-shape="rect"] .ptitle{top:5%}
   :root[data-shape="rect"] #dots{bottom:3%}
@@ -327,6 +335,7 @@
 
 <div id="dots" hidden></div>
 <div id="toast"></div>
+<div id="ptr" aria-hidden="true"><div class="ptr-spin"></div></div>
 <!-- Rotary sink: the bezel/crown emits VERTICAL scroll, which the WebView only
      delivers to a vertically-scrollable, focused element. This invisible one
      stays focused, catches the rotary, and each detent steps the pager. -->
@@ -672,6 +681,41 @@ function focusPager(){
 pager.addEventListener('pointerup',focusPager);
 centreSink();setInterval(focusPager,1200);
 applyI18n();applyTheme();
+
+// --- Auto-refresh: the Wear browser won't poll on its own. Silently refresh
+// telemetry on a timer while the app is visible, paired, and idle; and whenever
+// the app comes back to the foreground.
+const canRefresh=()=>!document.hidden&&!pager.hidden&&!busy&&!document.body.classList.contains('sliding')&&(demo||(BASE&&JWT));
+setInterval(()=>{if(canRefresh())load(true);},20000);
+document.addEventListener('visibilitychange',()=>{if(canRefresh())load(true);});
+
+// --- Pull-to-refresh: drag down from the top to refresh (no reload button on
+// the watch browser). Only engages on a clearly-vertical downward drag, so it
+// never fights the horizontal pager swipe.
+const ptr=$('ptr');
+let _pY=0,_pX=0,_pOn=false,_pReady=false;
+function ptrReset(){_pOn=false;_pReady=false;ptr.classList.remove('spin');ptr.style.transition='';ptr.style.transform='translate(-50%,-70px)';ptr.style.opacity='0';}
+document.addEventListener('touchstart',(e)=>{if(pager.hidden||busy||e.touches.length!==1)return;_pY=e.touches[0].clientY;_pX=e.touches[0].clientX;_pOn=false;},{passive:true});
+document.addEventListener('touchmove',(e)=>{
+  if(pager.hidden||busy||e.touches.length!==1)return;
+  const dy=e.touches[0].clientY-_pY,dx=e.touches[0].clientX-_pX;
+  if(!_pOn){if(dy>10&&dy>Math.abs(dx)*1.5)_pOn=true;else return;}
+  if(dy<=0){ptrReset();return;}
+  e.preventDefault();
+  const pull=Math.min(dy*0.5,90);_pReady=pull>=60;
+  ptr.style.transition='none';
+  ptr.style.transform='translate(-50%,'+(pull-60)+'px) rotate('+(pull*3)+'deg)';
+  ptr.style.opacity=Math.min(1,pull/45);
+},{passive:false});
+document.addEventListener('touchend',()=>{
+  if(!_pOn)return;_pOn=false;
+  ptr.style.transition='transform .2s ease-out,opacity .2s ease-out';
+  if(_pReady&&canRefresh()){
+    ptr.style.transform='translate(-50%,12px)';ptr.style.opacity='1';ptr.classList.add('spin');
+    Promise.resolve(load(true)).finally(()=>setTimeout(ptrReset,500));
+  }else ptrReset();
+});
+
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 load();
 </script>
