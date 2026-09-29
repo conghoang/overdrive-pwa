@@ -430,7 +430,15 @@ async function api(path,opts={}){
     const res=await fetch(BASE+path,{method,signal:ac.signal,
       headers:Object.assign({Authorization:'Bearer '+JWT},opts.body?{'Content-Type':'application/json'}:{}),body:opts.body});
     if(res.status===401){const e=new Error('auth');e.auth=1;throw e;}
-    const ct=res.headers.get('content-type')||'';return ct.includes('json')?await res.json():{};
+    const ct=res.headers.get('content-type')||'';
+    const data=ct.includes('json')?await res.json().catch(()=>({})):{};
+    // Non-2xx is a failure, never data: a 500's JSON body used to be rendered as the
+    // car's state. Reads throw; commands report success:false with the server's reason.
+    if(!res.ok){
+      if(method==='GET'){const e=new Error('http '+res.status);e.status=res.status;throw e;}
+      return {success:false,error:(data&&(data.error||data.message))||('HTTP '+res.status)};
+    }
+    return data;
   }finally{clearTimeout(timer);}
 }
 function demoResp(path,opts){
@@ -464,7 +472,9 @@ function renderTyre(id,t,limits){
   s.textContent=pUnitLabel(pressureUnit);          // unit label as configured in OD
   if(v==null||t?.available===false){b.textContent='—';el.classList.add('dim');return;}
   b.textContent=fmtPressure(t,pressureUnit);        // OD's value in the configured unit — no conversion
-  const low=(limits&&((id.includes('f')&&v<(limits.frontLow||0))||(id.includes('r')&&v<(limits.rearLow||0))))||(t.pressureState&&t.pressureState!==0);
+  const front=id.slice(-2)[0]==='f';     // 'ty-fr' -> 'f': front axle ('fr' contains an r!)
+  const lim=limits?(front?limits.frontLow:limits.rearLow):0;
+  const low=(lim&&v<lim)||(t.pressureState&&t.pressureState!==0);
   if(low) el.classList.add('low');
 }
 const FLAME='<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="#f6a23c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c1 3-2 4-2 7a2 2 0 0 0 4 0c2 2 3 3 3 6a5 5 0 0 1-10 0c0-4 5-6 5-13z"/></svg>';
@@ -517,9 +527,9 @@ function renderStatus(s,st){
   items.push(_chip(s.acc?G:M,IC_POWER));                                  // ignition
   const lk=st.doors?.overall??-1;
   items.push(_chip(lk===2?A:lk===1?G:M, lk===2?IC_UNLOCK:IC_LOCK));       // central lock (-1 unknown = muted)
-  const w=st.windows||{};
-  const open=['lf','rf','lr','rr','sunroof','sunshade'].some(k=>(w[k]||0)>0);
-  items.push(_chip(open?A:G,IC_WIN));                                     // windows
+  const w=st.windows;
+  const open=!!w&&['lf','rf','lr','rr','sunroof','sunshade'].some(k=>(w[k]||0)>0);
+  items.push(_chip(!w?M:open?A:G,IC_WIN));                               // windows (unknown = muted)
   setHTML($('statusrow'),items.join(''));
 }
 function renderClimate(){$('clima').classList.toggle('on',climaOn);
@@ -529,13 +539,11 @@ function renderClimate(){$('clima').classList.toggle('on',climaOn);
   renderFan();}
 
 function renderQR(id,text){
-  // The QR carries the pairing URL *and* the watch's ECDH public key (~140 chars),
-  // not just the 6-char code — that's why it's dense. Error-correction 'L' keeps
-  // the module count (and so the density) as low as the data allows; a quiet-zone
-  // margin plus the white card make it reliable to scan at close range.
+  // The QR is just the 6-char code (21x21). The generator is vendored next to this
+  // page (21KB minified) so pairing doesn't wait on a 3rd-party CDN; the SW caches it.
   const draw=()=>{try{const q=qrcode(0,'L');q.addData(text);q.make();$(id).innerHTML=q.createSvgTag({cellSize:4,margin:2});}catch{}};
   if(window.qrcode)return draw();
-  const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js';
+  const s=document.createElement('script');s.src='qrcode.min.js';
   s.onload=draw;s.onerror=()=>{};document.head.appendChild(s);
 }
 async function startPairing(){
@@ -543,7 +551,7 @@ async function startPairing(){
   try{
     const kp=await SC.generateKey(EC,false,['deriveKey']);
     const watchPub=b64u(await SC.exportKey('raw',kp.publicKey));
-    const r=await fetch(PAIR_API+'/new',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({watchPub})}).then(x=>x.json());
+    const r=await fetchT(PAIR_API+'/new',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({watchPub})}).then(x=>x.json());
     if(!r.code) throw 0;
     // QR is just the 6-char code — scanned in the phone's pair page, which fetches
     // this session's public key from the worker by that code. Minimal, sparse QR.
@@ -557,11 +565,14 @@ async function startPairing(){
 // freezes until the watch wakes. Keep the pairing context so a wake (and the
 // "Check now" button) can trigger an immediate check.
 let _pair=null;
+function fetchT(url,opts={},ms=8000){const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),ms);
+  return fetch(url,Object.assign({},opts,{signal:ac.signal})).finally(()=>clearTimeout(tm));}
 async function pairTick(){
-  const P=_pair;if(!P||P.stop)return;
-  clearTimeout(P.t);
-  let r;try{r=await fetch(PAIR_API+'/get?code='+P.code).then(x=>x.json());}
-  catch{if(!P.stop)P.t=setTimeout(pairTick,1000);return;}
+  const P=_pair;if(!P||P.stop||P.busy)return;   // one poll in flight — taps/wakes used to stack extra loops
+  clearTimeout(P.t);P.busy=true;
+  let r;try{r=await fetchT(PAIR_API+'/get?code='+P.code).then(x=>x.json());}
+  catch{P.busy=false;if(!P.stop)P.t=setTimeout(pairTick,1000);return;}
+  P.busy=false;
   if(P.stop)return;
   if(r.status==='ready'){
     P.stop=true;
@@ -580,7 +591,7 @@ async function pairTick(){
   if(r.status==='expired'){P.stop=true;return startPairing();}
   P.t=setTimeout(pairTick,1000);
 }
-function pollPair(code,kp){_pair={code,kp,stop:false,t:0};pairTick();}
+function pollPair(code,kp){if(_pair){_pair.stop=true;clearTimeout(_pair.t);}_pair={code,kp,stop:false,busy:false,t:0};pairTick();}
 // Manual "Check now" and any foreground wake trigger an immediate check.
 function checkPair(){if(_pair&&!_pair.stop)pairTick();}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkPair();});
@@ -590,10 +601,24 @@ window.addEventListener('focus',checkPair);
 // pager back to the first screen (which looked like a full page reload).
 // #5: only one load runs at a time — timer, foreground, pull-to-refresh and the
 // post-action refresh share it instead of stacking duplicate requests.
+// fresh=true (after a command): run a NEW load once any in-flight one finishes,
+// since an in-flight load read the car before the command was applied.
 let _loadP=null;
-function load(silent){if(!_loadP)_loadP=_load(silent).finally(()=>{_loadP=null;});return _loadP;}
+function load(silent,fresh){
+  if(_loadP&&!fresh)return _loadP;
+  const p=(_loadP||Promise.resolve()).catch(()=>{}).then(()=>_load(silent))
+    .finally(()=>{if(_loadP===p)_loadP=null;});
+  return _loadP=p;
+}
 // Outside temperature barely moves: fetch it at most every 5 minutes.
 let _sumAt=0;const SUM_TTL=300000;
+// Last good /api/vehicle/state. If that request fails we keep showing (and acting
+// on) this instead of redrawing from empty defaults — which used to flip the watch
+// to "AC off / unlocked / heat off" and make the AC button send the wrong command.
+let _lastSt=null;
+// A temp picked while AC is off isn't sent yet; keep it until AC is turned on.
+let _tempLocal=false;
+let _offline=false;   // show "can't reach car" once per outage, not every refresh
 async function _load(silent){
   if(!demo&&(!BASE||!JWT)) return startPairing();
   if(!silent) showState('<div class="spin"></div>');
@@ -604,7 +629,11 @@ async function _load(silent){
     const [sR,stR,sumR]=await Promise.allSettled([api('/status'),api('/api/vehicle/state'),
       wantSum?api('/api/launcher/v1/summary'):Promise.resolve(null)]);
     if(sR.status==='rejected') throw sR.reason;
-    const s=sR.value,st=stR.status==='fulfilled'?stR.value:{};
+    const s=sR.value;
+    // Only accept a response that actually describes the car.
+    const sv=stR.status==='fulfilled'?stR.value:null;
+    if(sv&&['doors','climate','seats','tyres','windows'].some(k=>k in sv))_lastSt=sv;
+    const st=_lastSt;                       // null only if we've never had a good read
     if(wantSum&&sumR.status==='fulfilled'&&typeof sumR.value?.env?.tempC==='number'){outTempC=sumR.value.env.tempC;_sumAt=Date.now();}
     const unit=s.distanceUnit||'km',r=s.range||{};
     pressureUnit=s.pressureUnit||'kpa';
@@ -620,25 +649,29 @@ async function _load(silent){
       $('fuel-bar').style.transform='translateX('+(pctClamp(r.fuelPercent)-100)+'%)';}
     else $('leg-fuel').hidden=true;
 
-    const lock=st.doors?.overall??-1;
-    $('b-lock').className='cbtn pN'+(lock===1?' on':'');
-    $('b-unlock').className='cbtn pS'+(lock===2?' warn':'');
     renderControls();
-    renderStatus(s,st);
-    climaOn=!!st.climate?.acOn;
-    // Don't overwrite a value the user is still adjusting (debounced send pending).
-    if(!_pend.temp&&typeof st.climate?.setpointDriver==='number')tempC=Math.round(st.climate.setpointDriver);
-    if(!_pend.fan)fanLevel=st.climate?.fanLevel||0;
-    renderClimate();
-    const h=st.seats?.heat||[],c=st.seats?.cool||[];seatHeat=[h[0]||0,h[1]||0];seatCool=[c[0]||0,c[1]||0];
-    ventSupported=!!st.seats?.ventilatedSupported;renderSeats();
-    const T=st.tyres||{};renderTyre('ty-fl',T.fl,T.limits);renderTyre('ty-fr',T.fr,T.limits);renderTyre('ty-rl',T.rl,T.limits);renderTyre('ty-rr',T.rr,T.limits);
+    renderStatus(s,st||{});
+    if(st){
+      const lock=st.doors?.overall??-1;
+      $('b-lock').className='cbtn pN'+(lock===1?' on':'');
+      $('b-unlock').className='cbtn pS'+(lock===2?' warn':'');
+      climaOn=!!st.climate?.acOn;
+      if(climaOn)_tempLocal=false;          // AC running: the car's setpoint is the truth
+      // Don't overwrite a value the user is still adjusting or hasn't sent yet.
+      if(!_pend.temp&&!_tempLocal&&typeof st.climate?.setpointDriver==='number')tempC=Math.round(st.climate.setpointDriver);
+      if(!_pend.fan)fanLevel=st.climate?.fanLevel||0;
+      renderClimate();
+      const h=st.seats?.heat||[],c=st.seats?.cool||[];seatHeat=[h[0]||0,h[1]||0];seatCool=[c[0]||0,c[1]||0];
+      ventSupported=!!st.seats?.ventilatedSupported;renderSeats();
+      const T=st.tyres||{};renderTyre('ty-fl',T.fl,T.limits);renderTyre('ty-fr',T.fr,T.limits);renderTyre('ty-rl',T.rl,T.limits);renderTyre('ty-rr',T.rr,T.limits);
+    } else renderClimate();                 // outside temp can still show
     $('devid').textContent=demo?'DEMO-SEAL-01':'';
+    _offline=false;
     if(!silent) hideState();
   }catch(e){if(e.auth)return showState('<p>'+t('st.ended')+'</p><p class="sub">'+t('st.repair')+'</p>');
     // A silent refresh already has a working screen up — don't replace it with a
     // full error page over a transient blip; a toast is enough.
-    if(silent)return toast(t('st.unreach'),true);
+    if(silent){if(!_offline){_offline=true;toast(t('st.unreach'),true);}return;}
     showState('<p>'+t('st.unreach')+'</p><button class="retry" onclick="load()">'+t('st.retry')+'</button>');}
 }
 function showState(h){$('state').innerHTML=h;$('state').hidden=false;$('pager').hidden=true;$('dots').hidden=true;}
@@ -649,8 +682,10 @@ async function fire(label,path,body){
   if(busy)return;busy=true;
   const el=_tapEl;_tapEl=null;if(el)el.classList.add('pending');
   try{const r=await api(path,{method:'POST',body:body?JSON.stringify(body):undefined});
-    toast(r.success===false?(r.error||label+' '+t('toast.fail')):label+' ✓',r.success===false);if(r.success!==false)await load(true);}
-  catch(e){if(e.auth)return showState('<p>'+t('st.ended')+'</p><p class="sub">'+t('st.repair')+'</p>');toast(label+' '+t('toast.fail'),true);}
+    toast(r.success===false?(r.error||label+' '+t('toast.fail')):label+' ✓',r.success===false);if(r.success!==false)await load(true,true);}
+  catch(e){if(e.auth)return showState('<p>'+t('st.ended')+'</p><p class="sub">'+t('st.repair')+'</p>');toast(label+' '+t('toast.fail'),true);
+    // A timed-out command may still have reached the car: re-read the real state.
+    setTimeout(()=>load(true,true),0);}
   finally{busy=false;if(el)el.classList.remove('pending');}
 }
 document.addEventListener('click',(ev)=>{
@@ -669,9 +704,10 @@ document.addEventListener('click',(ev)=>{
   else if(a==='unlock')fire('Unlock','/api/vehicle/unlock');
   else if(a==='trunk')fire('Trunk','/api/vehicle/trunk',{action:'open'});
   else if(a==='flash')fire(t('b.find'),'/api/vehicle/flash');
-  else if(a==='clima')fire(climaOn?t('ac.off'):t('ac.on'),'/api/vehicle/climate',climaOn?{action:'power_off'}:{action:'power_on',temp:tempC,remoteDurationMinutes:15});
+  else if(a==='clima'){if(!climaOn)_tempLocal=false;fire(climaOn?t('ac.off'):t('ac.on'),'/api/vehicle/climate',climaOn?{action:'power_off'}:{action:'power_on',temp:tempC,remoteDurationMinutes:15});}
   else if(a==='temp+'||a==='temp-'){tempC=Math.max(16,Math.min(30,tempC+(a==='temp+'?1:-1)));renderClimate();
-    if(climaOn)queueSend('temp',()=>fire('°','/api/vehicle/climate',{action:'set_temp',zone:0,temp:tempC}));}
+    if(climaOn)queueSend('temp',()=>fire('°','/api/vehicle/climate',{action:'set_temp',zone:0,temp:tempC}));
+    else _tempLocal=true;}
   else if(a==='fan+')setFan(fanLevel+1);
   else if(a==='fan-')setFan(fanLevel-1);
   else if(a==='logout'){if(window.OdNative&&OdNative.logout)OdNative.logout();
@@ -679,7 +715,9 @@ document.addEventListener('click',(ev)=>{
 });
 const N=7,dots=$('dots');for(let i=0;i<N;i++)dots.appendChild(document.createElement('i'));
 const pager=$('pager');
-function updateDots(){const i=Math.round(pager.scrollLeft/pager.clientWidth);[...dots.children].forEach((d,k)=>d.classList.toggle('on',k===i));}
+let _dotI=-1;
+function updateDots(){const i=Math.round(pager.scrollLeft/pager.clientWidth);if(i===_dotI)return;_dotI=i;
+  for(let k=0;k<dots.children.length;k++)dots.children[k].classList.toggle('on',k===i);}
 // Track a swipe in progress so the auto-refresh never re-renders mid-animation.
 // A plain flag (not a body class) — nothing in CSS needs it. Cleared 150ms after
 // the last scroll event.
@@ -776,8 +814,10 @@ document.addEventListener('touchend',()=>{
   }else ptrReset();
 });
 
-if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 load();
+// After the page (and first car reads) are in: installing the SW fetches the shell
+// + backdrops, which shouldn't compete with them on a slow watch link.
+if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script>
 </body>
 </html>

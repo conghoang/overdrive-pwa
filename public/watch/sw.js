@@ -1,11 +1,12 @@
 // Service worker so the watch page is installable, starts fast on a flaky watch
 // connection, and works offline. Never touches the pairing Worker or the car
 // (those are cross-origin and must always hit the network).
-//   - Images/icons never change in place (a new look = a new file + cache bump):
+//   - Images/icons and the vendored QR library never change in place (a new
+//     version = a new file + cache bump):
 //     cache-first, so they cost nothing after the first load.
 //   - The page and other files: network-first so updates land, but give up on a
 //     slow network after 2.5s and serve the cached copy instead.
-const CACHE = 'odw-shell-v28';
+const CACHE = 'odw-shell-v29';
 const SHELL = ['./', './index.html',
   './bg-car-dark.webp', './bg-car-light.webp',
   './bg-climate-dark.webp', './bg-climate-light.webp',
@@ -55,6 +56,6 @@ function networkFirst(e) {
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== location.origin) return;
-  const isAsset = e.request.destination === 'image' || /\.(webp|png|ico|svg)$/.test(url.pathname);
+  const isAsset = e.request.destination === 'image' || /\.(webp|png|ico|svg)$/.test(url.pathname) || url.pathname.endsWith('/qrcode.min.js');
   e.respondWith(isAsset ? cacheFirst(e.request) : networkFirst(e));
 });
