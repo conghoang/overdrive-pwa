@@ -46,6 +46,12 @@
     scroll-snap-type:x mandatory;scrollbar-width:none}
   #pager::-webkit-scrollbar{display:none}
   #pager:focus{outline:none}
+  /* Invisible vertical scroller behind everything: receives rotary/bezel input.
+     z-index:-1 keeps it clear of touch; it just needs focus + room to scroll. */
+  #rotsink{position:fixed;inset:0;overflow-y:scroll;overscroll-behavior:contain;
+    opacity:0;z-index:-1;scrollbar-width:none;outline:none}
+  #rotsink::-webkit-scrollbar{display:none}
+  #rotsink>div{height:300%}
   :root[data-shape="rect"] .panel{padding:0 5%}
   :root[data-shape="rect"] .ptitle{top:5%}
   :root[data-shape="rect"] #dots{bottom:3%}
@@ -310,6 +316,10 @@
 
 <div id="dots" hidden></div>
 <div id="toast"></div>
+<!-- Rotary sink: the bezel/crown emits VERTICAL scroll, which the WebView only
+     delivers to a vertically-scrollable, focused element. This invisible one
+     stays focused, catches the rotary, and each detent steps the pager. -->
+<div id="rotsink" tabindex="0" aria-hidden="true"><div></div></div>
 
 <script>
 const qs=new URLSearchParams(location.search),demo=qs.has('demo');
@@ -607,25 +617,39 @@ function rotaryStep(dir){
   pager.scrollTo({left:next*w,behavior:'smooth'});
 }
 function onRotary(e){const d=e.deltaY||e.deltaX;if(!d)return;e.preventDefault();rotaryStep(d>0?1:-1);}
-pager.addEventListener('wheel',onRotary,{passive:false});
 window.addEventListener('wheel',onRotary,{passive:false});
-// Rotary reaches the web layer three ways, depending on the watch/WebView:
-//  1. wheel events (above) — Chrome-based WebViews.
-//  2. focused key/scroll events — the pager must be focusable and hold focus.
-//  3. the native shell calling window.__rotary(dir) directly (most reliable).
 window.__rotary=rotaryStep;
-pager.setAttribute('tabindex','0');
-pager.addEventListener('keydown',(e)=>{
+
+// The rotary sink is the primary path: the bezel emits VERTICAL scroll, which the
+// WebView only delivers to a vertically-scrollable focused element. This hidden
+// one absorbs it — we read the scroll direction, step the pager, and re-centre it.
+const rotsink=$('rotsink');
+let _sinkMid=0,_sinkArmed=false;
+function centreSink(){_sinkMid=(rotsink.scrollHeight-rotsink.clientHeight)/2;rotsink.scrollTop=_sinkMid;
+  // ignore the scroll event that this reset itself fires
+  _sinkArmed=false;setTimeout(()=>_sinkArmed=true,60);}
+rotsink.addEventListener('scroll',()=>{
+  if(!_sinkArmed)return;
+  const d=rotsink.scrollTop-_sinkMid;
+  if(Math.abs(d)<4)return;
+  rotaryStep(d>0?1:-1);
+  centreSink();
+},{passive:true});
+// Focusable arrow-key support too (some watches map the bezel to keys).
+window.addEventListener('keydown',(e)=>{
   if(e.key==='ArrowDown'||e.key==='ArrowRight'||e.key==='PageDown'){e.preventDefault();rotaryStep(1);}
   else if(e.key==='ArrowUp'||e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();rotaryStep(-1);}
 });
-// Keep the pager focused (unless a text field is active) so rotary key/scroll
-// events keep landing after taps.
-function focusPager(){if(!pager.hidden&&!/^(INPUT|TEXTAREA)$/.test(document.activeElement&&document.activeElement.tagName)){try{pager.focus({preventScroll:true});}catch{}}
-  // Belt & braces: if anything nudged the window sideways, snap it back.
-  try{if(window.scrollX)window.scrollTo(0,0);}catch{}}
+// Keep the sink focused (so rotary keeps landing) unless a text field is active.
+function focusPager(){
+  if(!pager.hidden&&!/^(INPUT|TEXTAREA)$/.test(document.activeElement&&document.activeElement.tagName)){
+    try{rotsink.focus({preventScroll:true});}catch{}
+    if(Math.abs(rotsink.scrollTop-_sinkMid)>2)centreSink();
+  }
+  try{if(window.scrollX)window.scrollTo(0,0);}catch{}
+}
 pager.addEventListener('pointerup',focusPager);
-setInterval(focusPager,1500);
+centreSink();setInterval(focusPager,1200);
 applyI18n();applyTheme();
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 load();
