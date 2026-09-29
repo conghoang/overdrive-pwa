@@ -201,7 +201,7 @@ const lss=(k,v)=>{try{localStorage.setItem(k,v)}catch{}};
 const BASE=(qs.get('b')||ls('odw.baseUrl')||'').replace(/\/$/,''),JWT=qs.get('t')||ls('odw.jwt')||'';
 const $=(id)=>document.getElementById(id);
 // Pairing bridge (Cloudflare Worker). Override without editing via localStorage.
-const PAIR_API=(ls('odw.pairApi')||'https://overdrive-pair.example.workers.dev').replace(/\/$/,'');
+const PAIR_API=(ls('odw.pairApi')||'https://watch-pair.sl6vn.link').replace(/\/$/,'');
 const PAIR_PAGE=location.origin+location.pathname.replace(/watch\/?$/,'pair/');
 const b64u=(buf)=>btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 const ub64=(s)=>Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
