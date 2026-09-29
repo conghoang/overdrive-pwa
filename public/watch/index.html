@@ -83,6 +83,14 @@
   .pS{bottom:8%;left:50%;transform:translateX(-50%)}
   .pW{left:4%;top:50%;transform:translateY(-50%)}
   .pE{right:4%;top:50%;transform:translateY(-50%)}
+  /* Square/rectangular screens: use the corners — 2x2 grid instead of the cross. */
+  :root[data-shape="rect"] .cross{display:grid;grid-template-columns:repeat(2,minmax(0,38vmin));
+    gap:4vmin;justify-content:center;align-content:center;position:absolute;inset:0}
+  :root[data-shape="rect"] .cbtn{position:static;transform:none;width:auto;height:auto;aspect-ratio:1;border-radius:24%}
+  :root[data-shape="rect"] #b-lock{order:1}
+  :root[data-shape="rect"] #b-unlock{order:2}
+  :root[data-shape="rect"] .pW{order:3}
+  :root[data-shape="rect"] #b4{order:4}
 
   /* ---- Panel 3: climate ---- */
   /* Centered cluster that stays inside the round face. */
@@ -492,6 +500,20 @@ const N=7,dots=$('dots');for(let i=0;i<N;i++)dots.appendChild(document.createEle
 const pager=$('pager');
 function updateDots(){const i=Math.round(pager.scrollLeft/pager.clientWidth);[...dots.children].forEach((d,k)=>d.classList.toggle('on',k===i));}
 renderControls();pager.addEventListener("scroll",updateDots,{passive:true});updateDots();
+// Rotating bezel / crown: Wear OS delivers rotary input as wheel events. Map a
+// detent to the next/previous panel (one step, debounced). Harmless without a dial.
+let _rot=false;
+function onRotary(e){
+  if(pager.hidden)return;                 // ignore while pairing / error screens
+  const d=e.deltaY||e.deltaX;if(!d)return;
+  e.preventDefault();
+  if(_rot)return;_rot=true;setTimeout(()=>_rot=false,300);
+  const w=pager.clientWidth,cur=Math.round(pager.scrollLeft/w);
+  const next=Math.max(0,Math.min(6,cur+(d>0?1:-1)));
+  pager.scrollTo({left:next*w,behavior:'smooth'});
+}
+pager.addEventListener('wheel',onRotary,{passive:false});
+window.addEventListener('wheel',onRotary,{passive:false});
 applyI18n();
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 load();
