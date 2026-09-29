@@ -38,6 +38,9 @@
   html,body{margin:0;height:100%;background:var(--bg);color:var(--text);overflow:hidden;
     font-family:system-ui,-apple-system,"Roboto",sans-serif;font-variant-numeric:tabular-nums;
     -webkit-user-select:none;user-select:none}
+  /* Pin the app to the viewport so nothing (focus scroll-into-view, overscroll,
+     a stray horizontal offset) can shift the content off the round screen. */
+  body{position:fixed;inset:0;width:100%;overscroll-behavior:none}
 
   #pager{display:flex;height:100%;width:100%;overflow-x:auto;overflow-y:hidden;
     scroll-snap-type:x mandatory;scrollbar-width:none}
@@ -49,7 +52,7 @@
   /* scroll-snap-stop:always: a fast flick can carry momentum past a snap point
      and skip a panel. This forces the scroll to rest on the very next panel, so
      one swipe = one screen. */
-  .panel{flex:0 0 100%;height:100%;scroll-snap-align:center;scroll-snap-stop:always;position:relative;
+  .panel{flex:0 0 100%;height:100%;scroll-snap-align:start;scroll-snap-stop:always;position:relative;
     display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 10%;text-align:center}
   .ptitle{position:absolute;top:11%;left:0;right:0;font-size:4.6vmin;letter-spacing:.12em;
     font-weight:800;text-transform:uppercase;color:var(--mid)}
@@ -584,7 +587,9 @@ pager.addEventListener('keydown',(e)=>{
 });
 // Keep the pager focused (unless a text field is active) so rotary key/scroll
 // events keep landing after taps.
-function focusPager(){if(!pager.hidden&&!/^(INPUT|TEXTAREA)$/.test(document.activeElement&&document.activeElement.tagName)){try{pager.focus({preventScroll:true});}catch{}}}
+function focusPager(){if(!pager.hidden&&!/^(INPUT|TEXTAREA)$/.test(document.activeElement&&document.activeElement.tagName)){try{pager.focus({preventScroll:true});}catch{}}
+  // Belt & braces: if anything nudged the window sideways, snap it back.
+  try{if(window.scrollX)window.scrollTo(0,0);}catch{}}
 pager.addEventListener('pointerup',focusPager);
 setInterval(focusPager,1500);
 applyI18n();applyTheme();
