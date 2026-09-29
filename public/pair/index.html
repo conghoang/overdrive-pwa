@@ -142,6 +142,10 @@ async function manualPair(){
 
 // ---- In-page QR scanner (BarcodeDetector, jsQR fallback) ----
 function parseScan(text){
+  text=(text||'').trim();
+  // New QR is just the 6-char code.
+  if(/^[A-Za-z0-9]{6}$/.test(text)) return {c:text.toUpperCase(),k:null};
+  // Older QR was a pair URL with #c=<code>(&k=<key>).
   try{ const p=new URLSearchParams(new URL(text).hash.slice(1)); if(p.get('c')) return {c:p.get('c').toUpperCase(),k:p.get('k')||null}; }catch{}
   return null;
 }

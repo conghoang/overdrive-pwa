@@ -469,12 +469,11 @@ async function startPairing(){
     const watchPub=b64u(await SC.exportKey('raw',kp.publicKey));
     const r=await fetch(PAIR_API+'/new',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({watchPub})}).then(x=>x.json());
     if(!r.code) throw 0;
-    // QR carries only the code — the phone fetches this session's public key from
-    // the worker by code (same as typing the code), so the QR stays sparse.
-    const url=PAIR_PAGE+'#c='+r.code;
+    // QR is just the 6-char code — scanned in the phone's pair page, which fetches
+    // this session's public key from the worker by that code. Minimal, sparse QR.
     $('state').innerHTML='<div class="pairqr" id="pairqr"></div><div class="paircode">'+r.code+'</div>'
       +'<div class="sub">'+t('pair.scan')+'</div>';
-    renderQR('pairqr',url);
+    renderQR('pairqr',r.code);
     pollPair(r.code,kp);
   }catch(e){ showState('<p>'+t('st.unavail')+'</p><button class="retry" onclick="startPairing()">'+t('st.retry')+'</button>'); }
 }
