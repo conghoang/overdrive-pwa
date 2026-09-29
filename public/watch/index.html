@@ -67,15 +67,19 @@
   .switch.on i{transform:translateX(6vmin);background:var(--on-accent)}
 
   /* ---- Panel 2: quick buttons (PWA quick-btn) ---- */
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:3.4vmin;width:88%;max-width:82vmin}
-  .qbtn{aspect-ratio:1;border-radius:var(--radius);background:var(--surface-1);
-    border:1px solid var(--border);box-shadow:var(--shadow);display:flex;flex-direction:column;
-    align-items:center;justify-content:center;gap:2.6vmin;color:var(--text);cursor:pointer;transition:transform .08s}
-  .qbtn:active{transform:scale(.95)}
-  .qbtn .qi{color:var(--accent-bright);display:flex}.qbtn .qi svg{width:12vmin;height:12vmin}
-  .qbtn span{font-size:4.6vmin;font-weight:600}
-  .qbtn.on{border-color:var(--success)}.qbtn.on .qi{color:var(--success)}
-  .qbtn.warn{border-color:var(--m-orange)}.qbtn.warn .qi{color:var(--m-orange)}
+  /* Cardinal-cross control buttons, icon only. */
+  .cross{position:absolute;inset:0}
+  .cbtn{position:absolute;width:31vmin;height:31vmin;border-radius:50%;background:var(--surface-1);
+    border:1px solid var(--border);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;
+    color:var(--accent-bright);cursor:pointer;transition:background .12s,border-color .15s}
+  .cbtn:active{background:var(--surface-2)}
+  .cbtn svg{width:14vmin;height:14vmin}
+  .cbtn.on{border-color:var(--success);color:var(--success)}
+  .cbtn.warn{border-color:var(--m-orange);color:var(--m-orange)}
+  .pN{top:4%;left:50%;transform:translateX(-50%)}
+  .pS{bottom:8%;left:50%;transform:translateX(-50%)}
+  .pW{left:4%;top:50%;transform:translateY(-50%)}
+  .pE{right:4%;top:50%;transform:translateY(-50%)}
 
   /* ---- Panel 3: climate ---- */
   /* Centered cluster that stays inside the round face. */
@@ -173,13 +177,13 @@
     </div>
   </section>
 
-  <!-- 2 · Controls -->
+  <!-- 2 · Controls — cardinal cross, icon only -->
   <section class="panel">
-    <div class="grid2">
-      <div class="qbtn" data-act="lock" id="b-lock"><span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span><span data-i18n="b.lock">Lock</span></div>
-      <div class="qbtn" data-act="unlock" id="b-unlock"><span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg></span><span data-i18n="b.unlock">Unlock</span></div>
-      <div class="qbtn" data-act="trunk"><span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16.9h3.3"/><path d="M13.5 16.9h5.6a2.1 2.1 0 0 0 2.1-2.3l-.6-4.7a2.5 2.5 0 0 0-2-2.1L11.7 7.5"/><path d="M2.4 4.1c4.6.1 7.4.8 9.3 3.4"/><path d="M11.7 7.5c1.9-1.9 4.2-2.9 7.5-2.8"/><circle cx="9.7" cy="16.9" r="2.9"/></svg></span><span data-i18n="b.trunk">Trunk</span></div>
-      <div class="qbtn" id="b4"></div>
+    <div class="cross">
+      <button class="cbtn pN" data-act="lock" id="b-lock" aria-label="Lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></button>
+      <button class="cbtn pW" data-act="trunk" aria-label="Trunk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16.9h3.3"/><path d="M13.5 16.9h5.6a2.1 2.1 0 0 0 2.1-2.3l-.6-4.7a2.5 2.5 0 0 0-2-2.1L11.7 7.5"/><path d="M2.4 4.1c4.6.1 7.4.8 9.3 3.4"/><path d="M11.7 7.5c1.9-1.9 4.2-2.9 7.5-2.8"/><circle cx="9.7" cy="16.9" r="2.9"/></svg></button>
+      <button class="cbtn pE" id="b4" aria-label="Find"></button>
+      <button class="cbtn pS" data-act="unlock" id="b-unlock" aria-label="Unlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg></button>
     </div>
   </section>
 
@@ -282,8 +286,8 @@ const SVG_START='<svg viewBox="0 0 24 24"><path d="M13 3 6 13h5l-1 8 7-11h-5z" f
 function renderControls(){
   const sw=$('wcSwitch');if(sw)sw.classList.toggle('on',wc51);
   const b4=$('b4');if(!b4)return;
-  if(wc51){b4.dataset.act='start';b4.innerHTML='<span class="qi">'+SVG_START+'</span><span>'+t('b.start')+'</span>';}
-  else{b4.dataset.act='flash';b4.innerHTML='<span class="qi">'+SVG_FIND+'</span><span>'+t('b.find')+'</span>';}
+  if(wc51){b4.dataset.act='start';b4.setAttribute('aria-label',t('b.start'));b4.innerHTML=SVG_START;}
+  else{b4.dataset.act='flash';b4.setAttribute('aria-label',t('b.find'));b4.innerHTML=SVG_FIND;}
 }
 function fireWC(labelText,cmd){return fire(labelText,'/api/keymap/fire',{kind:'shell',cmd:wcCmd(cmd)});}
 const label=(a)=>({lock:t('b.lock'),unlock:t('b.unlock'),trunk:t('b.trunk'),start:t('b.start'),flash:t('b.find')}[a]||a);
@@ -430,8 +434,8 @@ async function load(){
     else $('leg-fuel').hidden=true;
 
     const lock=st.doors?.overall??-1;
-    $('b-lock').className='qbtn'+(lock===1?' on':'');
-    $('b-unlock').className='qbtn'+(lock===2?' warn':'');
+    $('b-lock').className='cbtn pN'+(lock===1?' on':'');
+    $('b-unlock').className='cbtn pS'+(lock===2?' warn':'');
     renderControls();
     // Outside temp lives on the launcher summary, not /status.
     let sum={};try{sum=await api('/api/launcher/v1/summary');}catch{}
