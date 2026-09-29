@@ -2,7 +2,7 @@
 // offline. Network-first for same-origin GETs (so updates land), falling back to
 // cache, then to the shell. Never touches the pairing Worker or the car (those
 // are cross-origin and must always hit the network).
-const CACHE = 'odw-shell-v1';
+const CACHE = 'odw-shell-v2';
 const SHELL = ['./', './index.html'];
 
 self.addEventListener('install', (e) => {
