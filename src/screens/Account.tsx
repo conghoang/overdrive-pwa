@@ -186,6 +186,15 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
             {t('dev.edit_51dk')}
           </button>
         )}
+        <div class="srow" style={{ paddingBottom: 0 }}>
+          <div class="stack">
+            <span class="srow-label">{t('dev.pair_watch')}</span>
+            <span class="screen-sub" style={{ marginTop: '2px' }}>{t('dev.pair_watch_desc')}</span>
+          </div>
+          <button class="btn ghost" onClick={() => { location.href = import.meta.env.BASE_URL + 'pair/' }}>
+            {t('dev.pair_open')}
+          </button>
+        </div>
       </div>
 
       <div class="card" style={{ marginTop: '14px' }}>
