@@ -107,10 +107,17 @@ async function sealAndSend(code,watchPub){
   if(!r.ok) throw new Error('Pairing failed. Try again.');
 }
 
-// Auto path: opened via QR with #c=<code>&k=<watchPub>
+// Auto path: opened via QR with #c=<code> (the key is fetched from the worker by
+// code). An older QR may also carry &k=<watchPub>, which we still honour.
 async function auto(code,watchPub){
   $('hint').hidden=true;$('auto').hidden=false;
   try{
+    if(!watchPub){
+      const pub=await fetch(PAIR_API+'/pub?code='+code).then(x=>x.json());
+      if(pub.status==='expired') throw new Error('That code expired — start again on the watch.');
+      if(!pub.watchPub) throw new Error('Pairing failed. Try again.');
+      watchPub=pub.watchPub;
+    }
     await sealAndSend(code,watchPub);
     $('autospin').hidden=true;$('automsg').className='msg ok';
     $('automsg').innerHTML='✓ Paired<br><span style="color:var(--mid);font-weight:400">Your watch is connecting…</span>';
@@ -135,7 +142,7 @@ async function manualPair(){
 
 // ---- In-page QR scanner (BarcodeDetector, jsQR fallback) ----
 function parseScan(text){
-  try{ const p=new URLSearchParams(new URL(text).hash.slice(1)); if(p.get('c')&&p.get('k')) return {c:p.get('c').toUpperCase(),k:p.get('k')}; }catch{}
+  try{ const p=new URLSearchParams(new URL(text).hash.slice(1)); if(p.get('c')) return {c:p.get('c').toUpperCase(),k:p.get('k')||null}; }catch{}
   return null;
 }
 function loadJsQR(){return new Promise((res,rej)=>{ if(window.jsQR)return res();
@@ -168,7 +175,7 @@ async function startScan(){
 }
 
 const h=new URLSearchParams(location.hash.slice(1));
-if(h.get('c')&&h.get('k')){ auto(h.get('c').toUpperCase(),h.get('k')); }
+if(h.get('c')){ auto(h.get('c').toUpperCase(),h.get('k')||null); }
 else { $('manual').hidden=false; }
 $('scan').addEventListener('click',startScan);
 $('go').addEventListener('click',manualPair);
