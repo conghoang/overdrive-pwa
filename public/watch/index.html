@@ -86,6 +86,10 @@
   .seg{display:inline-flex;background:var(--surface-1);border:1px solid var(--border);border-radius:6vmin;padding:1vmin;margin-top:6vmin}
   .seg button{border:0;background:none;color:var(--mid);font-weight:800;font-size:4.4vmin;padding:1.6vmin 6vmin;border-radius:5vmin;cursor:pointer}
   .seg button.on{background:var(--accent);color:var(--on-teal)}
+  /* Icon segs (theme): the glyph replaces the label; keep the pill height by
+     matching the text seg's vertical padding. */
+  #themeseg button{display:flex;align-items:center;justify-content:center;padding:1.4vmin 5.2vmin}
+  #themeseg svg{width:6vmin;height:6vmin;display:block}
   .setrow{display:flex;align-items:center;justify-content:space-between;gap:4vmin;width:84%;max-width:78vmin;cursor:pointer}
   .setname{font-size:5.6vmin;font-weight:700}
   .switch{flex:0 0 auto;width:15vmin;height:9vmin;border-radius:4.5vmin;background:var(--surface-2);
@@ -271,7 +275,10 @@
       <div class="switch" id="wcSwitch"><i></i></div>
     </div>
     <div class="seg" id="langseg"><button data-lang="en">EN</button><button data-lang="vi">VI</button></div>
-    <div class="seg" id="themeseg"><button data-theme="dark" data-i18n="theme.dark">Dark</button><button data-theme="light" data-i18n="theme.light">Light</button></div>
+    <div class="seg" id="themeseg">
+      <button data-theme="dark" aria-label="Dark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+      <button data-theme="light" aria-label="Light"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/></svg></button>
+    </div>
   </section>
 
   <!-- 7 · Account -->
