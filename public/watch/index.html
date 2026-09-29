@@ -374,7 +374,7 @@ async function load(){
     let sum={};try{sum=await api('/api/launcher/v1/summary');}catch{}
     const ot=(sum.env&&typeof sum.env.tempC==='number')?sum.env.tempC:null;
     $('outtemp').innerHTML=ot!=null
-      ?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13V5a2 2 0 1 1 4 0v8a4 4 0 1 1-4 0z"/></svg>'+Math.round(ot)+'° outside':'';
+      ?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13V5a2 2 0 1 1 4 0v8a4 4 0 1 1-4 0z"/></svg>'+Math.round(ot)+'°':'';
     climaOn=!!st.climate?.acOn;
     if(typeof st.climate?.setpointDriver==='number')tempC=Math.round(st.climate.setpointDriver);
     fanLevel=st.climate?.fanLevel||0;renderClimate();
