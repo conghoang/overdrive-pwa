@@ -102,8 +102,9 @@ export default defineConfig({
         navigateFallback: 'index.html',
         // See isDevSite above: without this the prod SW answers dev navigations
         // with prod's shell. Empty on the dev build, which owns that path.
-        // The watch (/watch/) and pairing (/pair/) sub-apps ship their own
-        // service worker + manifest, so keep the main SW out of their scope.
+        // The watch (/watch/) and pairing (/pair/) sub-apps are standalone pages
+        // (no SW of their own), so keep the main SW from answering their
+        // navigations with the phone app's shell.
         navigateFallbackDenylist: isDevSite ? [/\/watch\//, /\/pair\//] : [/\/dev\//, /\/watch\//, /\/pair\//],
         globPatterns: ['**/*.{js,css,html,svg,webp,png,ico,woff2}'],
         globIgnores: ['**/watch/**', '**/pair/**'],
