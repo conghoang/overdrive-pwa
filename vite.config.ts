@@ -36,16 +36,16 @@ export default defineConfig({
   plugins: [
     preact(),
     {
-      name: 'minify-watch',
+      name: 'build-watch',
       apply: 'build',
       enforce: 'post',
-      // Minifies dist/watch (see scripts/minify-watch.mjs). WATCH_NOMIN=1 skips it,
-      // for tests that poke internal functions like load().
+      // Content-hash asset URLs + minify for dist/watch (see scripts/build-watch.mjs).
+      // WATCH_NOMIN=1 keeps it unminified (still hashed), for tests that poke
+      // internal functions like load().
       async closeBundle() {
-        if (process.env.WATCH_NOMIN) return
-        const helper = './scripts/minify-watch.mjs'   // plain JS: no @types/node here
-        const { minifyWatch } = await import(/* @vite-ignore */ helper)
-        await minifyWatch('dist')
+        const helper = './scripts/build-watch.mjs'   // plain JS: no @types/node here
+        const { buildWatch } = await import(/* @vite-ignore */ helper)
+        await buildWatch('dist', { minify: !process.env.WATCH_NOMIN })
       },
     },
     {

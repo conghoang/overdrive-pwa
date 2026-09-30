@@ -353,6 +353,10 @@ const ls=(k)=>{try{return localStorage.getItem(k)}catch{return null}};
 const lss=(k,v)=>{try{localStorage.setItem(k,v)}catch{}};
 const BASE=(qs.get('b')||ls('odw.baseUrl')||'').replace(/\/$/,''),JWT=qs.get('t')||ls('odw.jwt')||'';
 const $=(id)=>document.getElementById(id);
+// Build replaces this with {file: content-hash}; asset() appends ?v=<hash> so a
+// changed file always gets a new URL (no stale copies in the browser cache).
+const ASSET_V=/*ASSET_V*/{};
+const asset=(f)=>ASSET_V[f]?f+'?v='+ASSET_V[f]:f;
 // Round is the safe default: the shape media feature is unsupported on many Wear
 // WebViews, so only switch to the square layout when a device *positively* reports
 // rectangular. (Assuming rect on an unknown watch would wrongly square a round one.)
@@ -361,7 +365,7 @@ detectShape();try{matchMedia('(shape: rect)').addEventListener('change',detectSh
 let lang=ls('odw.lang')||((navigator.language||'').toLowerCase().startsWith('vi')?'vi':'en');
 let theme=ls('odw.theme')||'dark';
 // Point each backdrop at its pre-baked file for this theme (fade + bg composited in).
-function applyBg(){document.querySelectorAll('[data-bg]').forEach(i=>{const s=i.dataset.bg+'-'+theme+'.webp';if(i.getAttribute('src')!==s)i.src=s;});}
+function applyBg(){document.querySelectorAll('[data-bg]').forEach(i=>{const s=asset(i.dataset.bg+'-'+theme+'.webp');if(i.getAttribute('src')!==s)i.src=s;});}
 applyBg();   // kick off the image fetches immediately
 // #9: write innerHTML only when the markup actually changed (refreshes are mostly no-ops).
 function setHTML(el,h){if(el&&el._h!==h){el._h=h;el.innerHTML=h;}}
@@ -536,7 +540,7 @@ function renderQR(id,text){
   // page (21KB minified) so pairing doesn't wait on a 3rd-party CDN; the SW caches it.
   const draw=()=>{try{const q=qrcode(0,'L');q.addData(text);q.make();$(id).innerHTML=q.createSvgTag({cellSize:4,margin:2});}catch{}};
   if(window.qrcode)return draw();
-  const s=document.createElement('script');s.src='qrcode.min.js';
+  const s=document.createElement('script');s.src=asset('qrcode.min.js');
   s.onload=draw;s.onerror=()=>{};document.head.appendChild(s);
 }
 async function startPairing(){
@@ -813,11 +817,13 @@ document.addEventListener('touchend',()=>{
 load();
 // After the page (and first car reads) are in: installing the SW fetches the shell
 // + backdrops, which shouldn't compete with them on a slow watch link.
-if('serviceWorker' in navigator) window.addEventListener('load',()=>{
-  navigator.serviceWorker.register('sw.js').catch(()=>{});
-  // Hand the SW this theme's backdrops (already in the HTTP cache) for offline use.
-  navigator.serviceWorker.ready.then(r=>r.active&&r.active.postMessage({cache:[...document.querySelectorAll('[data-bg]')].map(i=>i.src).filter(Boolean)})).catch(()=>{});
-});
+// No service worker: the page is ~12KB and GitHub Pages' HTTP caching (10 min +
+// ETag) is enough, while a SW kept old versions stuck on watches after deploys.
+// Remove the one earlier versions installed — only the watch's (scope …/watch/)
+// and its odw-* caches; the phone PWA shares this origin and keeps its own.
+if('serviceWorker' in navigator)navigator.serviceWorker.getRegistrations()
+  .then(rs=>rs.forEach(r=>{if(/\/watch\/$/.test(r.scope))r.unregister();})).catch(()=>{});
+if(window.caches)caches.keys().then(ks=>ks.forEach(k=>{if(k.startsWith('odw-'))caches.delete(k);})).catch(()=>{});
 </script>
 </body>
 </html>
