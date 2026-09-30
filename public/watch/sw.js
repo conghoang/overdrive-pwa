@@ -6,16 +6,23 @@
 //     cache-first, so they cost nothing after the first load.
 //   - The page and other files: network-first so updates land, but give up on a
 //     slow network after 2.5s and serve the cached copy instead.
-const CACHE = 'odw-shell-v29';
-const SHELL = ['./', './index.html',
-  './bg-car-dark.webp', './bg-car-light.webp',
-  './bg-climate-dark.webp', './bg-climate-light.webp',
-  './bg-seat-dark.webp', './bg-seat-light.webp'];
+const CACHE = 'odw-shell-v30';
+// Just the page ('./' — index.html is the same document, so don't fetch it twice).
+// Backdrops aren't precached: the page sends the ones for its current theme (see
+// 'message' below) and the other theme is cached on first use.
+const SHELL = ['./'];
 const NET_TIMEOUT = 2500;
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)));
   self.skipWaiting();
+});
+// The page lists the files it just loaded (current theme's backdrops). They come
+// from the HTTP cache, so this costs no extra download.
+self.addEventListener('message', (e) => {
+  const urls = e.data && e.data.cache;
+  if (Array.isArray(urls)) e.waitUntil(caches.open(CACHE).then((c) =>
+    Promise.all(urls.map((u) => c.match(u).then((hit) => hit || c.add(u).catch(() => {}))))));
 });
 self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys().then((keys) =>

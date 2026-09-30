@@ -29,11 +29,25 @@ const isDevSite = base.endsWith('/dev/')
 // the app's asset URLs so each deploy busts caches — without renaming files.
 const commit = (process.env.VITE_COMMIT || process.env.GITHUB_SHA || 'dev').slice(0, 7)
 
+
 export default defineConfig({
   base,
   define: { __COMMIT__: JSON.stringify(commit) },
   plugins: [
     preact(),
+    {
+      name: 'minify-watch',
+      apply: 'build',
+      enforce: 'post',
+      // Minifies dist/watch (see scripts/minify-watch.mjs). WATCH_NOMIN=1 skips it,
+      // for tests that poke internal functions like load().
+      async closeBundle() {
+        if (process.env.WATCH_NOMIN) return
+        const helper = './scripts/minify-watch.mjs'   // plain JS: no @types/node here
+        const { minifyWatch } = await import(/* @vite-ignore */ helper)
+        await minifyWatch('dist')
+      },
+    },
     {
       /*
        * Append ?v=<commit> to local <link href> CSS in index.html.

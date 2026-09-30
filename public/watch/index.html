@@ -71,15 +71,12 @@
     border-top-color:var(--accent);border-radius:50%}
   #ptr.spin .ptr-spin{animation:spin .7s linear infinite}
   :root[data-shape="rect"] .panel{padding:0 5%}
-  :root[data-shape="rect"] .ptitle{top:5%}
   :root[data-shape="rect"] #dots{bottom:3%}
   /* scroll-snap-stop:always: a fast flick can carry momentum past a snap point
      and skip a panel. This forces the scroll to rest on the very next panel, so
      one swipe = one screen. */
   .panel{flex:0 0 100%;height:100%;scroll-snap-align:start;scroll-snap-stop:always;position:relative;
     display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 10%;text-align:center}
-  .ptitle{position:absolute;top:11%;left:0;right:0;font-size:4.6vmin;letter-spacing:.12em;
-    font-weight:800;text-transform:uppercase;color:var(--mid)}
 
   #dots{position:fixed;bottom:5%;left:50%;transform:translateX(-50%);display:flex;gap:2vmin;z-index:5}
   #dots i{width:2vmin;height:2vmin;border-radius:50%;background:var(--mid);opacity:.4;transition:.2s}
@@ -376,22 +373,18 @@ function applyTheme(){
   applyBg();
 }
 const T={
- en:{'t.seats':'Seats','t.tyres':'Tyre \u00b7 kPa','t.settings':'Settings','t.account':'Account',
-     'b.lock':'Lock','b.unlock':'Unlock','b.trunk':'Trunk','b.find':'Find','b.start':'Start',
+ en:{'b.lock':'Lock','b.unlock':'Unlock','b.trunk':'Trunk','b.find':'Find','b.start':'Start',
      'b.wc51':'51DK','b.signout':'Sign out','ac.on':'AC ON','ac.off':'AC OFF','fan':'Fan',
-     'seat.driver':'Driver','seat.passenger':'Passenger','st.notpaired':'Not paired',
-     'st.pairhint':'Pair from the phone app','st.ended':'Session ended','st.repair':'Re-pair from the phone',
+     'seat.driver':'Driver','seat.passenger':'Passenger',
+     'st.ended':'Session ended','st.repair':'Re-pair from the phone',
      'st.unreach':'Can\u2019t reach car','st.retry':'Retry','st.unavail':'Pairing unavailable',
-     'pair.check':'Check now','pair.scan':'Scan in the phone app,<br>or enter this code','toast.fail':'failed','seat':'Seat',
-     'theme.dark':'Dark','theme.light':'Light'},
- vi:{'t.seats':'Gh\u1ebf','t.tyres':'L\u1ed1p \u00b7 kPa','t.settings':'C\u00e0i \u0111\u1eb7t','t.account':'T\u00e0i kho\u1ea3n',
-     'b.lock':'Kh\u00f3a','b.unlock':'M\u1edf kh\u00f3a','b.trunk':'C\u1ed1p','b.find':'T\u00ecm xe','b.start':'Kh\u1edfi \u0111\u1ed9ng',
+     'pair.check':'Check now','toast.fail':'failed','seat':'Seat'},
+ vi:{'b.lock':'Kh\u00f3a','b.unlock':'M\u1edf kh\u00f3a','b.trunk':'C\u1ed1p','b.find':'T\u00ecm xe','b.start':'Kh\u1edfi \u0111\u1ed9ng',
      'b.wc51':'51DK','b.signout':'\u0110\u0103ng xu\u1ea5t','ac.on':'\u0110H B\u1eacT','ac.off':'\u0110H T\u1eaeT','fan':'Qu\u1ea1t',
-     'seat.driver':'Gh\u1ebf l\u00e1i','seat.passenger':'Gh\u1ebf ph\u1ee5','st.notpaired':'Ch\u01b0a gh\u00e9p',
-     'st.pairhint':'Gh\u00e9p t\u1eeb \u1ee9ng d\u1ee5ng \u0111i\u1ec7n tho\u1ea1i','st.ended':'Phi\u00ean \u0111\u00e3 k\u1ebft th\u00fac','st.repair':'Gh\u00e9p l\u1ea1i t\u1eeb \u0111i\u1ec7n tho\u1ea1i',
+     'seat.driver':'Gh\u1ebf l\u00e1i','seat.passenger':'Gh\u1ebf ph\u1ee5',
+     'st.ended':'Phi\u00ean \u0111\u00e3 k\u1ebft th\u00fac','st.repair':'Gh\u00e9p l\u1ea1i t\u1eeb \u0111i\u1ec7n tho\u1ea1i',
      'st.unreach':'Kh\u00f4ng k\u1ebft n\u1ed1i \u0111\u01b0\u1ee3c xe','st.retry':'Th\u1eed l\u1ea1i','st.unavail':'Kh\u00f4ng gh\u00e9p \u0111\u01b0\u1ee3c',
-     'pair.check':'Ki\u1ec3m tra','pair.scan':'Qu\u00e9t trong \u1ee9ng d\u1ee5ng,<br>ho\u1eb7c nh\u1eadp m\u00e3 n\u00e0y','toast.fail':'th\u1ea5t b\u1ea1i','seat':'Gh\u1ebf',
-     'theme.dark':'T\u1ed1i','theme.light':'S\u00e1ng'}
+     'pair.check':'Ki\u1ec3m tra','toast.fail':'th\u1ea5t b\u1ea1i','seat':'Gh\u1ebf'}
 };
 const t=(k)=>(T[lang]&&T[lang][k])||T.en[k]||k;
 function applyI18n(){
@@ -556,10 +549,10 @@ async function startPairing(){
     // QR is just the 6-char code — scanned in the phone's pair page, which fetches
     // this session's public key from the worker by that code. Minimal, sparse QR.
     $('state').innerHTML='<div class="pairqr" id="pairqr"></div><div class="paircode">'+r.code+'</div>'
-      +'<button class="pairchk" onclick="checkPair()" aria-label="'+t('pair.check')+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.5 0 4.9 1 6.7 2.7L21 8"/><path d="M21 3v5h-5"/></svg></button>';
+      +'<button class="pairchk" data-act="pair-check" aria-label="'+t('pair.check')+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.5 0 4.9 1 6.7 2.7L21 8"/><path d="M21 3v5h-5"/></svg></button>';
     renderQR('pairqr',r.code);
     pollPair(r.code,kp);
-  }catch(e){ showState('<p>'+t('st.unavail')+'</p><button class="retry" onclick="startPairing()">'+t('st.retry')+'</button>'); }
+  }catch(e){ showState('<p>'+t('st.unavail')+'</p><button class="retry" data-act="pair-retry">'+t('st.retry')+'</button>'); }
 }
 // Wear OS suspends JS timers while the screen is dimmed/asleep, so the poll loop
 // freezes until the watch wakes. Keep the pairing context so a wake (and the
@@ -585,7 +578,7 @@ async function pairTick(){
       lss('odw.baseUrl',sess.baseUrl);lss('odw.jwt',sess.jwt);if(sess.deviceId)lss('odw.deviceId',sess.deviceId);
       showState('<div class="paircode" style="color:var(--success)">✓</div><div class="sub">Paired</div>');
       setTimeout(()=>location.reload(),500);
-    }catch(e){ showState('<p>Pairing failed</p><button class="retry" onclick="startPairing()">Retry</button>'); }
+    }catch(e){ showState('<p>Pairing failed</p><button class="retry" data-act="pair-retry">'+t('st.retry')+'</button>'); }
     return;
   }
   if(r.status==='expired'){P.stop=true;return startPairing();}
@@ -672,7 +665,7 @@ async function _load(silent){
     // A silent refresh already has a working screen up — don't replace it with a
     // full error page over a transient blip; a toast is enough.
     if(silent){if(!_offline){_offline=true;toast(t('st.unreach'),true);}return;}
-    showState('<p>'+t('st.unreach')+'</p><button class="retry" onclick="load()">'+t('st.retry')+'</button>');}
+    showState('<p>'+t('st.unreach')+'</p><button class="retry" data-act="load-retry">'+t('st.retry')+'</button>');}
 }
 function showState(h){$('state').innerHTML=h;$('state').hidden=false;$('pager').hidden=true;$('dots').hidden=true;}
 function hideState(){$('state').hidden=true;$('pager').hidden=false;$('dots').hidden=false;try{focusPager();}catch{}}
@@ -698,6 +691,9 @@ document.addEventListener('click',(ev)=>{
   if(sl){const mode=sl.dataset.mode==='cool'?'ventilation':'heating';
     fire(t('seat'),'/api/vehicle/seat',{action:mode,position:+sl.dataset.seat,level:+sl.dataset.level});return;}
   const el=ev.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;
+  if(a==='pair-check'){checkPair();return;}
+  if(a==='pair-retry'){startPairing();return;}
+  if(a==='load-retry'){load();return;}
   if(a==='wc51'){wc51=!wc51;lss('odw.wc51',wc51?'1':'0');renderControls();return;}
   if(wc51&&(a==='lock'||a==='unlock'||a==='trunk'||a==='start')){fireWC(label(a),a);return;}
   if(a==='lock')fire('Lock','/api/vehicle/lock');
@@ -817,7 +813,11 @@ document.addEventListener('touchend',()=>{
 load();
 // After the page (and first car reads) are in: installing the SW fetches the shell
 // + backdrops, which shouldn't compete with them on a slow watch link.
-if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+if('serviceWorker' in navigator) window.addEventListener('load',()=>{
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+  // Hand the SW this theme's backdrops (already in the HTTP cache) for offline use.
+  navigator.serviceWorker.ready.then(r=>r.active&&r.active.postMessage({cache:[...document.querySelectorAll('[data-bg]')].map(i=>i.src).filter(Boolean)})).catch(()=>{});
+});
 </script>
 </body>
 </html>
