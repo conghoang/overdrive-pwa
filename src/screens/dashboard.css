@@ -304,20 +304,23 @@
 .door-tyre.normal { fill: var(--wheel-normal); }
 .door-tyre.warn { fill: var(--warning); }
 .door-tyre.alert { fill: var(--danger); }
-/* Areas — default (unknown) grey; state tints follow. */
+/* Areas — tinted by open state: default (unknown) grey, closed green, open red. */
 .door-area { fill: var(--muted); opacity: 0.4; transition: fill 0.2s ease, opacity 0.2s ease; }
-.door-area.closed { fill: var(--muted); opacity: 0.6; }
-.door-area.locked { fill: var(--success); opacity: 1; }
-.door-area.unlocked { fill: var(--warning); opacity: 1; }
+.door-area.closed { fill: var(--success); opacity: 1; }
 .door-area.open { fill: var(--danger); opacity: 1; animation: doorOpenPulse 1.6s ease-in-out infinite; }
 @keyframes doorOpenPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 @media (prefers-reduced-motion: reduce) { .door-area.open { animation: none; } }
 
+/* Overall lock padlock in the centre */
+.door-lock { color: var(--muted); }
+.door-lock rect { fill: currentColor; }
+.door-lock.locked { color: var(--success); }
+.door-lock.unlocked { color: var(--warning); }
+
 .door-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 16px; }
 .door-leg { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
 .door-leg .sw { width: 11px; height: 11px; border-radius: 3px; flex: 0 0 auto; }
-.door-leg .sw.locked { background: var(--success); }
-.door-leg .sw.unlocked { background: var(--warning); }
+.door-leg .sw.closed { background: var(--success); }
 .door-leg .sw.open { background: var(--danger); }
 .door-leg .sw.unknown { background: var(--muted); opacity: 0.45; }
 .door-note { color: var(--text-secondary); font-size: 14px; line-height: 1.5; margin: 6px 0 2px; }

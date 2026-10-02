@@ -202,31 +202,31 @@ export function CarHero({ s }: { s: StatusResponse }) {
 const DOOR_AREAS: Array<keyof DoorsOpenState> = ['lf', 'rf', 'lr', 'rr', 'trunk', 'hood']
 
 /**
- * One colour per area, with open taking priority over lock — an ajar door is
- * the thing to notice (OverDrive's own diagram does the same). "closed" means
- * the car said the area is shut but didn't report its lock; "unknown" means it
- * said nothing at all.
+ * Per-area colour follows the OPEN state, which this trim reports for every
+ * area. Lock is reported only for the driver door (so it can't colour the other
+ * areas — doing so painted a closed trunk grey "unknown"); the overall lock is
+ * shown by the central padlock instead.
  */
-function areaState(lockV: number | undefined, openV: number | undefined): string {
+function openState(openV: number | undefined): string {
   if (openV === 1) return 'open'
-  if (lockV === 1) return 'locked'
-  if (lockV === 2) return 'unlocked'
   if (openV === 0) return 'closed'
   return 'unknown'
 }
 
 function areaTitle(key: string, lockV: number | undefined, openV: number | undefined): string {
-  const lock = lockV === 1 ? t('status.locked') : lockV === 2 ? t('status.unlocked') : t('common.unknown')
   const op = openV === 1 ? t('status.open') : openV === 0 ? t('status.closed') : t('common.unknown')
-  return `${t('status.door_' + key)} — ${lock} · ${op}`
+  // Lock is usually only known for the driver door — append it only when it is.
+  const lock = lockV === 1 ? t('status.locked') : lockV === 2 ? t('status.unlocked') : null
+  return `${t('status.door_' + key)} — ${op}${lock ? ' · ' + lock : ''}`
 }
 
 /**
  * Per-door breakdown behind the hero's lock pill, drawn as a top-view car
- * diagram like OverDrive's: the four doors, the bonnet (front) and the tailgate
- * (rear), each tinted by its state — teal locked, amber unlocked, red (pulsing)
- * open, grey unknown. A legend spells the colours out; a note stands in when
- * the car reports nothing at all.
+ * diagram like OverDrive's: the four doors, the bonnet (front), the tailgate
+ * (rear) and the tyres. Each openable area is tinted by its open state — green
+ * closed, red (pulsing) open, grey unknown — and a central padlock shows the
+ * overall lock. A legend spells the colours out; a note stands in when the car
+ * reports nothing at all.
  */
 function DoorStatusSheet({
   doors,
@@ -239,9 +239,11 @@ function DoorStatusSheet({
   tyres: TyresState | undefined
   onClose: () => void
 }) {
-  const st = (k: keyof DoorsOpenState) => areaState(doors?.[k], open?.[k])
+  const st = (k: keyof DoorsOpenState) => openState(open?.[k])
   const title = (k: keyof DoorsOpenState) => areaTitle(k, doors?.[k], open?.[k])
-  const hasAny = DOOR_AREAS.some((k) => st(k) !== 'unknown')
+  const lockOverall = doors?.overall // 1 locked, 2 unlocked, else unknown
+  const hasAny =
+    DOOR_AREAS.some((k) => st(k) !== 'unknown') || lockOverall === 1 || lockOverall === 2
   // Wheel colour follows that corner's pressure state; "muted" (grey) when the
   // car reports no reading, so the car still looks complete without one.
   const tyre = (k: 'fl' | 'fr' | 'rl' | 'rr') =>
@@ -288,11 +290,19 @@ function DoorStatusSheet({
               <rect class={'door-area ' + st('lr')} x="27" y="150" width="5" height="44" rx="2.5"><title>{title('lr')}</title></rect>
               <rect class={'door-area ' + st('rf')} x="118" y="98" width="5" height="44" rx="2.5"><title>{title('rf')}</title></rect>
               <rect class={'door-area ' + st('rr')} x="118" y="150" width="5" height="44" rx="2.5"><title>{title('rr')}</title></rect>
+
+              {/* Overall lock, centre of the roof */}
+              {(lockOverall === 1 || lockOverall === 2) && (
+                <g class={'door-lock ' + (lockOverall === 1 ? 'locked' : 'unlocked')} transform="translate(75,140)">
+                  <title>{lockOverall === 1 ? t('status.locked') : t('status.unlocked')}</title>
+                  <rect x="-9" y="0" width="18" height="14" rx="3" />
+                  <path d={lockOverall === 1 ? 'M-5 0 V-5 a5 5 0 0 1 10 0 V0' : 'M-5 0 V-5 a5 5 0 0 1 10 0'} fill="none" stroke="currentColor" stroke-width="2.4" />
+                </g>
+              )}
             </svg>
 
             <div class="door-legend">
-              <span class="door-leg"><i class="sw locked" />{t('status.locked')}</span>
-              <span class="door-leg"><i class="sw unlocked" />{t('status.unlocked')}</span>
+              <span class="door-leg"><i class="sw closed" />{t('status.closed')}</span>
               <span class="door-leg"><i class="sw open" />{t('status.open')}</span>
               <span class="door-leg"><i class="sw unknown" />{t('common.unknown')}</span>
             </div>
