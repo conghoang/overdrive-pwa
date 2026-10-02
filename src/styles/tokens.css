@@ -54,6 +54,7 @@
   --success: #56d68c;
   --success-soft: rgba(86, 214, 140, 0.14);
   --warning: #f3b45e;
+  --warning-soft: rgba(243, 180, 94, 0.16);
   --info: #75a7ff;
 
   /* chart / metric palette */
@@ -178,6 +179,7 @@
   --success: #1e844f;
   --success-soft: rgba(30, 132, 79, 0.12);
   --warning: #a2680d;
+  --warning-soft: rgba(162, 104, 13, 0.12);
   --info: #2f63cc;
 
   --m-teal: #0f9c8b;

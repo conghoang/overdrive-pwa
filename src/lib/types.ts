@@ -75,6 +75,9 @@ export interface DoorsState {
   trunk?: number; hood?: number; overall?: number
   source?: string; scope?: string
 }
+// doorsOpen: 1 = open, 0 = closed; a key is omitted when unreadable on this trim.
+// Distinct from `doors` above, which is the lock state. (OD /api/vehicle/state)
+export interface DoorsOpenState { lf?: number; rf?: number; lr?: number; rr?: number; hood?: number; trunk?: number }
 // windows: open percent (0 = closed, 100 = open, -1 = unknown)
 export interface WindowsState { lf?: number; rf?: number; lr?: number; rr?: number; sunroof?: number; sunshade?: number }
 export interface LightsState {
@@ -125,6 +128,7 @@ export interface TyresState {
 export interface VehicleState {
   success?: boolean
   doors?: DoorsState
+  doorsOpen?: DoorsOpenState
   windows?: WindowsState
   trunk?: { lockStatus?: number }
   sunroof?: { state?: number; position?: number }
