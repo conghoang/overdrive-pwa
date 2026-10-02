@@ -1,4 +1,4 @@
-import type { DoorsOpenState, StatusResponse, WindowsState } from './types'
+import type { DoorOpenState, StatusResponse, WindowsState } from './types'
 
 /**
  * How many windows are open, or null when the car hasn't said.
@@ -21,17 +21,17 @@ export function windowsOpenCount(w: WindowsState | undefined): number | null {
 /**
  * Whether any passenger door is open, or null when the car hasn't said.
  *
- * The four doors only — the trunk and hood (also in doorsOpen) are lids, not
+ * The four doors only — the trunk and hood (also in doorOpen) are lids, not
  * doors, and don't belong in a "doors unlocked" read. Null when no door
  * reports (same reasoning as windowsOpenCount), so an open door can flip the
  * lock pill to "Unlocked" while a silent trim leaves the lock state untouched.
  */
-export function anyDoorOpen(d: DoorsOpenState | undefined): boolean | null {
+export function anyDoorOpen(d: DoorOpenState | undefined): boolean | null {
   if (!d) return null
   const vals = [d.lf, d.rf, d.lr, d.rr]
-  const known = vals.filter((v) => typeof v === 'number')
+  const known = vals.filter((v) => typeof v === 'boolean')
   if (!known.length) return null
-  return known.some((v) => v === 1)
+  return known.some((v) => v === true)
 }
 
 /**

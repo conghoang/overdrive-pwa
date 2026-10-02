@@ -7,7 +7,7 @@ import { t } from '../lib/i18n'
 import { anyDoorOpen, windowsOpenCount } from '../lib/vehicle'
 import { tyreSeverity } from '../lib/tyres'
 import { IconBattery, IconBolt, IconFuel, IconLock, IconUnlock, IconWindow } from './icons'
-import type { DoorsOpenState, DoorsState, StatusResponse, TyresState } from '../lib/types'
+import type { DoorOpenState, DoorsState, StatusResponse, TyresState } from '../lib/types'
 
 export const DEFAULT_PHOTO = `${import.meta.env.BASE_URL}car/sealion6.webp`
 
@@ -74,7 +74,7 @@ export function CarHero({ s }: { s: StatusResponse }) {
   const doorsLock = vs?.doors?.overall // 1 locked, 2 unlocked, else unknown
   // An open door means the car isn't secured, so it reads as Unlocked even if
   // the lock state still says locked (or never reported). The open state wins.
-  const doorOpen = anyDoorOpen(vs?.doorsOpen)
+  const doorOpen = anyDoorOpen(vs?.doorOpen)
   const unlocked = doorsLock === 2 || doorOpen === true
   const locked = doorsLock === 1 && doorOpen !== true
   const winOpen = windowsOpenCount(vs?.windows)
@@ -189,7 +189,7 @@ export function CarHero({ s }: { s: StatusResponse }) {
       {doorSheet && (
         <DoorStatusSheet
           doors={vs?.doors}
-          open={vs?.doorsOpen}
+          open={vs?.doorOpen}
           tyres={vs?.tyres}
           onClose={() => setDoorSheet(false)}
         />
@@ -199,7 +199,7 @@ export function CarHero({ s }: { s: StatusResponse }) {
 }
 
 /** The six openable areas. */
-const DOOR_AREAS: Array<keyof DoorsOpenState> = ['lf', 'rf', 'lr', 'rr', 'trunk', 'hood']
+const DOOR_AREAS: Array<keyof DoorOpenState> = ['lf', 'rf', 'lr', 'rr', 'trunk', 'hood']
 
 /**
  * Per-area colour. Open wins (an ajar door is the thing to notice); otherwise
@@ -207,25 +207,25 @@ const DOOR_AREAS: Array<keyof DoorsOpenState> = ['lf', 'rf', 'lr', 'rr', 'trunk'
  * driver door, but the whole-car lock applies to every closed door, so a closed
  * door on a locked car reads green "Locked".
  */
-function areaState(openV: number | undefined, lockOverall: number | undefined): string {
-  if (openV === 1) return 'open'
+function areaState(openV: boolean | undefined, lockOverall: number | undefined): string {
+  if (openV === true) return 'open'
   if (lockOverall === 1) return 'locked'
   if (lockOverall === 2) return 'unlocked'
   return 'unknown'
 }
 
-function areaTitle(key: string, openV: number | undefined, lockOverall: number | undefined): string {
+function areaTitle(key: string, openV: boolean | undefined, lockOverall: number | undefined): string {
   const parts: string[] = []
-  if (openV === 1) parts.push(t('status.open'))
-  else if (openV === 0) parts.push(t('status.closed'))
+  if (openV === true) parts.push(t('status.open'))
+  else if (openV === false) parts.push(t('status.closed'))
   if (lockOverall === 1) parts.push(t('status.locked'))
   else if (lockOverall === 2) parts.push(t('status.unlocked'))
   return `${t('status.door_' + key)} — ${parts.length ? parts.join(' · ') : t('common.unknown')}`
 }
 
 /** Bonnet/tailgate: glass keeps its normal tint, turning red only when open. */
-function glassTitle(key: string, openV: number | undefined): string {
-  const op = openV === 1 ? t('status.open') : openV === 0 ? t('status.closed') : t('common.unknown')
+function glassTitle(key: string, openV: boolean | undefined): string {
+  const op = openV === true ? t('status.open') : openV === false ? t('status.closed') : t('common.unknown')
   return `${t('status.door_' + key)} — ${op}`
 }
 
@@ -244,13 +244,13 @@ function DoorStatusSheet({
   onClose,
 }: {
   doors: DoorsState | undefined
-  open: DoorsOpenState | undefined
+  open: DoorOpenState | undefined
   tyres: TyresState | undefined
   onClose: () => void
 }) {
   const lockOverall = doors?.overall // 1 locked, 2 unlocked, else unknown
-  const st = (k: keyof DoorsOpenState) => areaState(open?.[k], lockOverall)
-  const title = (k: keyof DoorsOpenState) => areaTitle(k, open?.[k], lockOverall)
+  const st = (k: keyof DoorOpenState) => areaState(open?.[k], lockOverall)
+  const title = (k: keyof DoorOpenState) => areaTitle(k, open?.[k], lockOverall)
   const hasAny = DOOR_AREAS.some((k) => st(k) !== 'unknown')
   // Wheel colour follows that corner's pressure state; "muted" (grey) when the
   // car reports no reading, so the car still looks complete without one.
@@ -289,8 +289,8 @@ function DoorStatusSheet({
 
               {/* Front glass = bonnet (front); rear glass = tailgate (rear): keep the
                   glass tint, turn red only when that lid is open. */}
-              <path class={'door-glass' + (open?.hood === 1 ? ' open' : '')} d="M48 62 C58 54 92 54 102 62 L98 88 C84 82 66 82 52 88 Z"><title>{glassTitle('hood', open?.hood)}</title></path>
-              <path class={'door-glass' + (open?.trunk === 1 ? ' open' : '')} d="M52 202 C66 208 84 208 98 202 L102 222 C92 230 58 230 48 222 Z"><title>{glassTitle('trunk', open?.trunk)}</title></path>
+              <path class={'door-glass' + (open?.hood === true ? ' open' : '')} d="M48 62 C58 54 92 54 102 62 L98 88 C84 82 66 82 52 88 Z"><title>{glassTitle('hood', open?.hood)}</title></path>
+              <path class={'door-glass' + (open?.trunk === true ? ' open' : '')} d="M52 202 C66 208 84 208 98 202 L102 222 C92 230 58 230 48 222 Z"><title>{glassTitle('trunk', open?.trunk)}</title></path>
 
               {/* Four doors — left side (LF/LR), right side (RF/RR) */}
               <rect class={'door-area ' + st('lf')} x="27" y="98" width="5" height="44" rx="2.5"><title>{title('lf')}</title></rect>
