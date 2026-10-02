@@ -131,11 +131,26 @@ export function CarHero({ s }: { s: StatusResponse }) {
           <span class={'hs-val ' + (powerOn ? 'g' : 'm')}>{powerOn ? t('common.on') : t('common.off')}</span>
           <span class="hs-lbl">{t('vitals.power')}</span>
         </div>
-        {/* A div (not a <button>) so the column flex renders on the car's older
-            WebView — a <button> flex container is unreliable there and collapsed
-            the cell into extra wrapped lines. The tap target is an overlay
-            button filling the cell, which carries the a11y role and the chevron. */}
-        <div class="hs-cell">
+        {/* The cell stays a <div> — the column flex renders reliably on the
+            car's older WebView (a <button> flex container does not), and a div's
+            own onClick is reliably hit (a transparent overlay button was not).
+            Button semantics are added with role + keyboard so it stays
+            accessible. The chevron is pointer-events:none so it never eats the
+            tap. */}
+        <div
+          class="hs-cell hs-cell-tap"
+          role="button"
+          tabIndex={0}
+          aria-haspopup="dialog"
+          aria-label={t('status.doors')}
+          onClick={() => setDoorSheet(true)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              setDoorSheet(true)
+            }
+          }}
+        >
           <span class="hs-ico">{unlocked ? <IconUnlock size={18} /> : <IconLock size={18} />}</span>
           {locked ? (
             <span class="hs-val g">{t('status.locked')}</span>
@@ -145,17 +160,9 @@ export function CarHero({ s }: { s: StatusResponse }) {
             <span class="hs-val m">{t('common.unknown')}</span>
           )}
           <span class="hs-lbl">{t('status.doors')}</span>
-          <button
-            type="button"
-            class="hs-cell-btn"
-            aria-haspopup="dialog"
-            aria-label={t('status.doors')}
-            onClick={() => setDoorSheet(true)}
-          >
-            <svg class="hs-more" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M9 6l6 6-6 6" />
-            </svg>
-          </button>
+          <svg class="hs-more" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 6l6 6-6 6" />
+          </svg>
         </div>
         <div class="hs-cell">
           <span class="hs-ico"><IconWindow size={18} /></span>
