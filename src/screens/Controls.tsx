@@ -177,6 +177,12 @@ export function Controls() {
     if (climateActive) runClimate(() => api.setClimateTemp(nt), t('ctrl.set_temp', { temp: nt }))
   }
 
+  // Flash & find-car run on-device on current OD builds, so they stay available even
+  // with no BYD Cloud; lock / unlock / trunk remain cloud-routed. cloudConfigured is
+  // null until the first cloud-status read — treat that as "not off" so nothing flickers.
+  const cloudOn = cloudConfigured.value !== false
+  const actionCols = cloudOn ? 5 : 2
+
   return (
     <div class="screen">
       <AppHeader title={t('tab.controls')} sub={disabled ? t('common.reconnecting') : t('common.ready')} dot={disabled ? 'wait' : 'ok'} />
@@ -270,27 +276,32 @@ export function Controls() {
 
       {/* Remote actions last, not first: climate is what this screen is opened
           for, and a five-tile block above it pushed the temperature and fan off
-          a phone screen. 51DK commands in WiCarlink mode; otherwise the BYD
-          Cloud buttons, hidden entirely when BYD Cloud isn't configured. */}
+          a phone screen. 51DK commands in WiCarlink mode; otherwise flash & find
+          (on-device) always show, with lock / unlock / trunk added when BYD Cloud
+          is configured. */}
       {wc ? (
         <WiCarlinkGrid />
-      ) : cloudConfigured.value === false ? null : (
-        <div class="grid action-grid tight" style={{ ['--cols' as string]: 5 }}>
-          <ActionButton
-            label={t('ctrl.lock')}
-            tone="accent"
-            icon={<IconLock size={22} />}
-            disabled={disabled}
-            onFire={() => run(api.lock, t('ctrl.lock'))}
-          />
-          <ActionButton
-            label={t('ctrl.unlock')}
-            tone="danger"
-            hold
-            icon={<IconUnlock size={22} />}
-            disabled={disabled}
-            onFire={() => run(api.unlock, t('ctrl.unlock'))}
-          />
+      ) : (
+        <div class="grid action-grid tight" style={{ ['--cols' as string]: actionCols }}>
+          {cloudOn && (
+            <ActionButton
+              label={t('ctrl.lock')}
+              tone="accent"
+              icon={<IconLock size={22} />}
+              disabled={disabled}
+              onFire={() => run(api.lock, t('ctrl.lock'))}
+            />
+          )}
+          {cloudOn && (
+            <ActionButton
+              label={t('ctrl.unlock')}
+              tone="danger"
+              hold
+              icon={<IconUnlock size={22} />}
+              disabled={disabled}
+              onFire={() => run(api.unlock, t('ctrl.unlock'))}
+            />
+          )}
           <ActionButton
             label={t('ctrl.flash')}
             icon={<IconBolt size={22} />}
@@ -303,13 +314,15 @@ export function Controls() {
             disabled={disabled}
             onFire={() => run(api.findCar, t('ctrl.find'))}
           />
-          <ActionButton
-            label={t(trunk.labelKey)}
-            hold
-            icon={<IconTrunk size={22} />}
-            disabled={disabled}
-            onFire={() => run(() => api.setTrunk(trunk.action), t(trunk.labelKey))}
-          />
+          {cloudOn && (
+            <ActionButton
+              label={t(trunk.labelKey)}
+              hold
+              icon={<IconTrunk size={22} />}
+              disabled={disabled}
+              onFire={() => run(() => api.setTrunk(trunk.action), t(trunk.labelKey))}
+            />
+          )}
         </div>
       )}
     </div>
