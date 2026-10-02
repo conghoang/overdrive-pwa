@@ -257,6 +257,66 @@
 .hs-val.w { color: var(--warning); }
 .hs-val.m { color: var(--muted); }
 .hs-lbl { color: var(--muted); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* The doors cell is a button — it opens the per-door breakdown. Reset the
+   native button look so it sits flush with the other two (static) cells. */
+.hs-cell-tap {
+  font: inherit; color: inherit; background: none; border: 0; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s ease;
+}
+.hs-cell-tap:active { transform: scale(0.96); }
+/* A quiet chevron in the top-right corner, hinting the cell opens something. */
+.hs-more { position: absolute; top: 2px; right: 2px; color: var(--muted); opacity: 0.6; }
+
+/* Per-door status sheet (behind the doors cell) */
+.door-backdrop {
+  position: fixed; inset: 0; z-index: 70;
+  background: rgba(2, 6, 12, 0.62);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  animation: door-fade 0.16s ease;
+}
+@keyframes door-fade { from { opacity: 0; } to { opacity: 1; } }
+.door-sheet {
+  width: 100%; max-width: 360px;
+  background: var(--surface-1);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-float);
+  padding: 18px 20px 20px;
+}
+.door-sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.door-sheet-title { font-size: 18px; font-weight: 700; margin: 0; }
+.door-sheet-x {
+  display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; margin: -4px -6px -4px 0;
+  border: 0; background: none; color: var(--muted); cursor: pointer; border-radius: 8px;
+}
+.door-sheet-x:active { transform: scale(0.9); }
+.door-grid {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 9px 10px;
+  align-items: center;
+}
+.door-col-lbl {
+  color: var(--muted); font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.05em; text-align: center;
+  padding-bottom: 2px;
+}
+.door-name { font-size: 14px; font-weight: 600; color: var(--text-secondary); }
+.door-chip {
+  min-width: 72px; text-align: center;
+  font-size: 12px; font-weight: 700;
+  padding: 5px 10px; border-radius: 999px;
+  border: 1px solid var(--border-soft);
+}
+.door-chip.g { color: var(--success); background: var(--success-soft); border-color: transparent; }
+.door-chip.w { color: var(--warning); background: var(--warning-soft); border-color: transparent; }
+.door-chip.m { color: var(--muted); }
+.door-note { color: var(--text-secondary); font-size: 14px; line-height: 1.5; margin: 6px 0 2px; }
 /* EV / HEV legs under the odometer headline */
 .odo-split {
   display: flex;

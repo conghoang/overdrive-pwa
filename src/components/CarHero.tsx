@@ -6,7 +6,7 @@ import { distanceUnitLabel, fmtDistance } from '../lib/format'
 import { t } from '../lib/i18n'
 import { anyDoorOpen, windowsOpenCount } from '../lib/vehicle'
 import { IconBattery, IconBolt, IconFuel, IconLock, IconUnlock, IconWindow } from './icons'
-import type { StatusResponse } from '../lib/types'
+import type { DoorsOpenState, DoorsState, StatusResponse } from '../lib/types'
 
 export const DEFAULT_PHOTO = `${import.meta.env.BASE_URL}car/sealion6.webp`
 
@@ -59,6 +59,7 @@ function EnergyLeg({
  */
 export function CarHero({ s }: { s: StatusResponse }) {
   const [imgOk, setImgOk] = useState(true)
+  const [doorSheet, setDoorSheet] = useState(false)
   const unit = s.distanceUnit || 'km'
   const charging = !!s.charging?.charging
   const photo = carPhoto.value || DEFAULT_PHOTO
@@ -130,7 +131,12 @@ export function CarHero({ s }: { s: StatusResponse }) {
           <span class={'hs-val ' + (powerOn ? 'g' : 'm')}>{powerOn ? t('common.on') : t('common.off')}</span>
           <span class="hs-lbl">{t('vitals.power')}</span>
         </div>
-        <div class="hs-cell">
+        <button
+          type="button"
+          class="hs-cell hs-cell-tap"
+          aria-haspopup="dialog"
+          onClick={() => setDoorSheet(true)}
+        >
           <span class="hs-ico">{unlocked ? <IconUnlock size={18} /> : <IconLock size={18} />}</span>
           {locked ? (
             <span class="hs-val g">{t('status.locked')}</span>
@@ -140,7 +146,10 @@ export function CarHero({ s }: { s: StatusResponse }) {
             <span class="hs-val m">{t('common.unknown')}</span>
           )}
           <span class="hs-lbl">{t('status.doors')}</span>
-        </div>
+          <svg class="hs-more" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 6l6 6-6 6" />
+          </svg>
+        </button>
         <div class="hs-cell">
           <span class="hs-ico"><IconWindow size={18} /></span>
           {winOpen == null ? (
@@ -161,6 +170,91 @@ export function CarHero({ s }: { s: StatusResponse }) {
       {!charging && !s.charging?.plugged && (
         <div class="charging-line">{s.acc ? t('car.ready') : t('car.parked')}</div>
       )}
+
+      {doorSheet && (
+        <DoorStatusSheet
+          doors={vs?.doors}
+          open={vs?.doorsOpen}
+          onClose={() => setDoorSheet(false)}
+        />
+      )}
+    </div>
+  )
+}
+
+/** The six openable areas, in a stable top-to-bottom reading order. */
+const DOOR_AREAS: Array<keyof DoorsOpenState> = ['lf', 'rf', 'lr', 'rr', 'trunk', 'hood']
+
+function lockChip(v: number | undefined): { cls: string; label: string } {
+  if (v === 1) return { cls: 'g', label: t('status.locked') }
+  if (v === 2) return { cls: 'w', label: t('status.unlocked') }
+  return { cls: 'm', label: t('common.unknown') }
+}
+function openChip(v: number | undefined): { cls: string; label: string } {
+  if (v === 1) return { cls: 'w', label: t('status.open') }
+  if (v === 0) return { cls: 'g', label: t('status.closed') }
+  return { cls: 'm', label: t('common.unknown') }
+}
+
+/**
+ * Per-door breakdown behind the hero's lock pill: for each of the four doors
+ * plus the trunk and bonnet, its lock state and its open state side by side.
+ *
+ * An area is listed only when the car reports at least one of the two for it,
+ * so a trim that can't read the bonnet doesn't show a row of "Unknown /
+ * Unknown"; when nothing is known at all, a single note stands in.
+ */
+function DoorStatusSheet({
+  doors,
+  open,
+  onClose,
+}: {
+  doors: DoorsState | undefined
+  open: DoorsOpenState | undefined
+  onClose: () => void
+}) {
+  const rows = DOOR_AREAS.filter((k) => {
+    const lv = doors?.[k]
+    const ov = open?.[k]
+    return lv === 1 || lv === 2 || ov === 0 || ov === 1
+  })
+  return (
+    <div class="door-backdrop" onClick={onClose}>
+      <div
+        class="door-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="door-sheet-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div class="door-sheet-head">
+          <h3 class="door-sheet-title" id="door-sheet-title">{t('status.doors')}</h3>
+          <button class="door-sheet-x" onClick={onClose} aria-label={t('common.close')}>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </div>
+
+        {rows.length ? (
+          <div class="door-grid">
+            <span class="door-col-lbl" />
+            <span class="door-col-lbl">{t('status.lock')}</span>
+            <span class="door-col-lbl">{t('status.opening')}</span>
+            {rows.map((k) => {
+              const lc = lockChip(doors?.[k])
+              const oc = openChip(open?.[k])
+              return [
+                <span class="door-name" key={`${k}-n`}>{t('status.door_' + k)}</span>,
+                <span class={'door-chip ' + lc.cls} key={`${k}-l`}>{lc.label}</span>,
+                <span class={'door-chip ' + oc.cls} key={`${k}-o`}>{oc.label}</span>,
+              ]
+            })}
+          </div>
+        ) : (
+          <p class="door-note">{t('status.no_door_data')}</p>
+        )}
+      </div>
     </div>
   )
 }
