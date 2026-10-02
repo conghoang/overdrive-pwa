@@ -279,13 +279,11 @@ function DoorStatusSheet({
               <rect class={'door-tyre ' + tyre('rr')} x="122" y="172" width="13" height="34" rx="5" />
 
               <path class="door-car-body" d="M75 12 C51 12 37 24 35 50 L31 92 L31 196 C31 228 47 248 75 248 C103 248 119 228 119 196 L119 92 L115 50 C113 24 99 12 75 12 Z" />
-              <path class="door-car-glass" d="M48 62 C58 54 92 54 102 62 L98 88 C84 82 66 82 52 88 Z" />
-              <path class="door-car-glass" d="M52 202 C66 208 84 208 98 202 L102 222 C92 230 58 230 48 222 Z" />
               <rect class="door-car-roof" x="46" y="98" width="58" height="96" rx="16" />
 
-              {/* Bonnet (front) and tailgate (rear) */}
-              <rect class={'door-area ' + st('hood')} x="46" y="35" width="58" height="9" rx="4"><title>{title('hood')}</title></rect>
-              <rect class={'door-area ' + st('trunk')} x="46" y="232" width="58" height="9" rx="4"><title>{title('trunk')}</title></rect>
+              {/* Front glass = bonnet (front) area; rear glass = tailgate (rear) area */}
+              <path class={'door-area ' + st('hood')} d="M48 62 C58 54 92 54 102 62 L98 88 C84 82 66 82 52 88 Z"><title>{title('hood')}</title></path>
+              <path class={'door-area ' + st('trunk')} d="M52 202 C66 208 84 208 98 202 L102 222 C92 230 58 230 48 222 Z"><title>{title('trunk')}</title></path>
 
               {/* Four doors — left side (LF/LR), right side (RF/RR) */}
               <rect class={'door-area ' + st('lf')} x="27" y="98" width="5" height="44" rx="2.5"><title>{title('lf')}</title></rect>

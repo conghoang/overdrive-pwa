@@ -297,7 +297,6 @@
 /* Top-view car diagram (OverDrive-style): one tinted area per door/lid. */
 .door-car { display: block; margin: 2px auto 14px; width: auto; height: 236px; max-width: 70%; }
 .door-car-body { fill: var(--surface-2); stroke: var(--border-strong); stroke-width: 1.5; }
-.door-car-glass { fill: var(--accent-soft); }
 .door-car-roof { fill: var(--surface-3); stroke: var(--border-soft); stroke-width: 1; }
 /* Tyres — coloured by that corner's pressure state (grey when no reading). */
 .door-tyre { fill: var(--wheel-muted); }
