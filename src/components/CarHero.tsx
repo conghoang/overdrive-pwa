@@ -196,27 +196,35 @@ export function CarHero({ s }: { s: StatusResponse }) {
   )
 }
 
-/** The six openable areas, in a stable top-to-bottom reading order. */
+/** The six openable areas. */
 const DOOR_AREAS: Array<keyof DoorsOpenState> = ['lf', 'rf', 'lr', 'rr', 'trunk', 'hood']
 
-function lockChip(v: number | undefined): { cls: string; label: string } {
-  if (v === 1) return { cls: 'g', label: t('status.locked') }
-  if (v === 2) return { cls: 'w', label: t('status.unlocked') }
-  return { cls: 'm', label: t('common.unknown') }
+/**
+ * One colour per area, with open taking priority over lock — an ajar door is
+ * the thing to notice (OverDrive's own diagram does the same). "closed" means
+ * the car said the area is shut but didn't report its lock; "unknown" means it
+ * said nothing at all.
+ */
+function areaState(lockV: number | undefined, openV: number | undefined): string {
+  if (openV === 1) return 'open'
+  if (lockV === 1) return 'locked'
+  if (lockV === 2) return 'unlocked'
+  if (openV === 0) return 'closed'
+  return 'unknown'
 }
-function openChip(v: number | undefined): { cls: string; label: string } {
-  if (v === 1) return { cls: 'w', label: t('status.open') }
-  if (v === 0) return { cls: 'g', label: t('status.closed') }
-  return { cls: 'm', label: t('common.unknown') }
+
+function areaTitle(key: string, lockV: number | undefined, openV: number | undefined): string {
+  const lock = lockV === 1 ? t('status.locked') : lockV === 2 ? t('status.unlocked') : t('common.unknown')
+  const op = openV === 1 ? t('status.open') : openV === 0 ? t('status.closed') : t('common.unknown')
+  return `${t('status.door_' + key)} — ${lock} · ${op}`
 }
 
 /**
- * Per-door breakdown behind the hero's lock pill: for each of the four doors
- * plus the trunk and bonnet, its lock state and its open state side by side.
- *
- * An area is listed only when the car reports at least one of the two for it,
- * so a trim that can't read the bonnet doesn't show a row of "Unknown /
- * Unknown"; when nothing is known at all, a single note stands in.
+ * Per-door breakdown behind the hero's lock pill, drawn as a top-view car
+ * diagram like OverDrive's: the four doors, the bonnet (front) and the tailgate
+ * (rear), each tinted by its state — teal locked, amber unlocked, red (pulsing)
+ * open, grey unknown. A legend spells the colours out; a note stands in when
+ * the car reports nothing at all.
  */
 function DoorStatusSheet({
   doors,
@@ -227,11 +235,10 @@ function DoorStatusSheet({
   open: DoorsOpenState | undefined
   onClose: () => void
 }) {
-  const rows = DOOR_AREAS.filter((k) => {
-    const lv = doors?.[k]
-    const ov = open?.[k]
-    return lv === 1 || lv === 2 || ov === 0 || ov === 1
-  })
+  const st = (k: keyof DoorsOpenState) => areaState(doors?.[k], open?.[k])
+  const title = (k: keyof DoorsOpenState) => areaTitle(k, doors?.[k], open?.[k])
+  const hasAny = DOOR_AREAS.some((k) => st(k) !== 'unknown')
+
   return (
     <div class="door-backdrop" onClick={onClose}>
       <div
@@ -250,21 +257,32 @@ function DoorStatusSheet({
           </button>
         </div>
 
-        {rows.length ? (
-          <div class="door-grid">
-            <span class="door-col-lbl" />
-            <span class="door-col-lbl">{t('status.lock')}</span>
-            <span class="door-col-lbl">{t('status.opening')}</span>
-            {rows.map((k) => {
-              const lc = lockChip(doors?.[k])
-              const oc = openChip(open?.[k])
-              return [
-                <span class="door-name" key={`${k}-n`}>{t('status.door_' + k)}</span>,
-                <span class={'door-chip ' + lc.cls} key={`${k}-l`}>{lc.label}</span>,
-                <span class={'door-chip ' + oc.cls} key={`${k}-o`}>{oc.label}</span>,
-              ]
-            })}
-          </div>
+        {hasAny ? (
+          <>
+            <svg class="door-car" viewBox="0 0 150 260" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t('status.doors')}>
+              <path class="door-car-body" d="M75 12 C51 12 37 24 35 50 L31 92 L31 196 C31 228 47 248 75 248 C103 248 119 228 119 196 L119 92 L115 50 C113 24 99 12 75 12 Z" />
+              <path class="door-car-glass" d="M48 62 C58 54 92 54 102 62 L98 88 C84 82 66 82 52 88 Z" />
+              <path class="door-car-glass" d="M52 202 C66 208 84 208 98 202 L102 222 C92 230 58 230 48 222 Z" />
+              <rect class="door-car-roof" x="46" y="98" width="58" height="96" rx="16" />
+
+              {/* Bonnet (front) and tailgate (rear) */}
+              <rect class={'door-area ' + st('hood')} x="46" y="35" width="58" height="9" rx="4"><title>{title('hood')}</title></rect>
+              <rect class={'door-area ' + st('trunk')} x="46" y="232" width="58" height="9" rx="4"><title>{title('trunk')}</title></rect>
+
+              {/* Four doors — left side (LF/LR), right side (RF/RR) */}
+              <rect class={'door-area ' + st('lf')} x="27" y="98" width="5" height="44" rx="2.5"><title>{title('lf')}</title></rect>
+              <rect class={'door-area ' + st('lr')} x="27" y="150" width="5" height="44" rx="2.5"><title>{title('lr')}</title></rect>
+              <rect class={'door-area ' + st('rf')} x="118" y="98" width="5" height="44" rx="2.5"><title>{title('rf')}</title></rect>
+              <rect class={'door-area ' + st('rr')} x="118" y="150" width="5" height="44" rx="2.5"><title>{title('rr')}</title></rect>
+            </svg>
+
+            <div class="door-legend">
+              <span class="door-leg"><i class="sw locked" />{t('status.locked')}</span>
+              <span class="door-leg"><i class="sw unlocked" />{t('status.unlocked')}</span>
+              <span class="door-leg"><i class="sw open" />{t('status.open')}</span>
+              <span class="door-leg"><i class="sw unknown" />{t('common.unknown')}</span>
+            </div>
+          </>
         ) : (
           <p class="door-note">{t('status.no_door_data')}</p>
         )}
