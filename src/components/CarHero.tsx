@@ -4,7 +4,7 @@ import { carPhoto } from '../lib/settings'
 import { vehicleState } from '../lib/store'
 import { distanceUnitLabel, fmtDistance } from '../lib/format'
 import { t } from '../lib/i18n'
-import { windowsOpenCount } from '../lib/vehicle'
+import { anyDoorOpen, windowsOpenCount } from '../lib/vehicle'
 import { IconBattery, IconBolt, IconFuel, IconLock, IconUnlock, IconWindow } from './icons'
 import type { StatusResponse } from '../lib/types'
 
@@ -69,7 +69,12 @@ export function CarHero({ s }: { s: StatusResponse }) {
   // three things you check before walking away, in the slot the gear pills held.
   const vs = vehicleState.value
   const powerOn = !!s.acc
-  const doors = vs?.doors?.overall // 1 locked, 2 unlocked, else unknown
+  const doorsLock = vs?.doors?.overall // 1 locked, 2 unlocked, else unknown
+  // An open door means the car isn't secured, so it reads as Unlocked even if
+  // the lock state still says locked (or never reported). The open state wins.
+  const doorOpen = anyDoorOpen(vs?.doorsOpen)
+  const unlocked = doorsLock === 2 || doorOpen === true
+  const locked = doorsLock === 1 && doorOpen !== true
   const winOpen = windowsOpenCount(vs?.windows)
 
   return (
@@ -126,10 +131,10 @@ export function CarHero({ s }: { s: StatusResponse }) {
           <span class="hs-lbl">{t('vitals.power')}</span>
         </div>
         <div class="hs-cell">
-          <span class="hs-ico">{doors === 2 ? <IconUnlock size={18} /> : <IconLock size={18} />}</span>
-          {doors === 1 ? (
+          <span class="hs-ico">{unlocked ? <IconUnlock size={18} /> : <IconLock size={18} />}</span>
+          {locked ? (
             <span class="hs-val g">{t('status.locked')}</span>
-          ) : doors === 2 ? (
+          ) : unlocked ? (
             <span class="hs-val w">{t('status.unlocked')}</span>
           ) : (
             <span class="hs-val m">{t('common.unknown')}</span>
