@@ -4,7 +4,7 @@ import { carPhoto } from '../lib/settings'
 import { vehicleState } from '../lib/store'
 import { distanceUnitLabel, fmtDistance } from '../lib/format'
 import { t } from '../lib/i18n'
-import { anyDoorOpen, windowsOpenCount } from '../lib/vehicle'
+import { anyOpen, windowsOpenCount } from '../lib/vehicle'
 import { tyreSeverity } from '../lib/tyres'
 import { IconBattery, IconBolt, IconFuel, IconLock, IconUnlock, IconWindow } from './icons'
 import type { DoorOpenState, DoorsState, StatusResponse, TyresState } from '../lib/types'
@@ -72,11 +72,11 @@ export function CarHero({ s }: { s: StatusResponse }) {
   const vs = vehicleState.value
   const powerOn = !!s.acc
   const doorsLock = vs?.doors?.overall // 1 locked, 2 unlocked, else unknown
-  // An open door means the car isn't secured, so it reads as Unlocked even if
-  // the lock state still says locked (or never reported). The open state wins.
-  const doorOpen = anyDoorOpen(vs?.doorOpen)
-  const unlocked = doorsLock === 2 || doorOpen === true
-  const locked = doorsLock === 1 && doorOpen !== true
+  // An open door/lid is the thing to notice, so it takes over the pill — a locked
+  // car with the trunk ajar should read "Open", not a reassuring "Locked".
+  const openAjar = anyOpen(vs?.doorOpen) === true
+  const locked = !openAjar && doorsLock === 1
+  const unlocked = !openAjar && doorsLock === 2
   const winOpen = windowsOpenCount(vs?.windows)
 
   return (
@@ -152,8 +152,10 @@ export function CarHero({ s }: { s: StatusResponse }) {
             }
           }}
         >
-          <span class="hs-ico">{unlocked ? <IconUnlock size={18} /> : <IconLock size={18} />}</span>
-          {locked ? (
+          <span class="hs-ico">{locked ? <IconLock size={18} /> : <IconUnlock size={18} />}</span>
+          {openAjar ? (
+            <span class="hs-val w">{t('status.open')}</span>
+          ) : locked ? (
             <span class="hs-val g">{t('status.locked')}</span>
           ) : unlocked ? (
             <span class="hs-val w">{t('status.unlocked')}</span>
