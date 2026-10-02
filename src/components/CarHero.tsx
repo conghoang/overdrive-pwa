@@ -202,22 +202,25 @@ export function CarHero({ s }: { s: StatusResponse }) {
 const DOOR_AREAS: Array<keyof DoorsOpenState> = ['lf', 'rf', 'lr', 'rr', 'trunk', 'hood']
 
 /**
- * Per-area colour follows the OPEN state, which this trim reports for every
- * area. Lock is reported only for the driver door (so it can't colour the other
- * areas — doing so painted a closed trunk grey "unknown"); the overall lock is
- * shown by the central padlock instead.
+ * Per-area colour. Open wins (an ajar door is the thing to notice); otherwise
+ * the area takes the OVERALL lock — this trim reports the lock only for the
+ * driver door, but the whole-car lock applies to every closed door, so a closed
+ * door on a locked car reads green "Locked".
  */
-function openState(openV: number | undefined): string {
+function areaState(openV: number | undefined, lockOverall: number | undefined): string {
   if (openV === 1) return 'open'
-  if (openV === 0) return 'closed'
+  if (lockOverall === 1) return 'locked'
+  if (lockOverall === 2) return 'unlocked'
   return 'unknown'
 }
 
-function areaTitle(key: string, lockV: number | undefined, openV: number | undefined): string {
-  const op = openV === 1 ? t('status.open') : openV === 0 ? t('status.closed') : t('common.unknown')
-  // Lock is usually only known for the driver door — append it only when it is.
-  const lock = lockV === 1 ? t('status.locked') : lockV === 2 ? t('status.unlocked') : null
-  return `${t('status.door_' + key)} — ${op}${lock ? ' · ' + lock : ''}`
+function areaTitle(key: string, openV: number | undefined, lockOverall: number | undefined): string {
+  const parts: string[] = []
+  if (openV === 1) parts.push(t('status.open'))
+  else if (openV === 0) parts.push(t('status.closed'))
+  if (lockOverall === 1) parts.push(t('status.locked'))
+  else if (lockOverall === 2) parts.push(t('status.unlocked'))
+  return `${t('status.door_' + key)} — ${parts.length ? parts.join(' · ') : t('common.unknown')}`
 }
 
 /**
@@ -239,11 +242,10 @@ function DoorStatusSheet({
   tyres: TyresState | undefined
   onClose: () => void
 }) {
-  const st = (k: keyof DoorsOpenState) => openState(open?.[k])
-  const title = (k: keyof DoorsOpenState) => areaTitle(k, doors?.[k], open?.[k])
   const lockOverall = doors?.overall // 1 locked, 2 unlocked, else unknown
-  const hasAny =
-    DOOR_AREAS.some((k) => st(k) !== 'unknown') || lockOverall === 1 || lockOverall === 2
+  const st = (k: keyof DoorsOpenState) => areaState(open?.[k], lockOverall)
+  const title = (k: keyof DoorsOpenState) => areaTitle(k, open?.[k], lockOverall)
+  const hasAny = DOOR_AREAS.some((k) => st(k) !== 'unknown')
   // Wheel colour follows that corner's pressure state; "muted" (grey) when the
   // car reports no reading, so the car still looks complete without one.
   const tyre = (k: 'fl' | 'fr' | 'rl' | 'rr') =>
@@ -290,19 +292,11 @@ function DoorStatusSheet({
               <rect class={'door-area ' + st('lr')} x="27" y="150" width="5" height="44" rx="2.5"><title>{title('lr')}</title></rect>
               <rect class={'door-area ' + st('rf')} x="118" y="98" width="5" height="44" rx="2.5"><title>{title('rf')}</title></rect>
               <rect class={'door-area ' + st('rr')} x="118" y="150" width="5" height="44" rx="2.5"><title>{title('rr')}</title></rect>
-
-              {/* Overall lock, centre of the roof */}
-              {(lockOverall === 1 || lockOverall === 2) && (
-                <g class={'door-lock ' + (lockOverall === 1 ? 'locked' : 'unlocked')} transform="translate(75,140)">
-                  <title>{lockOverall === 1 ? t('status.locked') : t('status.unlocked')}</title>
-                  <rect x="-9" y="0" width="18" height="14" rx="3" />
-                  <path d={lockOverall === 1 ? 'M-5 0 V-5 a5 5 0 0 1 10 0 V0' : 'M-5 0 V-5 a5 5 0 0 1 10 0'} fill="none" stroke="currentColor" stroke-width="2.4" />
-                </g>
-              )}
             </svg>
 
             <div class="door-legend">
-              <span class="door-leg"><i class="sw closed" />{t('status.closed')}</span>
+              <span class="door-leg"><i class="sw locked" />{t('status.locked')}</span>
+              <span class="door-leg"><i class="sw unlocked" />{t('status.unlocked')}</span>
               <span class="door-leg"><i class="sw open" />{t('status.open')}</span>
               <span class="door-leg"><i class="sw unknown" />{t('common.unknown')}</span>
             </div>
