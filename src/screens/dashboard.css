@@ -293,27 +293,28 @@
   border: 0; background: none; color: var(--muted); cursor: pointer; border-radius: 8px;
 }
 .door-sheet-x:active { transform: scale(0.9); }
-.door-grid {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 9px 10px;
-  align-items: center;
-}
-.door-col-lbl {
-  color: var(--muted); font-size: 10px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.05em; text-align: center;
-  padding-bottom: 2px;
-}
-.door-name { font-size: 14px; font-weight: 600; color: var(--text-secondary); }
-.door-chip {
-  min-width: 72px; text-align: center;
-  font-size: 12px; font-weight: 700;
-  padding: 5px 10px; border-radius: 999px;
-  border: 1px solid var(--border-soft);
-}
-.door-chip.g { color: var(--success); background: var(--success-soft); border-color: transparent; }
-.door-chip.w { color: var(--warning); background: var(--warning-soft); border-color: transparent; }
-.door-chip.m { color: var(--muted); }
+
+/* Top-view car diagram (OverDrive-style): one tinted area per door/lid. */
+.door-car { display: block; margin: 2px auto 14px; width: auto; height: 236px; max-width: 70%; }
+.door-car-body { fill: var(--surface-2); stroke: var(--border-strong); stroke-width: 1.5; }
+.door-car-glass { fill: var(--accent-soft); }
+.door-car-roof { fill: var(--surface-3); stroke: var(--border-soft); stroke-width: 1; }
+/* Areas — default (unknown) grey; state tints follow. */
+.door-area { fill: var(--muted); opacity: 0.4; transition: fill 0.2s ease, opacity 0.2s ease; }
+.door-area.closed { fill: var(--muted); opacity: 0.6; }
+.door-area.locked { fill: var(--success); opacity: 1; }
+.door-area.unlocked { fill: var(--warning); opacity: 1; }
+.door-area.open { fill: var(--danger); opacity: 1; animation: doorOpenPulse 1.6s ease-in-out infinite; }
+@keyframes doorOpenPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) { .door-area.open { animation: none; } }
+
+.door-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 16px; }
+.door-leg { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+.door-leg .sw { width: 11px; height: 11px; border-radius: 3px; flex: 0 0 auto; }
+.door-leg .sw.locked { background: var(--success); }
+.door-leg .sw.unlocked { background: var(--warning); }
+.door-leg .sw.open { background: var(--danger); }
+.door-leg .sw.unknown { background: var(--muted); opacity: 0.45; }
 .door-note { color: var(--text-secondary); font-size: 14px; line-height: 1.5; margin: 6px 0 2px; }
 /* EV / HEV legs under the odometer headline */
 .odo-split {
