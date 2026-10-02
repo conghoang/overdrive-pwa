@@ -41,6 +41,22 @@ export function setShowMap(on: boolean): void {
 }
 
 /*
+ * Google Maps JavaScript API key for the mini map and its street address.
+ *
+ * Supplied by the owner (Google requires a key), kept locally and only ever
+ * handed to Google's own maps.googleapis.com — never sent to the car. Without
+ * one the map card shows a short "add a key" hint instead of a map.
+ */
+const K_GMAPS = 'odpwa.gmapsKey'
+export const gmapsKey = signal<string>(localStorage.getItem(K_GMAPS) || '')
+export function setGmapsKey(key: string): void {
+  const v = key.trim()
+  gmapsKey.value = v
+  if (v) localStorage.setItem(K_GMAPS, v)
+  else localStorage.removeItem(K_GMAPS)
+}
+
+/*
  * Live-view fisheye correction, 0-100, stored PER CAMERA.
  *
  * Each lens sits at a different angle behind a different piece of glass, so one
@@ -284,6 +300,7 @@ export function resetSettings(): void {
   void idbDel(IDB_CARPHOTO).catch(() => {})
   carName.value = ''
   showMap.value = false
+  gmapsKey.value = ''
   tripView.value = 'compact'
   holdTrunk.value = false
   holdStart.value = false
