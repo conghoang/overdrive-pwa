@@ -258,14 +258,18 @@
 .hs-val.m { color: var(--muted); }
 .hs-lbl { color: var(--muted); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
 
-/* The doors cell is a button — it opens the per-door breakdown. Reset the
-   native button look so it sits flush with the other two (static) cells. */
-.hs-cell-tap {
-  font: inherit; color: inherit; background: none; border: 0; cursor: pointer;
+/* The doors cell opens the per-door breakdown. The cell itself stays a <div>
+   (flex column), and this transparent button overlays it as the tap target —
+   so the layout never depends on a <button> being a flex container, which the
+   car's older WebView doesn't honour. */
+.hs-cell-btn {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  background: none; border: 0; padding: 0; cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: transform 0.08s ease;
 }
-.hs-cell-tap:active { transform: scale(0.96); }
+.hs-cell-btn:active { transform: scale(0.96); }
 /* A quiet chevron in the top-right corner, hinting the cell opens something. */
 .hs-more { position: absolute; top: 2px; right: 2px; color: var(--muted); opacity: 0.6; }
 
