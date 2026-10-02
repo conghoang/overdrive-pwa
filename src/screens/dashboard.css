@@ -301,11 +301,9 @@
 /* Front/rear glass (bonnet/tailgate): normal glass tint, red when that lid is open. */
 .door-glass { fill: var(--accent-soft); transition: fill 0.2s ease; }
 .door-glass.open { fill: var(--danger); animation: doorOpenPulse 1.6s ease-in-out infinite; }
-/* Tyres — coloured by that corner's pressure state (grey when no reading). */
+/* Tyres — neutral here; they complete the car shape and carry no state in this
+   view (pressure has its own card). */
 .door-tyre { fill: var(--wheel-muted); }
-.door-tyre.normal { fill: var(--wheel-normal); }
-.door-tyre.warn { fill: var(--warning); }
-.door-tyre.alert { fill: var(--danger); }
 /* Areas — open wins (red, pulsing); else the whole-car lock tints them
    green (locked) or amber (unlocked); grey when nothing is known. */
 .door-area { fill: var(--muted); opacity: 0.4; transition: fill 0.2s ease, opacity 0.2s ease; }
