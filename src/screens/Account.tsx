@@ -15,7 +15,7 @@ import { lazyScreen } from '../lib/lazy'
  */
 const WiCarlinkEditor = lazyScreen(() => import('../components/WiCarlinkEditor'), 'WiCarlinkEditor')
 
-import { carName, carPhoto, holdStart, holdTrunk, resetSettings, setCarName, setCarPhoto, setHoldStart, setHoldTrunk, setShowMap, setWicarlink, showMap, wicarlink } from '../lib/settings'
+import { carName, carPhoto, gmapsKey, holdStart, holdTrunk, resetSettings, setCarName, setCarPhoto, setGmapsKey, setHoldStart, setHoldTrunk, setShowMap, setWicarlink, showMap, wicarlink } from '../lib/settings'
 import { fileToResizedBlob } from '../lib/image'
 import { toast } from '../lib/toast'
 import { lang, setLang, t } from '../lib/i18n'
@@ -94,6 +94,23 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
           </div>
           <Switch on={showMap.value} onChange={setShowMap} />
         </div>
+        {showMap.value && (
+          <div class="stack" style={{ marginTop: '12px', gap: '6px' }}>
+            <span class="srow-label">{t('dev.gmaps_key')}</span>
+            <input
+              class="wc-input"
+              type="text"
+              autocomplete="off"
+              autocapitalize="off"
+              autocorrect="off"
+              spellcheck={false}
+              placeholder={t('dev.gmaps_key_ph')}
+              value={gmapsKey.value}
+              onInput={(e) => setGmapsKey((e.target as HTMLInputElement).value)}
+            />
+            <span class="screen-sub">{t('dev.gmaps_key_desc')}</span>
+          </div>
+        )}
       </div>
 
       {/* language */}
