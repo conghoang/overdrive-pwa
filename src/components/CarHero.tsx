@@ -131,12 +131,11 @@ export function CarHero({ s }: { s: StatusResponse }) {
           <span class={'hs-val ' + (powerOn ? 'g' : 'm')}>{powerOn ? t('common.on') : t('common.off')}</span>
           <span class="hs-lbl">{t('vitals.power')}</span>
         </div>
-        <button
-          type="button"
-          class="hs-cell hs-cell-tap"
-          aria-haspopup="dialog"
-          onClick={() => setDoorSheet(true)}
-        >
+        {/* A div (not a <button>) so the column flex renders on the car's older
+            WebView — a <button> flex container is unreliable there and collapsed
+            the cell into extra wrapped lines. The tap target is an overlay
+            button filling the cell, which carries the a11y role and the chevron. */}
+        <div class="hs-cell">
           <span class="hs-ico">{unlocked ? <IconUnlock size={18} /> : <IconLock size={18} />}</span>
           {locked ? (
             <span class="hs-val g">{t('status.locked')}</span>
@@ -146,10 +145,18 @@ export function CarHero({ s }: { s: StatusResponse }) {
             <span class="hs-val m">{t('common.unknown')}</span>
           )}
           <span class="hs-lbl">{t('status.doors')}</span>
-          <svg class="hs-more" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M9 6l6 6-6 6" />
-          </svg>
-        </button>
+          <button
+            type="button"
+            class="hs-cell-btn"
+            aria-haspopup="dialog"
+            aria-label={t('status.doors')}
+            onClick={() => setDoorSheet(true)}
+          >
+            <svg class="hs-more" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M9 6l6 6-6 6" />
+            </svg>
+          </button>
+        </div>
         <div class="hs-cell">
           <span class="hs-ico"><IconWindow size={18} /></span>
           {winOpen == null ? (
