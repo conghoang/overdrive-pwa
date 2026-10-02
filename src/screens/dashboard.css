@@ -299,6 +299,11 @@
 .door-car-body { fill: var(--surface-2); stroke: var(--border-strong); stroke-width: 1.5; }
 .door-car-glass { fill: var(--accent-soft); }
 .door-car-roof { fill: var(--surface-3); stroke: var(--border-soft); stroke-width: 1; }
+/* Tyres — coloured by that corner's pressure state (grey when no reading). */
+.door-tyre { fill: var(--wheel-muted); }
+.door-tyre.normal { fill: var(--wheel-normal); }
+.door-tyre.warn { fill: var(--warning); }
+.door-tyre.alert { fill: var(--danger); }
 /* Areas — default (unknown) grey; state tints follow. */
 .door-area { fill: var(--muted); opacity: 0.4; transition: fill 0.2s ease, opacity 0.2s ease; }
 .door-area.closed { fill: var(--muted); opacity: 0.6; }

@@ -5,8 +5,9 @@ import { vehicleState } from '../lib/store'
 import { distanceUnitLabel, fmtDistance } from '../lib/format'
 import { t } from '../lib/i18n'
 import { anyDoorOpen, windowsOpenCount } from '../lib/vehicle'
+import { tyreSeverity } from '../lib/tyres'
 import { IconBattery, IconBolt, IconFuel, IconLock, IconUnlock, IconWindow } from './icons'
-import type { DoorsOpenState, DoorsState, StatusResponse } from '../lib/types'
+import type { DoorsOpenState, DoorsState, StatusResponse, TyresState } from '../lib/types'
 
 export const DEFAULT_PHOTO = `${import.meta.env.BASE_URL}car/sealion6.webp`
 
@@ -189,6 +190,7 @@ export function CarHero({ s }: { s: StatusResponse }) {
         <DoorStatusSheet
           doors={vs?.doors}
           open={vs?.doorsOpen}
+          tyres={vs?.tyres}
           onClose={() => setDoorSheet(false)}
         />
       )}
@@ -229,15 +231,21 @@ function areaTitle(key: string, lockV: number | undefined, openV: number | undef
 function DoorStatusSheet({
   doors,
   open,
+  tyres,
   onClose,
 }: {
   doors: DoorsState | undefined
   open: DoorsOpenState | undefined
+  tyres: TyresState | undefined
   onClose: () => void
 }) {
   const st = (k: keyof DoorsOpenState) => areaState(doors?.[k], open?.[k])
   const title = (k: keyof DoorsOpenState) => areaTitle(k, doors?.[k], open?.[k])
   const hasAny = DOOR_AREAS.some((k) => st(k) !== 'unknown')
+  // Wheel colour follows that corner's pressure state; "muted" (grey) when the
+  // car reports no reading, so the car still looks complete without one.
+  const tyre = (k: 'fl' | 'fr' | 'rl' | 'rr') =>
+    tyreSeverity(tyres?.[k], k === 'fl' || k === 'fr', tyres?.limits)
 
   return (
     <div class="door-backdrop" onClick={onClose}>
@@ -260,6 +268,12 @@ function DoorStatusSheet({
         {hasAny ? (
           <>
             <svg class="door-car" viewBox="0 0 150 260" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t('status.doors')}>
+              {/* Tyres — drawn first (behind the body), coloured by pressure */}
+              <rect class={'door-tyre ' + tyre('fl')} x="15" y="54" width="13" height="34" rx="5" />
+              <rect class={'door-tyre ' + tyre('fr')} x="122" y="54" width="13" height="34" rx="5" />
+              <rect class={'door-tyre ' + tyre('rl')} x="15" y="172" width="13" height="34" rx="5" />
+              <rect class={'door-tyre ' + tyre('rr')} x="122" y="172" width="13" height="34" rx="5" />
+
               <path class="door-car-body" d="M75 12 C51 12 37 24 35 50 L31 92 L31 196 C31 228 47 248 75 248 C103 248 119 228 119 196 L119 92 L115 50 C113 24 99 12 75 12 Z" />
               <path class="door-car-glass" d="M48 62 C58 54 92 54 102 62 L98 88 C84 82 66 82 52 88 Z" />
               <path class="door-car-glass" d="M52 202 C66 208 84 208 98 202 L102 222 C92 230 58 230 48 222 Z" />
