@@ -326,6 +326,17 @@
 @keyframes doorOpenPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
 @media (prefers-reduced-motion: reduce) { .door-area.open { animation: none; } }
 
+/* An open door swings its panel out of the body: the leaf is hinged at the
+   pillar (transform-origin set inline per door) and grows out along its length
+   when it mounts, so the picture itself shows the car thrown open. */
+.door-leaf { transform-box: view-box; transform: rotate(var(--a)); animation: doorSwingOut 0.5s cubic-bezier(0.34, 1.26, 0.5, 1) both; }
+.door-leaf rect { fill: var(--danger); stroke: rgba(0, 0, 0, 0.4); stroke-width: 2; }
+@keyframes doorSwingOut {
+  from { transform: rotate(var(--a)) scaleX(0.06); opacity: 0; }
+  to { transform: rotate(var(--a)) scaleX(1); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) { .door-leaf { animation-duration: 0.01ms; } }
+
 .door-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 16px; }
 .door-leg { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
 .door-leg .sw { width: 11px; height: 11px; border-radius: 3px; flex: 0 0 auto; }

@@ -251,6 +251,20 @@ function DoorStatusSheet({
   const title = (k: keyof DoorOpenState) => areaTitle(k, open?.[k], lockOverall)
   const hasAny = DOOR_AREAS.some((k) => st(k) !== 'unknown')
 
+  // An open door doesn't just turn a marker red — the panel swings out of the
+  // car, so the picture itself reads "a door is open" at a glance. Each leaf is
+  // a rect hinged at the pillar (front doors forward, rear doors back, the
+  // butterfly shape of a car with everything thrown open); it grows out from
+  // the hinge when that door opens. hx/hy are the hinge in the 524×1000 overlay,
+  // ang the open swing in CSS degrees (0 = pointing inboard/east, +clockwise).
+  const leaf = (k: keyof DoorOpenState, hx: number, hy: number, ang: number) =>
+    open?.[k] === true ? (
+      <g class="door-leaf" style={`transform-origin:${hx}px ${hy}px;--a:${ang}deg`}>
+        <rect x={hx} y={hy - 12} width="126" height="24" rx="12" />
+        <title>{title(k)}</title>
+      </g>
+    ) : null
+
   return (
     <div class="door-backdrop" onClick={onClose}>
       <div
@@ -284,6 +298,11 @@ function DoorStatusSheet({
                 <rect class={'door-area ' + st('lr')} x="50" y="540" width="30" height="150" rx="14"><title>{title('lr')}</title></rect>
                 <rect class={'door-area ' + st('rf')} x="362" y="366" width="30" height="150" rx="14"><title>{title('rf')}</title></rect>
                 <rect class={'door-area ' + st('rr')} x="362" y="540" width="30" height="150" rx="14"><title>{title('rr')}</title></rect>
+                {/* …and when a door is open, its panel swings out of the body */}
+                {leaf('lf', 100, 391, -125)}
+                {leaf('rf', 426, 391, -55)}
+                {leaf('lr', 100, 582, 150)}
+                {leaf('rr', 426, 582, 30)}
               </svg>
             </div>
 
