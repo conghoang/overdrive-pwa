@@ -146,7 +146,6 @@
   position: relative; height: 160px; aspect-ratio: 630 / 1203;
 }
 .tyre-car-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
-.tyre-car-ov { position: absolute; inset: 0; width: 100%; height: 100%; }
 .tyre-read { display: flex; flex-direction: column; position: relative; }
 /* Align each side's figures to the OUTER edge, not centred: centring left a
    narrow number ("36") with more space around it than a wide one ("36.3"), so
