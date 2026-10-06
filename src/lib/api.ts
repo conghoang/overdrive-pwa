@@ -335,9 +335,12 @@ export const closeAllWindows = (): Promise<ControlResult> => apiPost('/api/vehic
  * the newest trip's end reading is the current odometer. It therefore updates
  * when a trip CLOSES, not continuously — it can lag by one drive.
  *
- * The EV / HEV split has no HTTP surface at all: trips record energy consumed,
- * not distance per drivetrain, so those stay null until OverDrive exposes the
- * `mileage` block that BydVehicleData.toJson() already builds.
+ * This stays the FALLBACK: newer OverDrive (braveheart-v52.5+) serves the real
+ * odometer — total plus the EV/HEV split — in /api/vehicle/state's `odometer`
+ * block, which the store prefers over this (see composeOdo). The trip log is
+ * used only when the device state doesn't carry it (and for the rolling
+ * efficiency averages below, which the device state does not provide). Trips
+ * record energy, not distance per drivetrain, so evKm/hevKm stay null here.
  */
 
 

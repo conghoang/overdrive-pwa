@@ -1,7 +1,7 @@
 import { signal } from '@preact/signals'
 import { AuthError, getCloudStatus, getOdometer, getStatus, getSummary, getVehicleState } from './api'
 import type { Odometer } from './api'
-import type { StatusResponse, VehicleState } from './types'
+import type { DeviceOdometer, StatusResponse, VehicleState } from './types'
 
 export const status = signal<StatusResponse | null>(null)
 export const vehicleState = signal<VehicleState | null>(null)
@@ -43,6 +43,74 @@ function readCachedOdo(): Odometer | null {
 }
 
 export const odometer = signal<Odometer | null>(readCachedOdo())
+
+/*
+ * Two sources feed the odometer, and the live one wins.
+ *
+ *   - The DEVICE STATE reports the odometer directly in /api/vehicle/state
+ *     (`odometer`: total, plus the EV/HEV split on a PHEV) — authoritative and
+ *     updated every poll.
+ *   - The TRIP LOG derives it from the newest trip's end reading. It only moves
+ *     when a trip closes, and carries no EV/HEV split, but it also computes the
+ *     rolling efficiency averages the device state does not.
+ *
+ * So: prefer the device numbers for total/EV/HEV, fall back to the trip reading
+ * when the car didn't report them, and always take the efficiency figures from
+ * the trip log. `composeOdo` merges the latest of each under that precedence.
+ */
+let lastTripOdo: Odometer | null = odometer.value
+let lastDeviceOdo: DeviceOdometer | null = null
+
+/** A positive, finite, rounded km reading, or null when absent/zero. */
+function kmOrNull(v: unknown): number | null {
+  return typeof v === 'number' && isFinite(v) && v > 0 ? Math.round(v) : null
+}
+
+/** Pull a usable odometer out of a device-state `odometer` block, or null. */
+function deviceOdo(m: DeviceOdometer | undefined): DeviceOdometer | null {
+  if (!m) return null
+  const totalKm = kmOrNull(m.totalKm)
+  const evKm = kmOrNull(m.evKm)
+  const hevKm = kmOrNull(m.hevKm)
+  if (totalKm == null && evKm == null && hevKm == null) return null
+  return { totalKm: totalKm ?? undefined, evKm: evKm ?? undefined, hevKm: hevKm ?? undefined }
+}
+
+function sameOdo(a: DeviceOdometer | null, b: DeviceOdometer | null): boolean {
+  return a?.totalKm === b?.totalKm && a?.evKm === b?.evKm && a?.hevKm === b?.hevKm
+}
+
+/** Device state reported the odometer: adopt it (it wins) and recompose on change. */
+function noteDeviceOdo(m: DeviceOdometer | undefined): void {
+  const dm = deviceOdo(m)
+  if (!dm || sameOdo(dm, lastDeviceOdo)) return
+  lastDeviceOdo = dm
+  composeOdo()
+}
+
+/** Merge device + trip readings under the precedence above and publish them. */
+function composeOdo(): void {
+  const dev = lastDeviceOdo
+  const trip = lastTripOdo
+  if (!dev && !trip) return
+  const merged: Odometer = {
+    totalKm: dev?.totalKm ?? trip?.totalKm ?? null,
+    evKm: dev?.evKm ?? trip?.evKm ?? null,
+    hevKm: dev?.hevKm ?? trip?.hevKm ?? null,
+    fuelLPer100: trip?.fuelLPer100 ?? null,
+    recentKwhPer100: trip?.recentKwhPer100 ?? null,
+    recentLPer100: trip?.recentLPer100 ?? null,
+    recentKm: trip?.recentKm ?? null,
+  }
+  odometer.value = merged
+  try {
+    if (merged.totalKm != null || merged.evKm != null || merged.hevKm != null) {
+      localStorage.setItem(K_ODO, JSON.stringify(merged))
+    } else {
+      localStorage.removeItem(K_ODO) // definitively nothing to remember
+    }
+  } catch { /* private mode / quota — not worth failing over */ }
+}
 /**
  * Outside air temperature. Cabin temperature is what the dashboard would prefer,
  * but OverDrive only sends climate.insideTempC while the sensor is answering
@@ -170,12 +238,11 @@ async function tick(): Promise<void> {
       void getOdometer()
         .then((o) => {
           // null means the car said nothing — keep whatever we already had.
+          // The trip log is the fallback for total/EV/HEV and the only source of
+          // the efficiency averages; the device numbers still win in composeOdo.
           if (!active || !o) return
-          odometer.value = o
-          try {
-            if (o.totalKm != null) localStorage.setItem(K_ODO, JSON.stringify(o))
-            else localStorage.removeItem(K_ODO) // definitively has none; stop remembering
-          } catch { /* private mode / quota — the reading is not worth failing over */ }
+          lastTripOdo = o
+          composeOdo()
         })
         .catch(() => {})
     }
@@ -185,6 +252,8 @@ async function tick(): Promise<void> {
       if (active) {
         vehicleState.value = vs
         vsFails = 0
+        // The device state carries the odometer now — prefer it, live, every poll.
+        noteDeviceOdo(vs.odometer)
       }
     } catch (e) {
       if (e instanceof AuthError) throw e
@@ -308,6 +377,8 @@ export function reset(): void {
   batteryKwh.value = null
   localStorage.removeItem(K_KWH)
   odometer.value = null
+  lastTripOdo = null
+  lastDeviceOdo = null
   localStorage.removeItem(K_ODO)
   outsideTempC.value = null
   pm25Inside.value = null
