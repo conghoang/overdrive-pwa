@@ -271,28 +271,21 @@ function DoorStatusSheet({
 
         {hasAny ? (
           <>
-            <svg class="door-car" viewBox="0 0 150 260" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t('status.doors')}>
-              {/* Tyres — neutral here (pressure lives on its own card); they just
-                  complete the car shape and must not read as door states. */}
-              <rect class="door-tyre" x="15" y="54" width="13" height="34" rx="5" />
-              <rect class="door-tyre" x="122" y="54" width="13" height="34" rx="5" />
-              <rect class="door-tyre" x="15" y="172" width="13" height="34" rx="5" />
-              <rect class="door-tyre" x="122" y="172" width="13" height="34" rx="5" />
-
-              <path class="door-car-body" d="M75 12 C51 12 37 24 35 50 L31 92 L31 196 C31 228 47 248 75 248 C103 248 119 228 119 196 L119 92 L115 50 C113 24 99 12 75 12 Z" />
-              <rect class="door-car-roof" x="46" y="98" width="58" height="96" rx="16" />
-
-              {/* Front glass = bonnet (front); rear glass = tailgate (rear): keep the
-                  glass tint, turn red only when that lid is open. */}
-              <path class={'door-glass' + (open?.hood === true ? ' open' : '')} d="M48 62 C58 54 92 54 102 62 L98 88 C84 82 66 82 52 88 Z"><title>{glassTitle('hood', open?.hood)}</title></path>
-              <path class={'door-glass' + (open?.trunk === true ? ' open' : '')} d="M52 202 C66 208 84 208 98 202 L102 222 C92 230 58 230 48 222 Z"><title>{glassTitle('trunk', open?.trunk)}</title></path>
-
-              {/* Four doors — left side (LF/LR), right side (RF/RR) */}
-              <rect class={'door-area ' + st('lf')} x="27" y="98" width="5" height="44" rx="2.5"><title>{title('lf')}</title></rect>
-              <rect class={'door-area ' + st('lr')} x="27" y="150" width="5" height="44" rx="2.5"><title>{title('lr')}</title></rect>
-              <rect class={'door-area ' + st('rf')} x="118" y="98" width="5" height="44" rx="2.5"><title>{title('rf')}</title></rect>
-              <rect class={'door-area ' + st('rr')} x="118" y="150" width="5" height="44" rx="2.5"><title>{title('rr')}</title></rect>
-            </svg>
+            <div class="door-car" role="img" aria-label={t('status.doors')}>
+              <img class="door-car-photo" src={`${import.meta.env.BASE_URL}car/topview.webp`} alt="" />
+              {/* Overlay matched to the photo (viewBox aspect = image aspect). Markers
+                  sit over the doors; the front/rear glass flashes red when that lid opens. */}
+              <svg class="door-car-ov" viewBox="0 0 524 1000" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                {/* Front glass = bonnet, rear glass = tailgate: red only when open */}
+                <rect class={'door-glass' + (open?.hood === true ? ' open' : '')} x="112" y="183" width="270" height="150" rx="40"><title>{glassTitle('hood', open?.hood)}</title></rect>
+                <rect class={'door-glass' + (open?.trunk === true ? ' open' : '')} x="125" y="723" width="241" height="117" rx="34"><title>{glassTitle('trunk', open?.trunk)}</title></rect>
+                {/* Four doors — left (LF/LR), right (RF/RR) */}
+                <rect class={'door-area ' + st('lf')} x="50" y="366" width="30" height="150" rx="14"><title>{title('lf')}</title></rect>
+                <rect class={'door-area ' + st('lr')} x="50" y="540" width="30" height="150" rx="14"><title>{title('lr')}</title></rect>
+                <rect class={'door-area ' + st('rf')} x="362" y="366" width="30" height="150" rx="14"><title>{title('rf')}</title></rect>
+                <rect class={'door-area ' + st('rr')} x="362" y="540" width="30" height="150" rx="14"><title>{title('rr')}</title></rect>
+              </svg>
+            </div>
 
             <div class="door-legend">
               <span class="door-leg"><i class="sw locked" />{t('status.locked')}</span>

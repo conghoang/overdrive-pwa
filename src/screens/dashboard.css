@@ -141,7 +141,13 @@
   gap: 18px 8px;
   padding: 12px 8px 6px;
 }
-.tyre-car { grid-column: 2; grid-row: 1 / span 2; display: flex; justify-content: center; }
+.tyre-car { grid-column: 2; grid-row: 1 / span 2; display: flex; align-items: center; justify-content: center; }
+.tyre-car-photo-wrap {
+  position: relative; height: 160px; aspect-ratio: 630 / 1203;
+  background: rgba(125, 135, 148, 0.10); border-radius: 12px;
+}
+.tyre-car-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.tyre-car-ov { position: absolute; inset: 0; width: 100%; height: 100%; }
 .tyre-read { display: flex; flex-direction: column; position: relative; }
 /* Align each side's figures to the OUTER edge, not centred: centring left a
    narrow number ("36") with more space around it than a wide one ("36.3"), so
@@ -295,18 +301,22 @@
 .door-sheet-x:active { transform: scale(0.9); }
 
 /* Top-view car diagram (OverDrive-style): one tinted area per door/lid. */
-.door-car { display: block; margin: 2px auto 14px; width: auto; height: 236px; max-width: 70%; }
-.door-car-body { fill: var(--surface-2); stroke: var(--border-strong); stroke-width: 1.5; }
-.door-car-roof { fill: var(--surface-3); stroke: var(--border-soft); stroke-width: 1; }
-/* Front/rear glass (bonnet/tailgate): normal glass tint, red when that lid is open. */
-.door-glass { fill: var(--accent-soft); transition: fill 0.2s ease; }
-.door-glass.open { fill: var(--danger); animation: doorOpenPulse 1.6s ease-in-out infinite; }
-/* Tyres — neutral here; they complete the car shape and carry no state in this
-   view (pressure has its own card). */
-.door-tyre { fill: var(--wheel-muted); }
+/* Top-view car photo backdrop with a state overlay on top (aspect = image). */
+.door-car {
+  position: relative; margin: 2px auto 12px;
+  height: 250px; aspect-ratio: 630 / 1203;
+  background: rgba(125, 135, 148, 0.10); border-radius: 16px;
+}
+.door-car-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.door-car-ov { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* Front/rear glass (bonnet/tailgate): no tint normally, red (pulsing) when open. */
+.door-glass { fill: transparent; transition: fill 0.2s ease; }
+.door-glass.open { fill: var(--danger); animation: glassOpenPulse 1.6s ease-in-out infinite; }
+@keyframes glassOpenPulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 0.25; } }
+@media (prefers-reduced-motion: reduce) { .door-glass.open { animation: none; opacity: 0.5; } }
 /* Areas — open wins (red, pulsing); else the whole-car lock tints them
    green (locked) or amber (unlocked); grey when nothing is known. */
-.door-area { fill: var(--muted); opacity: 0.4; transition: fill 0.2s ease, opacity 0.2s ease; }
+.door-area { fill: var(--muted); opacity: 0.55; stroke: rgba(0, 0, 0, 0.35); stroke-width: 2; transition: fill 0.2s ease, opacity 0.2s ease; }
 .door-area.locked { fill: var(--success); opacity: 1; }
 .door-area.unlocked { fill: var(--warning); opacity: 1; }
 .door-area.open { fill: var(--danger); opacity: 1; animation: doorOpenPulse 1.6s ease-in-out infinite; }
