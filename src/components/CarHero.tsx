@@ -293,16 +293,17 @@ function DoorStatusSheet({
                 {/* Front glass = bonnet, rear glass = tailgate: red only when open */}
                 <rect class={'door-glass' + (open?.hood === true ? ' open' : '')} x="112" y="183" width="270" height="150" rx="40"><title>{glassTitle('hood', open?.hood)}</title></rect>
                 <rect class={'door-glass' + (open?.trunk === true ? ' open' : '')} x="125" y="723" width="241" height="117" rx="34"><title>{glassTitle('trunk', open?.trunk)}</title></rect>
-                {/* Four doors — left (LF/LR), right (RF/RR) */}
-                <rect class={'door-area ' + st('lf')} x="50" y="366" width="30" height="150" rx="14"><title>{title('lf')}</title></rect>
-                <rect class={'door-area ' + st('lr')} x="50" y="540" width="30" height="150" rx="14"><title>{title('lr')}</title></rect>
-                <rect class={'door-area ' + st('rf')} x="362" y="366" width="30" height="150" rx="14"><title>{title('rf')}</title></rect>
-                <rect class={'door-area ' + st('rr')} x="362" y="540" width="30" height="150" rx="14"><title>{title('rr')}</title></rect>
-                {/* …and when a door is open, its panel swings out of the body */}
-                {leaf('lf', 100, 391, -125)}
-                {leaf('rf', 426, 391, -55)}
-                {leaf('lr', 100, 582, 150)}
-                {leaf('rr', 426, 582, 30)}
+                {/* Four doors, over each side window — left (LF/LR), right (RF/RR).
+                    x's are symmetric about the car's centreline (overlay x≈263). */}
+                <rect class={'door-area ' + st('lf')} x="67" y="300" width="30" height="165" rx="14"><title>{title('lf')}</title></rect>
+                <rect class={'door-area ' + st('lr')} x="67" y="495" width="30" height="165" rx="14"><title>{title('lr')}</title></rect>
+                <rect class={'door-area ' + st('rf')} x="427" y="300" width="30" height="165" rx="14"><title>{title('rf')}</title></rect>
+                <rect class={'door-area ' + st('rr')} x="427" y="495" width="30" height="165" rx="14"><title>{title('rr')}</title></rect>
+                {/* …and when a door is open, its panel swings out from the body edge */}
+                {leaf('lf', 55, 382, -125)}
+                {leaf('rf', 470, 382, -55)}
+                {leaf('lr', 55, 578, 150)}
+                {leaf('rr', 470, 578, 30)}
               </svg>
             </div>
 
