@@ -247,22 +247,23 @@ function DoorStatusSheet({
   onClose: () => void
 }) {
   const lockOverall = doors?.overall // 1 locked, 2 unlocked, else unknown
+  const st = (k: keyof DoorOpenState) => areaState(open?.[k], lockOverall)
   const title = (k: keyof DoorOpenState) => areaTitle(k, open?.[k], lockOverall)
-  const hasAny = DOOR_AREAS.some((k) => areaState(open?.[k], lockOverall) !== 'unknown')
+  const hasAny = DOOR_AREAS.some((k) => st(k) !== 'unknown')
 
-  // Each door is a real piece cut from the photo. Closed, it rests exactly in
-  // its hole in the body image, so the car looks whole; open, it swings out
-  // about its pillar hinge and the dark opening behind it shows — the way the
-  // car's own cluster shows it. `ox,oy` is the hinge as a % of the image box,
-  // `ang` the open swing (CSS degrees; fronts forward, rears back).
-  const doorImg = (k: keyof DoorOpenState, file: string, ox: number, oy: number, ang: number) => (
-    <img
-      class={'door-swing' + (open?.[k] === true ? ' open' : '')}
-      src={`${import.meta.env.BASE_URL}car/door_${file}.webp`}
-      alt={title(k)}
-      style={`transform-origin:${ox}% ${oy}%;--a:${ang}deg`}
-    />
-  )
+  // An open door doesn't just turn a marker red — the panel swings out of the
+  // car, so the picture itself reads "a door is open" at a glance. Each leaf is
+  // a rect hinged at the pillar (front doors forward, rear doors back, the
+  // butterfly shape of a car with everything thrown open); it grows out from
+  // the hinge when that door opens. hx/hy are the hinge in the 524×1000 overlay,
+  // ang the open swing in CSS degrees (0 = pointing inboard/east, +clockwise).
+  const leaf = (k: keyof DoorOpenState, hx: number, hy: number, ang: number) =>
+    open?.[k] === true ? (
+      <g class="door-leaf" style={`transform-origin:${hx}px ${hy}px;--a:${ang}deg`}>
+        <rect x={hx} y={hy - 12} width="126" height="24" rx="12" />
+        <title>{title(k)}</title>
+      </g>
+    ) : null
 
   return (
     <div class="door-backdrop" onClick={onClose}>
@@ -285,29 +286,33 @@ function DoorStatusSheet({
         {hasAny ? (
           <>
             <div class="door-car" role="img" aria-label={t('status.doors')}>
-              {/* Body with the four door openings cut out; the doors are separate
-                  pieces layered on top, resting in their holes until they open. */}
-              <img class="door-car-body" src={`${import.meta.env.BASE_URL}car/topview_body.webp`} alt="" />
-              {doorImg('lf', 'fl', 7.9, 36.6, -62)}
-              {doorImg('rf', 'fr', 92.4, 36.6, 62)}
-              {doorImg('lr', 'rl', 7.6, 68.3, -62)}
-              {doorImg('rr', 'rr', 92.7, 68.3, 62)}
-              {/* Bonnet (front) and tailgate (rear): the whole panel floods red when open */}
+              <img class="door-car-photo" src={`${import.meta.env.BASE_URL}car/topview.webp`} alt="" />
+              {/* Overlay matched to the photo (viewBox aspect = image aspect). Markers
+                  sit over the doors; the bonnet/tailgate flood red when that lid
+                  opens and the doors swing out — the way the car's own display shows it. */}
               <svg class="door-car-ov" viewBox="0 0 524 1000" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                {/* Bonnet (front) and tailgate (rear): the whole panel floods red when open */}
                 <rect class={'door-lid' + (open?.hood === true ? ' open' : '')} x="125" y="46" width="274" height="191" rx="46"><title>{glassTitle('hood', open?.hood)}</title></rect>
                 <rect class={'door-lid' + (open?.trunk === true ? ' open' : '')} x="133" y="745" width="258" height="195" rx="46"><title>{glassTitle('trunk', open?.trunk)}</title></rect>
+                {/* Four doors, over each side window — left (LF/LR), right (RF/RR).
+                    x's are symmetric about the car's centreline (overlay x≈263). */}
+                <rect class={'door-area ' + st('lf')} x="67" y="300" width="30" height="165" rx="14"><title>{title('lf')}</title></rect>
+                <rect class={'door-area ' + st('lr')} x="67" y="495" width="30" height="165" rx="14"><title>{title('lr')}</title></rect>
+                <rect class={'door-area ' + st('rf')} x="427" y="300" width="30" height="165" rx="14"><title>{title('rf')}</title></rect>
+                <rect class={'door-area ' + st('rr')} x="427" y="495" width="30" height="165" rx="14"><title>{title('rr')}</title></rect>
+                {/* …and when a door is open, its panel swings out from the body edge */}
+                {leaf('lf', 55, 382, -125)}
+                {leaf('rf', 470, 382, -55)}
+                {leaf('lr', 55, 578, 150)}
+                {leaf('rr', 470, 578, 30)}
               </svg>
             </div>
 
             <div class="door-legend">
-              {lockOverall === 1 ? (
-                <span class="door-leg"><i class="sw locked" />{t('status.locked')}</span>
-              ) : lockOverall === 2 ? (
-                <span class="door-leg"><i class="sw unlocked" />{t('status.unlocked')}</span>
-              ) : (
-                <span class="door-leg"><i class="sw unknown" />{t('common.unknown')}</span>
-              )}
+              <span class="door-leg"><i class="sw locked" />{t('status.locked')}</span>
+              <span class="door-leg"><i class="sw unlocked" />{t('status.unlocked')}</span>
               <span class="door-leg"><i class="sw open" />{t('status.open')}</span>
+              <span class="door-leg"><i class="sw unknown" />{t('common.unknown')}</span>
             </div>
           </>
         ) : (
