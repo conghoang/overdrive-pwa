@@ -288,11 +288,12 @@ function DoorStatusSheet({
             <div class="door-car" role="img" aria-label={t('status.doors')}>
               <img class="door-car-photo" src={`${import.meta.env.BASE_URL}car/topview.webp`} alt="" />
               {/* Overlay matched to the photo (viewBox aspect = image aspect). Markers
-                  sit over the doors; the front/rear glass flashes red when that lid opens. */}
+                  sit over the doors; the bonnet/tailgate flood red when that lid
+                  opens and the doors swing out — the way the car's own display shows it. */}
               <svg class="door-car-ov" viewBox="0 0 524 1000" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-                {/* Front glass = bonnet, rear glass = tailgate: red only when open */}
-                <rect class={'door-glass' + (open?.hood === true ? ' open' : '')} x="112" y="183" width="270" height="150" rx="40"><title>{glassTitle('hood', open?.hood)}</title></rect>
-                <rect class={'door-glass' + (open?.trunk === true ? ' open' : '')} x="125" y="723" width="241" height="117" rx="34"><title>{glassTitle('trunk', open?.trunk)}</title></rect>
+                {/* Bonnet (front) and tailgate (rear): the whole panel floods red when open */}
+                <rect class={'door-lid' + (open?.hood === true ? ' open' : '')} x="125" y="46" width="274" height="191" rx="46"><title>{glassTitle('hood', open?.hood)}</title></rect>
+                <rect class={'door-lid' + (open?.trunk === true ? ' open' : '')} x="133" y="745" width="258" height="195" rx="46"><title>{glassTitle('trunk', open?.trunk)}</title></rect>
                 {/* Four doors, over each side window — left (LF/LR), right (RF/RR).
                     x's are symmetric about the car's centreline (overlay x≈263). */}
                 <rect class={'door-area ' + st('lf')} x="67" y="300" width="30" height="165" rx="14"><title>{title('lf')}</title></rect>
