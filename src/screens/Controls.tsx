@@ -283,7 +283,7 @@ export function Controls() {
       {wc ? (
         <WiCarlinkGrid />
       ) : (
-        <div class="grid action-grid tight" style={{ ['--cols' as string]: 2 }}>
+        <div class="grid action-grid tight" style={{ ['--cols' as string]: 4 }}>
           {cloudOrKey && (
             <ActionButton
               label={t('ctrl.lock')}
