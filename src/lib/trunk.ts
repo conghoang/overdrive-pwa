@@ -20,6 +20,12 @@ export function trunkAction(vs: VehicleState | null | undefined): {
   labelKey: string
   known: boolean
 } {
+  // doorOpen.trunk is the reliable boolean the car reports for the tailgate;
+  // prefer it. The doors.trunk / trunk.lockStatus code (1 = closed, 2 = open)
+  // is the fallback for a trim that only fills the lock field.
+  const openV = vs?.doorOpen?.trunk
+  if (openV === true) return { action: 'close', labelKey: 'ctrl.trunk_close', known: true }
+  if (openV === false) return { action: 'open', labelKey: 'ctrl.trunk_open', known: true }
   const state = vs?.doors?.trunk ?? vs?.trunk?.lockStatus
   if (state === 2) return { action: 'close', labelKey: 'ctrl.trunk_close', known: true }
   if (state === 1) return { action: 'open', labelKey: 'ctrl.trunk_open', known: true }
