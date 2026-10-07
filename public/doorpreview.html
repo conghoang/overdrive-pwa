@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Door-status preview</title>
+<style>
+  :root{color-scheme:dark}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.4 system-ui,-apple-system,sans-serif;background:#0c1724;color:#e8eef4;
+    display:flex;flex-direction:column;align-items:center;gap:16px;padding:20px 14px 40px}
+  h1{font-size:17px;font-weight:700;margin:0;color:#cfe3f2}
+  .sub{color:#7f93a6;font-size:12.5px;margin:-8px 0 2px;text-align:center;max-width:380px}
+  .door-car{position:relative;height:60vh;max-height:560px;aspect-ratio:630/1203}
+  .door-car-body,.door-swing{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+  .door-swing{transform:rotate(0deg);transition:transform .55s cubic-bezier(.34,1.18,.5,1)}
+  .door-swing.open{transform:rotate(var(--a))}
+  .door-car-ov{position:absolute;inset:0;width:100%;height:100%}
+  .door-lid{fill:transparent;transition:fill .25s}
+  .door-lid.open{fill:#ff6b6b;opacity:.6}
+  .controls{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;max-width:430px}
+  .chip{padding:10px 16px;border-radius:999px;border:1px solid #38506a;background:#14202e;
+    color:#d6e6f2;font-weight:600;font-size:13px;cursor:pointer;transition:.15s;-webkit-tap-highlight-color:transparent}
+  .chip.on{background:#ff6b6b;border-color:#ff6b6b;color:#1a0b0b}
+  .chip.util{background:#1c2b3a;border-color:#2c4055;color:#9fdcc9}
+  .divider{width:100%;max-width:430px;height:1px;background:#1e2d3d}
+</style>
+</head>
+<body>
+  <h1>Door-status — live preview</h1>
+  <p class="sub">Tap a door or lid to open it. These are the real cut-out pieces with the exact app CSS, so this is the actual behaviour.</p>
+  <div class="controls">
+    <button class="chip" data-k="lf">Front&nbsp;L</button>
+    <button class="chip" data-k="rf">Front&nbsp;R</button>
+    <button class="chip" data-k="lr">Rear&nbsp;L</button>
+    <button class="chip" data-k="rr">Rear&nbsp;R</button>
+    <button class="chip" data-k="hood">Hood</button>
+    <button class="chip" data-k="trunk">Trunk</button>
+  </div>
+  <div class="controls">
+    <button class="chip util" id="all">All open</button>
+    <button class="chip util" id="none">All closed</button>
+  </div>
+  <div class="divider"></div>
+  <div class="door-car">
+    <img class="door-car-body" src="car/topview_body.webp" alt="">
+    <img class="door-swing" id="d-lf" style="transform-origin:7.9% 36.6%;--a:-62deg" src="car/door_fl.webp" alt="">
+    <img class="door-swing" id="d-rf" style="transform-origin:92.4% 36.6%;--a:62deg" src="car/door_fr.webp" alt="">
+    <img class="door-swing" id="d-lr" style="transform-origin:7.6% 68.3%;--a:-62deg" src="car/door_rl.webp" alt="">
+    <img class="door-swing" id="d-rr" style="transform-origin:92.7% 68.3%;--a:62deg" src="car/door_rr.webp" alt="">
+    <svg class="door-car-ov" viewBox="0 0 524 1000" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+      <rect class="door-lid" id="lid-hood" x="125" y="46" width="274" height="191" rx="46"></rect>
+      <rect class="door-lid" id="lid-trunk" x="133" y="745" width="258" height="195" rx="46"></rect>
+    </svg>
+  </div>
+<script>
+  var map={lf:'d-lf',rf:'d-rf',lr:'d-lr',rr:'d-rr',hood:'lid-hood',trunk:'lid-trunk'};
+  function set(k,on){document.getElementById(map[k]).classList.toggle('open',on);
+    document.querySelector('.chip[data-k="'+k+'"]').classList.toggle('on',on);}
+  document.querySelectorAll('.chip[data-k]').forEach(function(b){
+    b.onclick=function(){set(b.dataset.k,!document.getElementById(map[b.dataset.k]).classList.contains('open'));};});
+  document.getElementById('all').onclick=function(){Object.keys(map).forEach(function(k){set(k,true);});};
+  document.getElementById('none').onclick=function(){Object.keys(map).forEach(function(k){set(k,false);});};
+</script>
+</body>
+</html>
