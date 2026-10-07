@@ -133,27 +133,28 @@
   .switch.on{background:var(--accent);border-color:transparent}
   .switch.on i{transform:translateX(6vmin);background:var(--on-accent)}
 
-  /* ---- Panel 2: controls — the eight OverDrive remote actions ---- */
-  /* A scrolling 2-column grid of tiles. Eight buttons don't fit a radial
-     cross, so the panel scrolls vertically within the swipe pager; generous
-     top/bottom padding keeps the first and last rows clear of a round bezel. */
-  .panel.ctrl{overflow-y:auto;overflow-x:hidden;align-items:stretch;justify-content:flex-start;
-    padding:17vmin 7% 15vmin;scrollbar-width:none}
-  .panel.ctrl::-webkit-scrollbar{display:none}
-  .cgrid{display:grid;grid-template-columns:1fr 1fr;gap:3.2vmin;width:100%}
-  .cbtn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.4vmin;
-    aspect-ratio:1;border-radius:26%;background:var(--btn-bg);border:1px solid var(--border);
-    box-shadow:var(--shadow);color:var(--accent-bright);cursor:pointer;
-    transition:background .12s,border-color .15s;-webkit-tap-highlight-color:transparent}
+  /* ---- Panel 2: quick buttons (PWA quick-btn) ---- */
+  /* Cardinal-cross control buttons, icon only. */
+  .cross{position:absolute;inset:0}
+  .cbtn{position:absolute;width:31vmin;height:31vmin;border-radius:50%;background:var(--btn-bg);
+    border:1px solid var(--border);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;
+    color:var(--accent-bright);cursor:pointer;transition:background .12s,border-color .15s}
   .cbtn:active{background:var(--btn-bg-active)}
-  .cbtn svg{width:10vmin;height:10vmin}
-  .cbtn .cl{font-size:3vmin;font-weight:700;color:var(--mid);letter-spacing:.2px;text-align:center}
+  .cbtn svg{width:17vmin;height:17vmin}
   .cbtn.on{border-color:var(--success);color:var(--success)}
-  .cbtn.on .cl{color:var(--success)}
   .cbtn.warn{border-color:var(--m-orange);color:var(--m-orange)}
-  .cbtn.warn .cl{color:var(--m-orange)}
-  .cbtn.danger{color:var(--danger)}
-  .cbtn.danger .cl{color:var(--danger)}
+  .pN{top:4%;left:50%;transform:translateX(-50%)}
+  .pS{bottom:8%;left:50%;transform:translateX(-50%)}
+  .pW{left:4%;top:50%;transform:translateY(-50%)}
+  .pE{right:4%;top:50%;transform:translateY(-50%)}
+  /* Square/rectangular screens: use the corners — 2x2 grid instead of the cross. */
+  :root[data-shape="rect"] .cross{display:grid;grid-template-columns:repeat(2,minmax(0,38vmin));
+    gap:4vmin;justify-content:center;align-content:center;position:absolute;inset:0}
+  :root[data-shape="rect"] .cbtn{position:static;transform:none;width:auto;height:auto;aspect-ratio:1;border-radius:24%}
+  :root[data-shape="rect"] #b-lock{order:1}
+  :root[data-shape="rect"] #b-unlock{order:2}
+  :root[data-shape="rect"] .pW{order:3}
+  :root[data-shape="rect"] #b4{order:4}
 
   /* ---- Panel 3: climate ---- */
   /* Centered cluster that stays inside the round face. */
@@ -265,9 +266,14 @@
     </div>
   </section>
 
-  <!-- 2 · Controls — the eight OverDrive remote actions, rendered by renderControls() -->
-  <section class="panel ctrl">
-    <div class="cgrid" id="cgrid"></div>
+  <!-- 2 · Controls — cardinal cross, icon only -->
+  <section class="panel">
+    <div class="cross">
+      <button class="cbtn pN" data-act="lock" id="b-lock" aria-label="Lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></button>
+      <button class="cbtn pW" data-act="trunk" aria-label="Trunk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16.9h3.3"/><path d="M13.5 16.9h5.6a2.1 2.1 0 0 0 2.1-2.3l-.6-4.7a2.5 2.5 0 0 0-2-2.1L11.7 7.5"/><path d="M2.4 4.1c4.6.1 7.4.8 9.3 3.4"/><path d="M11.7 7.5c1.9-1.9 4.2-2.9 7.5-2.8"/><circle cx="9.7" cy="16.9" r="2.9"/></svg></button>
+      <button class="cbtn pE" id="b4" aria-label="Find"></button>
+      <button class="cbtn pS" data-act="unlock" id="b-unlock" aria-label="Unlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg></button>
+    </div>
   </section>
 
   <!-- 3 · Climate -->
@@ -372,14 +378,12 @@ function applyTheme(){
 }
 const T={
  en:{'b.lock':'Lock','b.unlock':'Unlock','b.trunk':'Trunk','b.find':'Find','b.start':'Start',
-     'b.flash':'Flash','b.trunkopen':'Open trunk','b.trunkclose':'Close trunk','b.poweron':'Power on','b.poweroff':'Power off',
      'b.wc51':'51DK','b.signout':'Sign out','ac.on':'AC ON','ac.off':'AC OFF','fan':'Fan',
      'seat.driver':'Driver','seat.passenger':'Passenger',
      'st.ended':'Session ended','st.repair':'Re-pair from the phone',
      'st.unreach':'Can\u2019t reach car','st.retry':'Retry','st.unavail':'Pairing unavailable',
      'pair.check':'Check now','toast.fail':'failed','seat':'Seat'},
  vi:{'b.lock':'Kh\u00f3a','b.unlock':'M\u1edf kh\u00f3a','b.trunk':'C\u1ed1p','b.find':'T\u00ecm xe','b.start':'Kh\u1edfi \u0111\u1ed9ng',
-     'b.flash':'Nh\u00e1y \u0111\u00e8n','b.trunkopen':'M\u1edf c\u1ed1p','b.trunkclose':'\u0110\u00f3ng c\u1ed1p','b.poweron':'B\u1eadt ngu\u1ed3n','b.poweroff':'T\u1eaft ngu\u1ed3n',
      'b.wc51':'51DK','b.signout':'\u0110\u0103ng xu\u1ea5t','ac.on':'\u0110H B\u1eacT','ac.off':'\u0110H T\u1eaeT','fan':'Qu\u1ea1t',
      'seat.driver':'Gh\u1ebf l\u00e1i','seat.passenger':'Gh\u1ebf ph\u1ee5',
      'st.ended':'Phi\u00ean \u0111\u00e3 k\u1ebft th\u00fac','st.repair':'Gh\u00e9p l\u1ea1i t\u1eeb \u0111i\u1ec7n tho\u1ea1i',
@@ -403,37 +407,13 @@ let outTempC=null;
 const WC_PKG='com.wicarlink.digitalcarkey',WC_ACT=WC_PKG+'/.ui.activity.LauncherActivity';
 // No-flash: broadcast to the running app, fall back to the activity if it's dead.
 const wcCmd=(cmd)=>'if pidof '+WC_PKG+' >/dev/null; then am broadcast -n '+WC_PKG+'/.app.AdbCmdReceiver --es cmd '+cmd+'; else am start -n '+WC_ACT+' --es cmd '+cmd+'; fi';
-const SVG_A='fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"';
-const SVG_LOCK='<svg viewBox="0 0 24 24" '+SVG_A+'><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
-const SVG_UNLOCK='<svg viewBox="0 0 24 24" '+SVG_A+'><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>';
-const SVG_TRUNK='<svg viewBox="0 0 24 24" '+SVG_A+'><path d="M3 16.9h3.3"/><path d="M13.5 16.9h5.6a2.1 2.1 0 0 0 2.1-2.3l-.6-4.7a2.5 2.5 0 0 0-2-2.1L11.7 7.5"/><path d="M2.4 4.1c4.6.1 7.4.8 9.3 3.4"/><path d="M11.7 7.5c1.9-1.9 4.2-2.9 7.5-2.8"/><circle cx="9.7" cy="16.9" r="2.9"/></svg>';
-const SVG_TRUNKDN='<svg viewBox="0 0 24 24" '+SVG_A+'><path d="M3 16.9h3.3"/><path d="M13.5 16.9h5.6a2.1 2.1 0 0 0 2.1-2.3l-.6-4.7a2.5 2.5 0 0 0-2-2.1L11.7 7.5"/><path d="M2.4 4.1c4.6.1 7.4.8 9.3 3.4"/><path d="M11.7 7.5c1.9-1.9 4.2-2.9 7.5-2.8"/><path d="M9.7 13v6m0 0 2.1-2.2M9.7 19l-2.1-2.2"/></svg>';
-const SVG_FIND='<svg viewBox="0 0 24 24" '+SVG_A+'><path d="M12 2a7 7 0 0 0-7 7c0 3 2 5 2 7h10c0-2 2-4 2-7a7 7 0 0 0-7-7z"/><path d="M9 21h6"/></svg>';
-const SVG_FLASH='<svg viewBox="0 0 24 24" '+SVG_A+'><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>';
-const SVG_POWER='<svg viewBox="0 0 24 24" '+SVG_A+'><path d="M12 3v9"/><path d="M6.6 6.6a8 8 0 1 0 10.8 0"/></svg>';
-const SVG_POWEROFF='<svg viewBox="0 0 24 24" '+SVG_A+'><path d="M18.4 6.6a8 8 0 1 1-12.8 0"/><path d="M12 3v6"/><path d="M4 4l16 16"/></svg>';
+const SVG_FIND='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 0-7 7c0 3 2 5 2 7h10c0-2 2-4 2-7a7 7 0 0 0-7-7z"/><path d="M9 21h6"/></svg>';
 const SVG_START='<svg viewBox="0 0 24 24"><path d="M13 3 6 13h5l-1 8 7-11h-5z" fill="currentColor"/></svg>';
-// One grid tile. id is optional (lock/unlock carry one so the poll can tint them).
-function cTile(act,icon,labelKey,extra,id){
-  return '<button class="cbtn'+(extra?' '+extra:'')+'" data-act="'+act+'"'+(id?' id="'+id+'"':'')+
-    ' aria-label="'+t(labelKey)+'"><span class="ci">'+icon+'</span><span class="cl">'+t(labelKey)+'</span></button>';
-}
 function renderControls(){
   const sw=$('wcSwitch');if(sw)sw.classList.toggle('on',wc51);
-  const g=$('cgrid');if(!g)return;
-  let tiles;
-  if(wc51){
-    // WiCarlink kit: the four 51DK commands (routed to the kit in the dispatch).
-    tiles=[cTile('lock',SVG_LOCK,'b.lock',null,'b-lock'),cTile('unlock',SVG_UNLOCK,'b.unlock',null,'b-unlock'),
-      cTile('trunk',SVG_TRUNK,'b.trunk'),cTile('start',SVG_START,'b.start')];
-  }else{
-    // Native: the same eight OverDrive's own dashboard offers.
-    tiles=[cTile('lock',SVG_LOCK,'b.lock',null,'b-lock'),cTile('unlock',SVG_UNLOCK,'b.unlock',null,'b-unlock'),
-      cTile('flash',SVG_FLASH,'b.flash'),cTile('find',SVG_FIND,'b.find'),
-      cTile('trunk',SVG_TRUNK,'b.trunkopen'),cTile('trunkclose',SVG_TRUNKDN,'b.trunkclose'),
-      cTile('poweron',SVG_POWER,'b.poweron'),cTile('poweroff',SVG_POWEROFF,'b.poweroff','danger')];
-  }
-  setHTML(g,tiles.join(''));
+  const b4=$('b4');if(!b4)return;
+  if(wc51){b4.dataset.act='start';b4.setAttribute('aria-label',t('b.start'));setHTML(b4,SVG_START);}
+  else{b4.dataset.act='find';b4.setAttribute('aria-label',t('b.find'));setHTML(b4,SVG_FIND);}
 }
 function fireWC(labelText,cmd){return fire(labelText,'/api/keymap/fire',{kind:'shell',cmd:wcCmd(cmd)});}
 const label=(a)=>({lock:t('b.lock'),unlock:t('b.unlock'),trunk:t('b.trunk'),start:t('b.start'),flash:t('b.find')}[a]||a);
@@ -670,8 +650,8 @@ async function _load(silent){
     renderStatus(s,st||{});
     if(st){
       const lock=st.doors?.overall??-1;
-      const bl=$('b-lock');if(bl)bl.className='cbtn'+(lock===1?' on':'');
-      const bu=$('b-unlock');if(bu)bu.className='cbtn'+(lock===2?' warn':'');
+      $('b-lock').className='cbtn pN'+(lock===1?' on':'');
+      $('b-unlock').className='cbtn pS'+(lock===2?' warn':'');
       climaOn=!!st.climate?.acOn;
       if(climaOn)_tempLocal=false;          // AC running: the car's setpoint is the truth
       // Don't overwrite a value the user is still adjusting or hasn't sent yet.
@@ -720,14 +700,10 @@ document.addEventListener('click',(ev)=>{
   if(a==='load-retry'){load();return;}
   if(a==='wc51'){wc51=!wc51;lss('odw.wc51',wc51?'1':'0');renderControls();return;}
   if(wc51&&(a==='lock'||a==='unlock'||a==='trunk'||a==='start')){fireWC(label(a),a);return;}
-  if(a==='lock')fire(t('b.lock'),'/api/vehicle/lock');
-  else if(a==='unlock')fire(t('b.unlock'),'/api/vehicle/unlock');
-  else if(a==='trunk')fire(t('b.trunkopen'),'/api/vehicle/trunk',{action:'open'});
-  else if(a==='trunkclose')fire(t('b.trunkclose'),'/api/vehicle/trunk',{action:'close'});
-  else if(a==='flash')fire(t('b.flash'),'/api/vehicle/flash');
+  if(a==='lock')fire('Lock','/api/vehicle/lock');
+  else if(a==='unlock')fire('Unlock','/api/vehicle/unlock');
+  else if(a==='trunk')fire('Trunk','/api/vehicle/trunk',{action:'open'});
   else if(a==='find')fire(t('b.find'),'/api/vehicle/find-car');
-  else if(a==='poweron')fire(t('b.poweron'),'/api/vehicle/power-on');
-  else if(a==='poweroff')fire(t('b.poweroff'),'/api/vehicle/power-off');
   else if(a==='clima'){if(!climaOn)_tempLocal=false;fire(climaOn?t('ac.off'):t('ac.on'),'/api/vehicle/climate',climaOn?{action:'power_off'}:{action:'power_on',temp:tempC,remoteDurationMinutes:15});}
   else if(a==='temp+'||a==='temp-'){tempC=Math.max(16,Math.min(30,tempC+(a==='temp+'?1:-1)));renderClimate();
     if(climaOn)queueSend('temp',()=>fire('°','/api/vehicle/climate',{action:'set_temp',zone:0,temp:tempC}));
