@@ -305,6 +305,14 @@ export const setTrunk = (action: 'open' | 'close'): Promise<ControlResult> =>
   apiPost('/api/vehicle/trunk', { action })
 
 /*
+ * Vehicle power. Rides the local remote-key rail only (no cloud), so it is
+ * offered only when cloud-status reports localRemoteKey — see the Controls
+ * screen. Same endpoints OverDrive's own dashboard posts to (powerCommand).
+ */
+export const powerOn = (): Promise<ControlResult> => apiPost('/api/vehicle/power-on')
+export const powerOff = (): Promise<ControlResult> => apiPost('/api/vehicle/power-off')
+
+/*
  * Windows. Routing differs per command on the head unit, which decides whether
  * BYD Cloud is needed at all:
  *   area 0 + command 1 (open all)   → SDK_ONLY   — local, no cloud

@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
 import * as api from '../lib/api'
 import { AuthError } from '../lib/api'
-import { authLost, cloudConfigured, connected, refresh, vehicleState } from '../lib/store'
+import { authLost, cloudConfigured, connected, localRemoteKey, refresh, vehicleState } from '../lib/store'
 import { toast, toastResult } from '../lib/toast'
 import type { ControlResult } from '../lib/types'
 import { ActionButton } from '../components/HoldButton'
 import { IconBolt, IconLock, IconTrunk, IconUnlock, IconWind } from '../components/icons'
-import { IconBell, IconMinus, IconPlus } from '../components/icons-extra'
+import { IconBell, IconMinus, IconPlus, IconPower, IconPowerOff } from '../components/icons-extra'
 import { wicarlink } from '../lib/settings'
-import { trunkAction } from '../lib/trunk'
 import { t } from '../lib/i18n'
 import { WiCarlinkGrid } from '../components/WiCarlinkControls'
 import { Seats } from '../components/Seats'
@@ -154,7 +153,6 @@ export function Controls() {
     carSetpoint >= TEMP_MIN &&
     carSetpoint <= TEMP_MAX
   const disabled = !connected.value
-  const trunk = trunkAction(vs)
 
   useEffect(() => {
     if (!setpointUsable) return // absent while the car is off — keep the last known
@@ -177,11 +175,15 @@ export function Controls() {
     if (climateActive) runClimate(() => api.setClimateTemp(nt), t('ctrl.set_temp', { temp: nt }))
   }
 
-  // Flash & find-car run on-device on current OD builds, so they stay available even
-  // with no BYD Cloud; lock / unlock / trunk remain cloud-routed. cloudConfigured is
-  // null until the first cloud-status read — treat that as "not off" so nothing flickers.
-  const cloudOn = cloudConfigured.value !== false
-  const actionCols = cloudOn ? 5 : 2
+  // The eight remote actions, matched to OverDrive's own dashboard.
+  //   - Flash & Find run on-device, so they always show.
+  //   - Lock / Unlock / trunk need a path to the car: a BYD Cloud account OR the
+  //     on-device remote-key rail (OD's requireCloudOrLocalKey). cloudConfigured
+  //     is null until the first read — treat that as "not off" so nothing flickers.
+  //   - Power on / off ride the local remote-key rail only, so they appear only
+  //     when the daemon confirms it exists (OD's loadPowerControls).
+  const hasLocalKey = localRemoteKey.value === true
+  const cloudOrKey = cloudConfigured.value !== false || hasLocalKey
 
   return (
     <div class="screen">
@@ -275,15 +277,14 @@ export function Controls() {
       <Seats />
 
       {/* Remote actions last, not first: climate is what this screen is opened
-          for, and a five-tile block above it pushed the temperature and fan off
-          a phone screen. 51DK commands in WiCarlink mode; otherwise flash & find
-          (on-device) always show, with lock / unlock / trunk added when BYD Cloud
-          is configured. */}
+          for. 51DK commands in WiCarlink mode; otherwise the same eight controls
+          OverDrive's dashboard offers — Lock, Unlock, Flash, Find, Open/Close
+          trunk, Power on/off — each posting to the identical endpoint OD does. */}
       {wc ? (
         <WiCarlinkGrid />
       ) : (
-        <div class="grid action-grid tight" style={{ ['--cols' as string]: actionCols }}>
-          {cloudOn && (
+        <div class="grid action-grid tight" style={{ ['--cols' as string]: 2 }}>
+          {cloudOrKey && (
             <ActionButton
               label={t('ctrl.lock')}
               tone="accent"
@@ -292,11 +293,10 @@ export function Controls() {
               onFire={() => run(api.lock, t('ctrl.lock'))}
             />
           )}
-          {cloudOn && (
+          {cloudOrKey && (
             <ActionButton
               label={t('ctrl.unlock')}
               tone="danger"
-              hold
               icon={<IconUnlock size={22} />}
               disabled={disabled}
               onFire={() => run(api.unlock, t('ctrl.unlock'))}
@@ -314,13 +314,43 @@ export function Controls() {
             disabled={disabled}
             onFire={() => run(api.findCar, t('ctrl.find'))}
           />
-          {cloudOn && (
+          {cloudOrKey && (
             <ActionButton
-              label={t(trunk.labelKey)}
-              hold
+              label={t('ctrl.trunk_open')}
               icon={<IconTrunk size={22} />}
               disabled={disabled}
-              onFire={() => run(() => api.setTrunk(trunk.action), t(trunk.labelKey))}
+              onFire={() => run(() => api.setTrunk('open'), t('ctrl.trunk_open'))}
+            />
+          )}
+          {cloudOrKey && (
+            <ActionButton
+              label={t('ctrl.trunk_close')}
+              icon={<IconTrunk size={22} />}
+              disabled={disabled}
+              onFire={() => run(() => api.setTrunk('close'), t('ctrl.trunk_close'))}
+            />
+          )}
+          {/* Power rides the local remote-key rail — shown only when it exists.
+              Hold-to-fire stands in for OD's confirm: it switches the car on/off
+              where it's parked, so a mis-tap shouldn't do it. */}
+          {hasLocalKey && (
+            <ActionButton
+              label={t('ctrl.power_on')}
+              tone="accent"
+              hold
+              icon={<IconPower size={22} />}
+              disabled={disabled}
+              onFire={() => run(api.powerOn, t('ctrl.power_on'))}
+            />
+          )}
+          {hasLocalKey && (
+            <ActionButton
+              label={t('ctrl.power_off')}
+              tone="danger"
+              hold
+              icon={<IconPowerOff size={22} />}
+              disabled={disabled}
+              onFire={() => run(api.powerOff, t('ctrl.power_off'))}
             />
           )}
         </div>
