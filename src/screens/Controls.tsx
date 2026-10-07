@@ -7,7 +7,7 @@ import type { ControlResult } from '../lib/types'
 import { ActionButton } from '../components/HoldButton'
 import { IconBolt, IconLock, IconTrunk, IconUnlock, IconWind } from '../components/icons'
 import { IconBell, IconMinus, IconPlus, IconPower, IconPowerOff } from '../components/icons-extra'
-import { wicarlink } from '../lib/settings'
+import { holdStart, wicarlink } from '../lib/settings'
 import { t } from '../lib/i18n'
 import { WiCarlinkGrid } from '../components/WiCarlinkControls'
 import { Seats } from '../components/Seats'
@@ -331,13 +331,13 @@ export function Controls() {
             />
           )}
           {/* Power rides the local remote-key rail — shown only when it exists.
-              Hold-to-fire stands in for OD's confirm: it switches the car on/off
-              where it's parked, so a mis-tap shouldn't do it. */}
+              Plain tap by default; hold only when the owner turned on the
+              press-and-hold guard (same setting as engine start). */}
           {hasLocalKey && (
             <ActionButton
               label={t('ctrl.power_on')}
               tone="accent"
-              hold
+              hold={holdStart.value}
               icon={<IconPower size={22} />}
               disabled={disabled}
               onFire={() => run(api.powerOn, t('ctrl.power_on'))}
@@ -347,7 +347,7 @@ export function Controls() {
             <ActionButton
               label={t('ctrl.power_off')}
               tone="danger"
-              hold
+              hold={holdStart.value}
               icon={<IconPowerOff size={22} />}
               disabled={disabled}
               onFire={() => run(api.powerOff, t('ctrl.power_off'))}
