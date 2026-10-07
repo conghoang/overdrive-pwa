@@ -21,6 +21,10 @@ export const IconSnow = ({ size, class: c }: IconProps) =>
 export const IconPower = ({ size, class: c }: IconProps) =>
   svg(<><path d="M12 3v9" /><path d="M6.6 6.6a8 8 0 1 0 10.8 0" /></>, size, c)
 
+/** Power with a slash — "power off". */
+export const IconPowerOff = ({ size, class: c }: IconProps) =>
+  svg(<><path d="M18.4 6.6a8 8 0 1 1-12.8 0" /><path d="M12 3v6" /><path d="M4 4l16 16" /></>, size, c)
+
 export const IconRefresh = ({ size, class: c }: IconProps) =>
   svg(<><path d="M21 12a9 9 0 1 1-3-6.7" /><path d="M21 4v5h-5" /></>, size, c)
 

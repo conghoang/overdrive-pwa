@@ -182,6 +182,8 @@ export interface CloudStatus {
   configured?: boolean
   verified?: boolean
   enabled?: boolean
+  /** The on-device remote-key rail is present — the path vehicle power rides. */
+  localRemoteKey?: boolean
 }
 
 export interface ControlResult {

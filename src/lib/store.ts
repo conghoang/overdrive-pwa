@@ -161,6 +161,15 @@ function readCloud(): boolean | null {
   return v === null ? null : v === '1'
 }
 export const cloudConfigured = signal<boolean | null>(readCloud())
+// Whether the on-device remote-key rail exists — the path vehicle power rides.
+// Gates the Power on/off buttons, exactly as OverDrive's dashboard does. Cached
+// so the buttons don't flash in/out on load. null = not yet known.
+const K_LOCALKEY = 'odpwa.localkey'
+function readLocalKey(): boolean | null {
+  const v = localStorage.getItem(K_LOCALKEY)
+  return v === null ? null : v === '1'
+}
+export const localRemoteKey = signal<boolean | null>(readLocalKey())
 let cloudFetched = false
 
 async function fetchCloud(): Promise<void> {
@@ -170,6 +179,9 @@ async function fetchCloud(): Promise<void> {
     const c = !!s.configured
     cloudConfigured.value = c
     localStorage.setItem(K_CLOUD, c ? '1' : '0')
+    const lk = !!s.localRemoteKey
+    localRemoteKey.value = lk
+    localStorage.setItem(K_LOCALKEY, lk ? '1' : '0')
   } catch { /* ignore — leave cached value */ }
 }
 
@@ -387,6 +399,8 @@ export function reset(): void {
   vsFails = 0
   authLost.value = false
   cloudConfigured.value = null
+  localRemoteKey.value = null
   cloudFetched = false
   localStorage.removeItem(K_CLOUD)
+  localStorage.removeItem(K_LOCALKEY)
 }

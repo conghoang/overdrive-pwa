@@ -2,7 +2,7 @@ import type { JSX } from 'preact'
 import * as api from '../lib/api'
 import { ApiError, AuthError } from '../lib/api'
 import type { ControlResult } from '../lib/types'
-import { authLost, cloudConfigured, connected, refresh } from '../lib/store'
+import { authLost, cloudConfigured, connected, localRemoteKey, refresh } from '../lib/store'
 import { toast, toastResult } from '../lib/toast'
 import { t } from '../lib/i18n'
 import { holdStart, holdTrunk, wc, wcShell, wicarlink } from '../lib/settings'
@@ -10,6 +10,7 @@ import { vehicleState } from '../lib/store'
 import { trunkAction } from '../lib/trunk'
 import { useHold } from './HoldButton'
 import { IconBolt, IconLock, IconTrunk, IconUnlock } from './icons'
+import { IconPower } from './icons-extra'
 
 // 51DK commands (same as the WiCarlink buttons): broadcast to the running app,
 // or start its activity only if it isn't running — see wcShell.
@@ -105,6 +106,9 @@ export function QuickActions() {
    */
   const wc51 = wicarlink.value || cloudConfigured.value === false
   const trunk = trunkAction(vehicleState.value)
+  // The 3rd native tile is Power on when the local remote-key rail exists,
+  // otherwise Flash (which always has a path). Power rides that rail only.
+  const hasLocalKey = localRemoteKey.value === true
   return (
     <div class="quick-row">
       <QuickBtn
@@ -127,6 +131,14 @@ export function QuickActions() {
           disabled={disabled}
           hold={holdStart.value}
           onFire={() => fire('start', t('ctrl.start'))}
+        />
+      ) : hasLocalKey ? (
+        <QuickBtn
+          icon={<IconPower size={22} />}
+          label={t('ctrl.power_on')}
+          disabled={disabled}
+          hold
+          onFire={() => run(api.powerOn, t('ctrl.power_on'))}
         />
       ) : (
         <QuickBtn
