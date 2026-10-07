@@ -75,6 +75,11 @@
   background: var(--map-bg);
   margin-bottom: 14px;
   border: 1px solid var(--border-soft);
+  /* Leaflet's panes/controls carry z-index up to ~1000; without a stacking
+     context of its own the map would paint over the fixed tab bar (z-index 40)
+     as it scrolls past. isolate keeps all of Leaflet's z-index inside the card. */
+  isolation: isolate;
+  z-index: 0;
 }
 .minimap-host { position: absolute; inset: 0; background: var(--map-bg); }
 /* Darken ONLY the tiles — markers, controls and attribution keep their colours. */
