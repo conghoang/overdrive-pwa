@@ -121,7 +121,6 @@ export function QuickActions() {
         icon={<IconUnlock size={22} />}
         label={t('ctrl.unlock')}
         disabled={disabled}
-        hold={!wc51}
         onFire={() => (wc51 ? fire('unlock', t('ctrl.unlock')) : run(api.unlock, t('ctrl.unlock')))}
       />
       {wc51 ? (
@@ -137,7 +136,7 @@ export function QuickActions() {
           icon={<IconPower size={22} />}
           label={t('ctrl.power_on')}
           disabled={disabled}
-          hold
+          hold={holdStart.value}
           onFire={() => run(api.powerOn, t('ctrl.power_on'))}
         />
       ) : (
@@ -152,7 +151,7 @@ export function QuickActions() {
         icon={<IconTrunk size={22} />}
         label={wc51 ? t('ctrl.trunk') : t(trunk.labelKey)}
         disabled={disabled}
-        hold={!wc51 || holdTrunk.value}
+        hold={holdTrunk.value}
         onFire={() =>
           wc51
             ? fire('trunk', t('ctrl.trunk'))
