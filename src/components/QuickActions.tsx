@@ -94,23 +94,24 @@ async function run(fn: () => Promise<ControlResult>, ok: string) {
 export function QuickActions() {
   const disabled = !connected.value
   /*
-   * Which command set this row fires — it is never hidden.
+   * Which command set this row fires — it is never hidden. This MUST match the
+   * Controls tab (which gates on `wicarlink` alone): a car can be controlled
+   * natively over BYD Cloud OR the on-device remote-key rail, so 51DK is forced
+   * only when the kit's toggle is on, or when neither native path exists.
    *
-   * The kit's toggle decides when it is on. When it is off these are BYD Cloud
-   * endpoints, so a car with no cloud account has 51DK as the only route that
-   * can do anything — which is exactly what this row did for those users
-   * before. An earlier version hid the row entirely in that case, and since
-   * the toggle DEFAULTS to off, that silently deleted the card for everyone
-   * without a cloud account, including people whose kit worked fine. Losing a
-   * card you use is worse than a button that reports it could not run.
+   * (The old rule forced 51DK whenever there was no cloud account — but that
+   * predates the local-key rail. With a local key, native lock/unlock/power
+   * work with no cloud, so the home row was stuck on 51DK while Controls had
+   * already switched to the native buttons.)
    */
-  const wc51 = wicarlink.value || cloudConfigured.value === false
+  const hasLocalKey = localRemoteKey.value === true
+  const cloudOrKey = cloudConfigured.value !== false || hasLocalKey
+  const wc51 = wicarlink.value || !cloudOrKey
   const trunk = trunkAction(vehicleState.value)
   // The 3rd native tile is Power when the local remote-key rail exists,
   // otherwise Flash (which always has a path). Power rides that rail only.
   // Like OverDrive's split Power on / Power off, one tile that follows the
   // car: off → "Power on" (switch it on), on (acc) → "Power off".
-  const hasLocalKey = localRemoteKey.value === true
   const powered = !!status.value?.acc
   return (
     <div class="quick-row">
