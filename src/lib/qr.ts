@@ -29,6 +29,20 @@ export function qrSupported(): boolean {
   return !!navigator.mediaDevices?.getUserMedia && window.isSecureContext
 }
 
+/**
+ * The video cameras available to pick from. Labels and stable deviceIds are
+ * only populated once camera permission has been granted, so this is worth
+ * calling after a scan has actually started (see QrScanner.start's onStart).
+ */
+export async function listCameras(): Promise<MediaDeviceInfo[]> {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices()
+    return devices.filter((d) => d.kind === 'videoinput')
+  } catch {
+    return []
+  }
+}
+
 export class QrScanner {
   private stream: MediaStream | null = null
   private raf: number | null = null
@@ -36,13 +50,22 @@ export class QrScanner {
   private canvas: HTMLCanvasElement | null = null
 
   /**
-   * Open the rear camera, decode into `video`, and resolve with the first QR
-   * payload found. Rejects if permission is denied or the camera dies.
+   * Open a camera, decode into `video`, and resolve with the first QR payload
+   * found. Rejects if permission is denied or the camera dies.
+   *
+   * With no `deviceId` it asks for the rear camera; pass one to use a specific
+   * camera (for switching). `onStart` fires once the stream is live, with the
+   * camera that actually opened — the moment the camera list has real labels.
    */
-  async start(video: HTMLVideoElement): Promise<string> {
+  async start(
+    video: HTMLVideoElement,
+    opts?: { deviceId?: string; onStart?: (activeDeviceId?: string) => void },
+  ): Promise<string> {
     this.stopped = false
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' } },
+      video: opts?.deviceId
+        ? { deviceId: { exact: opts.deviceId } }
+        : { facingMode: { ideal: 'environment' } },
       audio: false,
     })
     /*
@@ -61,6 +84,12 @@ export class QrScanner {
     video.setAttribute('playsinline', 'true') // iOS: don't go fullscreen
     video.muted = true
     await video.play()
+
+    // Camera is live now, so labels/deviceIds are populated — tell the caller
+    // which one opened so it can offer a switch.
+    if (!this.stopped) {
+      opts?.onStart?.(stream.getVideoTracks()[0]?.getSettings?.().deviceId)
+    }
 
     const Native = nativeCtor()
     const detector = Native ? new Native({ formats: ['qr_code'] }) : null

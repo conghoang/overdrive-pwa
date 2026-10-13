@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
 import { getBaseUrl, isValidAccessCode, login, normalizeBase } from '../lib/api'
 import { t } from '../lib/i18n'
-import { QrScanner, qrSupported, urlFromScan } from '../lib/qr'
+import { QrScanner, qrSupported, urlFromScan, listCameras } from '../lib/qr'
 import { IconArrow, IconQr, IconRefresh } from '../components/icons-extra'
 import './setup.css'
 
@@ -11,6 +11,11 @@ export function Setup({ onDone }: { onDone: () => void }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [scanning, setScanning] = useState(false)
+  // Camera picking: `deviceId` is the camera to open (undefined = default rear),
+  // `cameras` the list to switch between (filled once the camera is live).
+  const [deviceId, setDeviceId] = useState<string | undefined>(undefined)
+  const [cameras, setCameras] = useState<MediaDeviceInfo[]>([])
+  const activeDeviceRef = useRef<string | undefined>(undefined)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const scannerRef = useRef<QrScanner | null>(null)
   const canScan = qrSupported()
@@ -32,7 +37,15 @@ export function Setup({ onDone }: { onDone: () => void }) {
     scannerRef.current = scanner
     let cancelled = false
     scanner
-      .start(video)
+      .start(video, {
+        deviceId,
+        onStart: (active) => {
+          activeDeviceRef.current = active
+          // Now that the camera is live, labels are available — list cameras so
+          // we know whether to offer a switch.
+          listCameras().then((c) => { if (!cancelled) setCameras(c) })
+        },
+      })
       .then((raw) => {
         if (cancelled) return
         const found = urlFromScan(raw)
@@ -55,7 +68,15 @@ export function Setup({ onDone }: { onDone: () => void }) {
       scanner.stop()
       scannerRef.current = null
     }
-  }, [scanning])
+  }, [scanning, deviceId])
+
+  /** Cycle to the next available camera (restarts the scanner on it). */
+  function switchCamera() {
+    if (cameras.length < 2) return
+    let i = cameras.findIndex((c) => c.deviceId === activeDeviceRef.current)
+    if (i < 0) i = 0
+    setDeviceId(cameras[(i + 1) % cameras.length].deviceId)
+  }
 
   const code = token.trim()
   const codeValid = isValidAccessCode(code)
@@ -107,6 +128,8 @@ export function Setup({ onDone }: { onDone: () => void }) {
                 title={t('setup.scan')}
                 onClick={() => {
                   setError(null)
+                  setDeviceId(undefined) // start on the default rear camera
+                  setCameras([])
                   setScanning(true)
                 }}
               >
@@ -161,6 +184,22 @@ export function Setup({ onDone }: { onDone: () => void }) {
           <div class="scan-box">
             <video ref={videoRef} class="scan-video" muted playsinline />
             <div class="scan-frame" />
+            {cameras.length > 1 && (
+              <button
+                type="button"
+                class="scan-switch"
+                aria-label={t('setup.switch_camera')}
+                title={t('setup.switch_camera')}
+                onClick={switchCamera}
+              >
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M15 4h3a2 2 0 0 1 2 2v3" />
+                  <path d="M9 20H6a2 2 0 0 1-2-2v-3" />
+                  <path d="M20 9a8 8 0 0 0-14-3M4 15a8 8 0 0 0 14 3" />
+                  <circle cx="12" cy="12" r="2.6" />
+                </svg>
+              </button>
+            )}
           </div>
           <h3 class="scan-title" id="scan-title">{t('setup.scan_title')}</h3>
           <p class="scan-hint">{t('setup.scan_hint')}</p>
