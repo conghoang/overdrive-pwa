@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Camera check</title>
+<style>
+  :root{color-scheme:dark}*{box-sizing:border-box}
+  body{margin:0;font:15px/1.45 system-ui,sans-serif;background:#0c1724;color:#e8eef4;padding:18px 14px 40px;max-width:560px;margin:0 auto}
+  h1{font-size:18px;margin:0 0 4px}
+  p.sub{color:#7f93a6;font-size:13px;margin:0 0 14px}
+  button{font:inherit;font-weight:600;border-radius:10px;border:1px solid #35506b;background:#15283a;color:#d6e6f2;padding:10px 14px;cursor:pointer}
+  button.pri{background:#35dfc1;border-color:#35dfc1;color:#04121a}
+  video{width:100%;max-width:320px;aspect-ratio:1;object-fit:cover;background:#000;border-radius:12px;display:block;margin:12px 0}
+  .cam{border:1px solid #1e2d3d;border-radius:12px;padding:12px;margin:10px 0;background:#101d2b}
+  .cam .lbl{font-weight:700}
+  .cam .meta{color:#8aa0b2;font-size:12px;word-break:break-all;margin:4px 0 8px}
+  .ok{color:#56d68c}.err{color:#ff6b6b}
+  #count{font-weight:700;color:#35dfc1}
+</style>
+</head>
+<body>
+<h1>Camera check</h1>
+<p class="sub">Tap “Grant &amp; list”, then “Open” on each camera. Screenshot this page and send it to me — it tells me exactly what your phone exposes to the browser.</p>
+<button class="pri" id="go">Grant &amp; list cameras</button>
+<video id="v" playsinline muted></video>
+<div id="out"></div>
+<script>
+  var out=document.getElementById('out'), v=document.getElementById('v');
+  function esc(s){return (s||'').replace(/[<&>]/g,function(c){return {'<':'&lt;','&':'&amp;','>':'&gt;'}[c];});}
+  async function open(id, box){
+    try{
+      var s=await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:id}}});
+      v.srcObject=s; await v.play().catch(function(){});
+      var tr=s.getVideoTracks()[0], st=tr.getSettings();
+      box.querySelector('.res').innerHTML='<span class="ok">OPENED ✓</span> — got deviceId '+esc((st.deviceId||'').slice(0,10))+
+        ' · facing '+esc(st.facingMode||'?')+' · '+(st.width||'?')+'×'+(st.height||'?');
+      // keep only this stream live
+      window._cur && window._cur!==s && window._cur.getTracks().forEach(function(t){t.stop();});
+      window._cur=s;
+    }catch(e){ box.querySelector('.res').innerHTML='<span class="err">FAILED ✗</span> — '+esc(e.name+': '+e.message); }
+  }
+  document.getElementById('go').onclick=async function(){
+    out.innerHTML='requesting permission…';
+    try{ window._cur=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}}); v.srcObject=window._cur; await v.play().catch(function(){}); }
+    catch(e){ out.innerHTML='<span class="err">Permission/err: '+esc(e.name+': '+e.message)+'</span>'; return; }
+    var devs=(await navigator.mediaDevices.enumerateDevices()).filter(function(d){return d.kind==='videoinput';});
+    out.innerHTML='<p><span id="count">'+devs.length+'</span> video camera(s) exposed:</p>';
+    devs.forEach(function(d,i){
+      var box=document.createElement('div'); box.className='cam';
+      box.innerHTML='<div class="lbl">#'+i+' — '+esc(d.label||'(no label)')+'</div>'+
+        '<div class="meta">deviceId: '+esc((d.deviceId||'(empty)').slice(0,16))+'…<br>groupId: '+esc((d.groupId||'(empty)').slice(0,12))+'…</div>'+
+        '<div class="res" style="margin-bottom:8px">—</div>';
+      var b=document.createElement('button'); b.textContent='Open #'+i; b.onclick=function(){open(d.deviceId,box);};
+      box.appendChild(b); out.appendChild(box);
+    });
+  };
+</script>
+</body>
+</html>
