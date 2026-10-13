@@ -87,6 +87,26 @@
   box-shadow: var(--shadow-float);
 }
 .scan-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Switch-camera button, floating over the preview (only shown with >1 camera). */
+.scan-switch {
+  position: absolute;
+  z-index: 2;
+  right: 12px;
+  bottom: 12px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(8, 16, 24, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #fff;
+  transition: transform 0.08s ease, background 0.15s ease;
+}
+.scan-switch:active { transform: scale(0.92); background: rgba(8, 16, 24, 0.75); }
 .scan-frame {
   position: absolute;
   inset: 12%;
