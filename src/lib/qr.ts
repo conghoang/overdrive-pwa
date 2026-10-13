@@ -48,6 +48,8 @@ export class QrScanner {
   private raf: number | null = null
   private stopped = false
   private canvas: HTMLCanvasElement | null = null
+  private video: HTMLVideoElement | null = null
+  private onEnded: (() => void) | null = null
 
   /**
    * Open a camera, decode into `video`, and resolve with the first QR payload
@@ -80,6 +82,7 @@ export class QrScanner {
       throw new Error('cancelled')
     }
     this.stream = stream
+    this.video = video
     video.srcObject = this.stream
     video.setAttribute('playsinline', 'true') // iOS: don't go fullscreen
     video.muted = true
@@ -134,11 +137,36 @@ export class QrScanner {
       this.raf = requestAnimationFrame(scan)
 
       // Surface a camera that dies mid-scan (unplugged / permission revoked).
-      this.stream?.getVideoTracks()[0]?.addEventListener('ended', () => {
+      // Kept in a field so switchCamera can re-arm it on the new track.
+      this.onEnded = () => {
         this.stop()
         reject(new Error('camera ended'))
-      })
+      }
+      this.stream?.getVideoTracks()[0]?.addEventListener('ended', this.onEnded)
     })
+  }
+
+  /**
+   * Switch to another camera WITHOUT restarting the scan — grab the new camera
+   * first, swap it into the same <video>, then release the old one. Keeping a
+   * stream live throughout means no black flash and no second permission prompt.
+   */
+  async switchCamera(deviceId: string): Promise<void> {
+    if (this.stopped || !this.video) return
+    const next = await navigator.mediaDevices.getUserMedia({
+      video: { deviceId: { exact: deviceId } },
+      audio: false,
+    })
+    if (this.stopped) {
+      next.getTracks().forEach((t) => t.stop())
+      return
+    }
+    const old = this.stream
+    this.stream = next
+    this.video.srcObject = next
+    try { await this.video.play() } catch { /* play races are harmless here */ }
+    if (this.onEnded) next.getVideoTracks()[0]?.addEventListener('ended', this.onEnded)
+    old?.getTracks().forEach((t) => t.stop()) // release the previous camera last
   }
 
   stop(): void {
@@ -150,6 +178,8 @@ export class QrScanner {
     this.stream?.getTracks().forEach((t) => t.stop())
     this.stream = null
     this.canvas = null
+    this.video = null
+    this.onEnded = null
   }
 }
 

@@ -11,9 +11,8 @@ export function Setup({ onDone }: { onDone: () => void }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [scanning, setScanning] = useState(false)
-  // Camera picking: `deviceId` is the camera to open (undefined = default rear),
-  // `cameras` the list to switch between (filled once the camera is live).
-  const [deviceId, setDeviceId] = useState<string | undefined>(undefined)
+  // Camera switching: `cameras` is the list to cycle through (filled once the
+  // camera is live); `activeDeviceRef` tracks which one is currently open.
   const [cameras, setCameras] = useState<MediaDeviceInfo[]>([])
   const activeDeviceRef = useRef<string | undefined>(undefined)
   const videoRef = useRef<HTMLVideoElement | null>(null)
@@ -38,7 +37,6 @@ export function Setup({ onDone }: { onDone: () => void }) {
     let cancelled = false
     scanner
       .start(video, {
-        deviceId,
         onStart: (active) => {
           activeDeviceRef.current = active
           // Now that the camera is live, labels are available — list cameras so
@@ -68,14 +66,16 @@ export function Setup({ onDone }: { onDone: () => void }) {
       scanner.stop()
       scannerRef.current = null
     }
-  }, [scanning, deviceId])
+  }, [scanning])
 
-  /** Cycle to the next available camera (restarts the scanner on it). */
+  /** Cycle to the next camera in place — no restart, no re-prompt, no flash. */
   function switchCamera() {
     if (cameras.length < 2) return
     let i = cameras.findIndex((c) => c.deviceId === activeDeviceRef.current)
     if (i < 0) i = 0
-    setDeviceId(cameras[(i + 1) % cameras.length].deviceId)
+    const next = cameras[(i + 1) % cameras.length]
+    activeDeviceRef.current = next.deviceId
+    scannerRef.current?.switchCamera(next.deviceId).catch(() => {})
   }
 
   const code = token.trim()
@@ -128,8 +128,7 @@ export function Setup({ onDone }: { onDone: () => void }) {
                 title={t('setup.scan')}
                 onClick={() => {
                   setError(null)
-                  setDeviceId(undefined) // start on the default rear camera
-                  setCameras([])
+                  setCameras([]) // re-listed once the camera is live
                   setScanning(true)
                 }}
               >
