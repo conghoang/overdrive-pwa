@@ -19,6 +19,10 @@ export function MiniMap({ lat, lng, height = 180 }: { lat: number; lng: number; 
   const mapRef = useRef<import('leaflet').Map | null>(null)
   const markerRef = useRef<import('leaflet').CircleMarker | null>(null)
   const roRef = useRef<ResizeObserver | null>(null)
+  // Whether the map auto-pans to keep the car centred. On by default; a manual
+  // drag turns it off (so looking around isn't yanked back), the recentre button
+  // turns it back on.
+  const followRef = useRef(true)
   const [ready, setReady] = useState(false)
   const [failed, setFailed] = useState(false)
 
@@ -61,6 +65,11 @@ export function MiniMap({ lat, lng, height = 180 }: { lat: number; lng: number; 
           fillOpacity: 1,
         }).addTo(map)
 
+        // A user drag means "I want to look elsewhere" — stop following until
+        // they recentre. Programmatic panTo/setView don't fire dragstart, so
+        // the car-following pan below never trips this.
+        map.on('dragstart', () => { followRef.current = false })
+
         mapRef.current = map
         setReady(true)
         /*
@@ -94,9 +103,14 @@ export function MiniMap({ lat, lng, height = 180 }: { lat: number; lng: number; 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Follow the car without fighting a user who has panned away.
+  // Move the marker to the car's new position every poll, and — unless the user
+  // has panned away — glide the map to keep the car centred as it drives.
   useEffect(() => {
     markerRef.current?.setLatLng([lat, lng])
+    if (followRef.current) {
+      // panTo (not setView) keeps the user's current zoom level.
+      mapRef.current?.panTo([lat, lng], { animate: true, duration: 0.5 })
+    }
   }, [lat, lng])
 
   if (failed) return null
@@ -109,7 +123,10 @@ export function MiniMap({ lat, lng, height = 180 }: { lat: number; lng: number; 
           class="minimap-recenter"
           title={t('loc.recenter')}
           aria-label={t('loc.recenter')}
-          onClick={() => mapRef.current?.setView([lat, lng], ZOOM, { animate: true })}
+          onClick={() => {
+            followRef.current = true // resume following the car
+            mapRef.current?.setView([lat, lng], ZOOM, { animate: true })
+          }}
         >
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9">
             <circle cx="12" cy="12" r="3.2" />
