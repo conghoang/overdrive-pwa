@@ -87,6 +87,28 @@ function readyRing(bounds) {
   return m;
 }
 
+/**
+ * The "unlocked" warning ring: the same ground ring in the app's warning amber,
+ * shown while the car sits parked, closed and unlocked — a glance-and-know
+ * reminder that it isn't locked. Fades in/out; steady (no pulse) so the render
+ * loop still idles at rest.
+ */
+export const WARN_RING = { radius: 2.3, opacity: 0.42, opacityLight: 0.5, color: 0xf3b45e };
+const WARN_PATHS = ['doors.lf', 'doors.rf', 'doors.lr', 'doors.rr', 'doors.hood', 'doors.trunk'];
+function warnRing(bounds) {
+  const size = (2 * WARN_RING.radius) / RING_SHARE;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(size, size), new THREE.MeshBasicMaterial({
+    map: ringTexture(), color: WARN_RING.color, transparent: true, depthWrite: false, toneMapped: false,
+    blending: THREE.AdditiveBlending, opacity: 0
+  }));
+  m.rotation.x = -Math.PI / 2;
+  m.position.set(0, 0.0048, (bounds.min.z + bounds.max.z) / 2);
+  m.renderOrder = -0.44;
+  m.visible = false;
+  m.raycast = () => {};
+  return m;
+}
+
 function contactShadow() {
   const W = 256;
   const H = 512;
@@ -333,6 +355,9 @@ export class Car3D {
     this.mapping.reduced = reduced;
     this.ring = readyRing(this.car.bounds);
     scene.add(this.ring);
+    this.warnRing = warnRing(this.car.bounds);
+    scene.add(this.warnRing);
+    this.warn = { level: 0 };
     this.applyTheme();
     this.director.mapping = this.mapping;
     this.badges = new Badges(od, this.opts.labels, this.car);
@@ -515,13 +540,13 @@ export class Car3D {
     this.renderer.toneMappingExposure = this.light ? RENDER.exposureLight : RENDER.exposure;
     this.shadow.material.opacity = this.light ? RENDER.shadowLight : 1;
     this.mapping.setTheme(this.light);
-    const r = this.ring;
-    if (r) {
+    for (const r of [this.ring, this.warnRing]) {
+      if (!r) continue;
       // Added light vanishes on white: normal blending there, like the ripples (car-engine.js setTheme).
       r.material.blending = this.light ? THREE.NormalBlending : THREE.AdditiveBlending;
       r.material.needsUpdate = true;
-      this.placeRing();
     }
+    if (this.ring) this.placeRing();
   }
 
   /** The car-on ring follows the approved READY halo: its fade (level) and its growth (scale); drawn with the frame. */
@@ -533,6 +558,28 @@ export class Car3D {
     r.visible = k.visible;
     r.material.opacity = k.opacity;
     r.scale.set(k.scale, k.scale, 1);
+  }
+
+  /**
+   * The unlocked-warning ring: shown while the car is parked (ignition off),
+   * every door and lid closed, and unlocked. Fades over ~0.6 s; returns true
+   * while still fading so the frame loop keeps running until it settles.
+   */
+  placeWarnRing(dt) {
+    const r = this.warnRing;
+    if (!r) return false;
+    const read = this.opts.read;
+    const unlocked = read('lock.driver') === false;
+    const parked = read('power.acc') !== true;
+    const closed = WARN_PATHS.every((k) => read(k) !== true);
+    const target = unlocked && parked && closed ? 1 : 0;
+    const lv = this.warn.level;
+    const step = (dt > 0 ? dt : 1 / 60) / 0.6;
+    const nl = lv === target ? target : Math.abs(target - lv) <= step ? target : lv + Math.sign(target - lv) * step;
+    this.warn.level = nl;
+    r.visible = nl > 0.001;
+    r.material.opacity = (this.light ? WARN_RING.opacityLight : WARN_RING.opacity) * nl;
+    return nl !== target;
   }
 
   /** The live state changed: what is not the director's (kW, %, paint) applies now; it compares the rest next frame. */
@@ -614,6 +661,7 @@ export class Car3D {
     this.rig.apply(this.camera);
     const st = this.mapping.step(now, this.camera);
     this.placeRing();
+    this.placeWarnRing(1 / 60);
     this.draw(now);
     return st;
   }
@@ -637,8 +685,9 @@ export class Car3D {
     this.rig.apply(this.camera);
     const st = this.mapping.step(now, this.camera);
     this.placeRing();
+    const warnActive = this.placeWarnRing(dt);
     const popOn = !!(this.opts.popEl && !this.opts.popEl.hidden);
-    const busy = camMoving || st.active || input.active || this.director.busy() || popOn || !!this.opts.demo;
+    const busy = camMoving || st.active || input.active || this.director.busy() || popOn || !!this.opts.demo || warnActive;
     // Only blinks, pulses or dots (or a batch still collecting): ~30 fps on vsync instead of every frame.
     const lazy = !busy && (st.ambient || this.director.waiting());
     // Adaptive pixel ratio: 30 frames in a row slower than 20 ms while moving -> 1.5, set at the next frame at rest.
@@ -748,11 +797,12 @@ export class Car3D {
       this.shadow.material.map.dispose();
       this.shadow.material.dispose();
     }
-    if (this.ring) {
-      this.ring.geometry.dispose();
-      this.ring.material.map.dispose();
-      this.ring.material.dispose();
-      if (this.ring.parent) this.ring.parent.remove(this.ring);
+    for (const r of [this.ring, this.warnRing]) {
+      if (!r) continue;
+      r.geometry.dispose();
+      r.material.map.dispose();
+      r.material.dispose();
+      if (r.parent) r.parent.remove(r);
     }
     if (this.envRT) this.envRT.dispose();
     if (this.renderer) {
@@ -764,6 +814,6 @@ export class Car3D {
     if (this.opts.popEl) this.opts.popEl.hidden = true;
     this.pins = [];
     this.frameCbs = [];
-    this.scene = this.car = this.mapping = this.director = this.ring = null;
+    this.scene = this.car = this.mapping = this.director = this.ring = this.warnRing = null;
   }
 }
