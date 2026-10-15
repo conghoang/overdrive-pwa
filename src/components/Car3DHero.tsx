@@ -4,6 +4,7 @@ import { status, vehicleState } from '../lib/store'
 import { car3dColor, carName } from '../lib/settings'
 import { tyreSeverity } from '../lib/tyres'
 import { fmtPressure, pressureUnitLabel } from '../lib/format'
+import { lang } from '../lib/i18n'
 import './car3d.css'
 
 /*
@@ -29,24 +30,64 @@ interface HeroHandle {
 interface NeoHero { mountHero(stage: Element, opts: Record<string, unknown>): HeroHandle }
 
 /*
- * The hero labels things with i18n keys (the loading/reset chrome, the
- * open-door warning pins, captions). We don't ship its string table, so
- * translate the handful it actually shows — including the {p} part name
- * interpolated into the "<part> open" warning — and blank anything unmapped so
- * no raw key leaks through.
+ * The hero labels everything through its own i18n keys (ph.act.* captions,
+ * part.* / win.* / lights.* part names, ph.home.* pins, chrome). The app's
+ * string table doesn't carry those keys, so the hero keeps its own small
+ * catalog — now in both languages, picked by the app's `lang` so Vietnamese
+ * users see Vietnamese captions. Anything unmapped blanks out so no raw key
+ * leaks through, and {p}/{n}/{g} are interpolated.
  */
-const STRINGS: Record<string, string> = {
-  'ph.hero3d_loading': '',
-  'ph.hero3d_reset': 'Reset view',
-  'ph.home.pin_open': '{p} open',
-  'ph.home.pin_tyre': 'Check tyre',
-  'part.lf': 'Front-left door', 'part.rf': 'Front-right door',
-  'part.lr': 'Rear-left door', 'part.rr': 'Rear-right door',
-  'part.trunk': 'Tailgate', 'part.hood': 'Hood',
-  'neo.home.act_on': 'Ready to drive', 'ph.act.stop': 'Off',
+const HERO_EN: Record<string, string> = {
+  'ph.hero3d_loading': '', 'ph.hero3d_reset': 'Reset view',
+  'ph.home.pin_open': '{p} open', 'ph.home.pin_tyre': 'Check tyre',
+  'neo.home.act_on': 'Ready to drive',
+  // part names
+  'part.lf': 'Front-left door', 'part.rf': 'Front-right door', 'part.lr': 'Rear-left door', 'part.rr': 'Rear-right door',
+  'part.hood': 'Hood', 'part.trunk': 'Tailgate', 'part.fuel': 'Fuel flap',
+  'win.lf': 'Front-left window', 'win.rf': 'Front-right window', 'win.lr': 'Rear-left window', 'win.rr': 'Rear-right window',
+  'win.sunroof': 'Sunroof', 'ph.act.part.shade': 'Sunshade',
+  'lights.low': 'Low beam', 'lights.high': 'High beam', 'lights.turnL': 'Left signal', 'lights.turnR': 'Right signal', 'lights.hazard': 'Hazards',
+  // caption actions
+  'ph.act.open': '{p} open', 'ph.act.close': '{p} closed',
+  'ph.act.win_down': '{p} down', 'ph.act.win_up': '{p} up',
+  'ph.act.locked': 'Locked', 'ph.act.unlocked': 'Unlocked',
+  'ph.act.start': 'Ready to drive', 'ph.act.stop': 'Off',
+  'ph.act.acc_on': 'Switched on', 'ph.act.acc_off': 'Switched off',
+  'ph.act.reverse': 'Reverse', 'ph.act.gear': 'Gear {g}',
+  'ph.act.mirror_fold': 'Mirrors folded', 'ph.act.mirror_unfold': 'Mirrors open',
+  'ph.act.on': '{p} on', 'ph.act.off': '{p} off',
+  'ph.act.ac_on': 'Climate on', 'ph.act.ac_off': 'Climate off',
+  'ph.act.charge_start': 'Charging', 'ph.act.charge_stop': 'Charging stopped',
+  'ph.act.plugged': 'Plugged in', 'ph.act.unplugged': 'Unplugged',
+  'ph.act.doors_open': '{n} doors open', 'ph.act.doors_close': '{n} doors closed', 'ph.act.doors_mixed': '{n} doors',
+  'ph.act.more': '+{n} more', 'ph.act.many': '{n} changes', 'ph.act.flash': 'Flashed',
+}
+const HERO_VI: Record<string, string> = {
+  'ph.hero3d_loading': '', 'ph.hero3d_reset': 'Đặt lại góc nhìn',
+  'ph.home.pin_open': '{p} đang mở', 'ph.home.pin_tyre': 'Kiểm tra lốp',
+  'neo.home.act_on': 'Sẵn sàng lái',
+  'part.lf': 'Cửa trước trái', 'part.rf': 'Cửa trước phải', 'part.lr': 'Cửa sau trái', 'part.rr': 'Cửa sau phải',
+  'part.hood': 'Nắp ca-pô', 'part.trunk': 'Cốp', 'part.fuel': 'Nắp xăng',
+  'win.lf': 'Kính trước trái', 'win.rf': 'Kính trước phải', 'win.lr': 'Kính sau trái', 'win.rr': 'Kính sau phải',
+  'win.sunroof': 'Cửa sổ trời', 'ph.act.part.shade': 'Rèm che',
+  'lights.low': 'Đèn cốt', 'lights.high': 'Đèn pha', 'lights.turnL': 'Xi-nhan trái', 'lights.turnR': 'Xi-nhan phải', 'lights.hazard': 'Đèn khẩn cấp',
+  'ph.act.open': '{p} đã mở', 'ph.act.close': '{p} đã đóng',
+  'ph.act.win_down': '{p} hạ xuống', 'ph.act.win_up': '{p} đã đóng',
+  'ph.act.locked': 'Đã khóa', 'ph.act.unlocked': 'Đã mở khóa',
+  'ph.act.start': 'Sẵn sàng lái', 'ph.act.stop': 'Đã tắt',
+  'ph.act.acc_on': 'Đã bật', 'ph.act.acc_off': 'Đã tắt',
+  'ph.act.reverse': 'Lùi', 'ph.act.gear': 'Số {g}',
+  'ph.act.mirror_fold': 'Gập gương', 'ph.act.mirror_unfold': 'Mở gương',
+  'ph.act.on': 'Bật {p}', 'ph.act.off': 'Tắt {p}',
+  'ph.act.ac_on': 'Bật điều hòa', 'ph.act.ac_off': 'Tắt điều hòa',
+  'ph.act.charge_start': 'Đang sạc', 'ph.act.charge_stop': 'Dừng sạc',
+  'ph.act.plugged': 'Đã cắm sạc', 'ph.act.unplugged': 'Đã rút sạc',
+  'ph.act.doors_open': 'Mở {n} cửa', 'ph.act.doors_close': 'Đóng {n} cửa', 'ph.act.doors_mixed': '{n} cửa',
+  'ph.act.more': '+{n} nữa', 'ph.act.many': '{n} thay đổi', 'ph.act.flash': 'Nháy đèn',
 }
 const heroT = (k: string, p?: Record<string, unknown>) => {
-  let s = k in STRINGS ? STRINGS[k] : ''
+  const table = lang.value === 'vi' ? HERO_VI : HERO_EN
+  let s = k in table ? table[k] : ''
   if (p) for (const [key, val] of Object.entries(p)) s = s.replace('{' + key + '}', String(val))
   return s
 }
