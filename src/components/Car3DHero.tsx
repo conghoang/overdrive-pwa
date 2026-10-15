@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'preact/hooks'
 import { effect } from '@preact/signals'
 import { status, vehicleState } from '../lib/store'
 import { car3dColor, carName } from '../lib/settings'
+import { tyreSeverity } from '../lib/tyres'
+import { fmtPressure, pressureUnitLabel } from '../lib/format'
 import './car3d.css'
 
 /*
@@ -58,6 +60,9 @@ const KEYS = [
   'charge.active', 'charge.plugged', 'charge.kw', 'charge.kwShown', 'charge.full', 'charge.fault', 'energy.socPct',
   'lights.low', 'lights.high', 'lights.hazard', 'lights.drl',
   'lock.driver', 'lock.doors.lf', 'lock.doors.rf', 'lock.doors.lr', 'lock.doors.rr', 'lock.scope',
+  // A tyre pin shows only for an abnormal corner (warn/alert); kPa feeds its label.
+  'tyres.fl.warn', 'tyres.fr.warn', 'tyres.rl.warn', 'tyres.rr.warn',
+  'tyres.fl.kPa', 'tyres.fr.kPa', 'tyres.rl.kPa', 'tyres.rr.kPa',
 ]
 
 /** Map our live telemetry onto the hero's dotted-key store. null = unknown = neutral. */
@@ -67,6 +72,7 @@ function readState(path: string): unknown {
   const d = vs?.doorOpen
   const w = vs?.windows
   const l = vs?.lights
+  const ty = vs?.tyres
   const beam = (x: number | undefined) => (typeof x === 'number' ? x > 0 : null)
   const pct = (x: number | undefined) => (typeof x === 'number' && x >= 0 ? x : null)
   const locked = vs?.doors?.overall === 1 ? true : vs?.doors?.overall === 2 ? false : null
@@ -110,6 +116,18 @@ function readState(path: string): unknown {
     case 'lock.doors.lf': case 'lock.doors.rf': case 'lock.doors.lr': case 'lock.doors.rr':
       return locked
     case 'lock.scope': return 'all'
+    // Tyres: the hero pins a corner only when `warn` is true, so flag abnormal
+    // ('warn'/'alert') corners — a low/over/critical reading or a leak. 'muted'
+    // (no data / no signal) and 'normal' leave the corner unpinned. The pin's
+    // label reads tyres.<w>.kPa through fmt.pressure.
+    case 'tyres.fl.warn': { const sev = tyreSeverity(ty?.fl, true, ty?.limits); return sev === 'warn' || sev === 'alert' }
+    case 'tyres.fr.warn': { const sev = tyreSeverity(ty?.fr, true, ty?.limits); return sev === 'warn' || sev === 'alert' }
+    case 'tyres.rl.warn': { const sev = tyreSeverity(ty?.rl, false, ty?.limits); return sev === 'warn' || sev === 'alert' }
+    case 'tyres.rr.warn': { const sev = tyreSeverity(ty?.rr, false, ty?.limits); return sev === 'warn' || sev === 'alert' }
+    case 'tyres.fl.kPa': return typeof ty?.fl?.kPa === 'number' ? ty.fl.kPa : null
+    case 'tyres.fr.kPa': return typeof ty?.fr?.kPa === 'number' ? ty.fr.kPa : null
+    case 'tyres.rl.kPa': return typeof ty?.rl?.kPa === 'number' ? ty.rl.kPa : null
+    case 'tyres.rr.kPa': return typeof ty?.rr?.kPa === 'number' ? ty.rr.kPa : null
     default: return null
   }
 }
@@ -172,7 +190,13 @@ export function Car3DHero({ onFallback }: { onFallback: () => void }) {
           t: heroT,
           fmt: {
             kw: (x: number) => (typeof x === 'number' && isFinite(x) ? x.toFixed(1) + ' kW' : '--'),
-            pressure: (x: number) => (typeof x === 'number' && isFinite(x) ? String(Math.round(x)) : '--'),
+            // The hero hands us the corner's kPa; show it in the user's pressure
+            // unit with its label (e.g. "180 kPa", "26.1 psi", "1.80 bar").
+            pressure: (x: number) => {
+              if (typeof x !== 'number' || !isFinite(x)) return '--'
+              const unit = status.value?.pressureUnit || 'kpa'
+              return `${fmtPressure({ kPa: x, available: true }, unit)} ${pressureUnitLabel(unit)}`
+            },
           },
         })
 
