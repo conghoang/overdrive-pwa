@@ -358,29 +358,50 @@ const PLATE_SPECS = [
   { pos: [0, 0.61, 2.42], ry: 0 },         // front, faces +z
   { pos: [0, 0.59, -2.44], ry: Math.PI },  // rear, faces -z
 ];
+/** A rounded-rect path (the car's older WebView may lack ctx.roundRect). */
+function roundRectPath(x, px, py, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  x.beginPath();
+  x.moveTo(px + r, py);
+  x.arcTo(px + w, py, px + w, py + h, r);
+  x.arcTo(px + w, py + h, px, py + h, r);
+  x.arcTo(px, py + h, px, py, r);
+  x.arcTo(px, py, px + w, py, r);
+  x.closePath();
+}
 function paintPlate(canvas, text) {
   const x = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
-  x.fillStyle = '#f2f2ee'; x.fillRect(0, 0, W, H);         // opaque: hides the baked plate
-  x.lineWidth = Math.round(H * 0.06); x.strokeStyle = '#15171a';
-  x.strokeRect(x.lineWidth, x.lineWidth, W - 2 * x.lineWidth, H - 2 * x.lineWidth);
+  // Rounded white plate on a transparent field: the quad slightly overfills the
+  // baked plate, so the corners (and anything past the baked edge) stay clear
+  // instead of spilling white onto the grille, and the single drawn border is
+  // the only one — no baked rim showing through as a second border.
+  x.clearRect(0, 0, W, H);
+  const r = Math.round(H * 0.18);
+  roundRectPath(x, 0, 0, W, H, r);
+  x.fillStyle = '#f6f6f3'; x.fill();                        // bright plate white, matches the baked one
+  const bw = Math.max(2, Math.round(H * 0.05));
+  roundRectPath(x, bw * 1.3, bw * 1.3, W - 2.6 * bw, H - 2.6 * bw, Math.max(1, r - bw));
+  x.lineWidth = bw; x.strokeStyle = '#16181b'; x.stroke();
   const s = String(text || '').trim().toUpperCase().slice(0, 12);
   if (!s) return;
-  x.fillStyle = '#15171a'; x.textAlign = 'center'; x.textBaseline = 'middle';
-  let fs = Math.round(H * 0.58);
+  x.fillStyle = '#16181b'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  let fs = Math.round(H * 0.56);
   const fit = () => { x.font = `700 ${fs}px "Space Grotesk","Arial Narrow",system-ui,sans-serif`; return x.measureText(s).width; };
-  while (fit() > W * 0.84 && fs > 10) fs -= 2;
-  x.fillText(s, W / 2, H * 0.55);
+  while (fit() > W * 0.8 && fs > 10) fs -= 2;
+  x.fillText(s, W / 2, H * 0.56);
 }
 function onePlate(text) {
   const canvas = document.createElement('canvas');
-  canvas.width = 512; canvas.height = 128;
+  canvas.width = 512; canvas.height = 138;                  // ~3.7:1, matches the quad below
   paintPlate(canvas, text);
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
   const mesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.40, 0.10),
-    new THREE.MeshBasicMaterial({ map: tex, toneMapped: false })
+    // Sized to the baked plate (measured on this Sealion 6: ~8% wider, ~15%
+    // taller than the first pass), so the overlay fully covers it.
+    new THREE.PlaneGeometry(0.44, 0.118),
+    new THREE.MeshBasicMaterial({ map: tex, transparent: true, toneMapped: false })
   );
   mesh.userData.od = true;              // excluded from part bounding-box walks and twins
   mesh.userData.plate = { canvas, tex };
