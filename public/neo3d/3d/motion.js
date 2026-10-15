@@ -209,10 +209,15 @@ export class OrbitInput {
     const move = (e) => this.move(e);
     const up = (e) => this.end(e, false);
     const cancel = (e) => this.end(e, true);
+    const wheel = (e) => this.wheel(e);
     canvas.addEventListener('pointerdown', down);
     canvas.addEventListener('pointermove', move);
     canvas.addEventListener('pointerup', up);
     canvas.addEventListener('pointercancel', cancel);
+    // Mouse wheel / trackpad pinch (which arrives as wheel + ctrlKey) zooms on
+    // desktop, where there is no two-finger pinch. Non-passive so it can hold
+    // the page still while zooming the car.
+    canvas.addEventListener('wheel', wheel, { passive: false });
     // A capture lost without a pointerup here (the canvas left the page...): end that pointer, no fling. After a
     // normal pointerup or pointercancel the pointer is already gone and this does nothing.
     canvas.addEventListener('lostpointercapture', cancel);
@@ -221,8 +226,21 @@ export class OrbitInput {
       canvas.removeEventListener('pointermove', move);
       canvas.removeEventListener('pointerup', up);
       canvas.removeEventListener('pointercancel', cancel);
+      canvas.removeEventListener('wheel', wheel);
       canvas.removeEventListener('lostpointercapture', cancel);
     };
+  }
+
+  /** Wheel / trackpad-pinch zoom: scale the orbit distance (scroll up = zoom in). */
+  wheel(e) {
+    e.preventDefault();
+    const rig = this.rig, lim = rig.lim;
+    // deltaY > 0 (scroll down / pinch out) moves the camera back; clamp to the
+    // orbit range. The exponential keeps each step proportional, so it feels the
+    // same whether near or far.
+    rig.goal[2] = clamp(rig.goal[2] * Math.exp(e.deltaY * 0.0012), lim.rMin, lim.rMax);
+    this.take();
+    this.on.change();
   }
 
   spread() {

@@ -7,10 +7,10 @@
 .car3d-host {
   position: relative;
   width: 100%;
-  /* A taller stage shows a bigger car (the rig frames the car to the view).
-     Scales a little with the card width so a foldable/large screen gets more,
-     capped so it never dominates the dashboard. */
-  height: clamp(300px, 46vw, 420px);
+  /* A taller stage gives the car more room; paired with a tighter framing fit
+     (Car3DHero) so the car actually fills it rather than leaving black bands.
+     Scales with the screen height, capped so it never swallows the dashboard. */
+  height: clamp(360px, 48vh, 480px);
   --bg:#05080D; --text:#EEF3F8; --muted:#8E9BAD; --accent:#4FE0C1;
   --ok:#6FF0D2; --warn:#FFC46B; --danger:#FF6B6B; --info:#7CC8FF;
   --charging:#6EC8FF; --open:#FF8A65; --amber:#FFB300; --unknown:#6B7480;

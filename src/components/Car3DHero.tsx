@@ -186,6 +186,7 @@ export function Car3DHero({ onFallback }: { onFallback: () => void }) {
           modelUrl: `${base}neo3d/models/sealion6.glb`,
           eligible: () => true, // we only ship this one model
           light: false, // the hero palette we vendored is dark
+          fit: 1.2, // frame the car a little tighter so it fills the (taller) hero
           plate: carName.value, // custom plates (front + rear) show the car's name
           t: heroT,
           fmt: {
