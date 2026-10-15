@@ -98,6 +98,30 @@ function webgl2(): boolean {
   return typeof (globalThis as { WebGL2RenderingContext?: unknown }).WebGL2RenderingContext === 'function'
 }
 
+/*
+ * The hero's badges/buttons render glyphs as <use href="#i-lock"> into an inline
+ * SVG symbol sprite. Inject that sprite (once) so the references resolve — without
+ * it the lock/charge/recenter icons are empty and only their dark pills show.
+ */
+let spriteLoading: Promise<void> | null = null
+function ensureSprite(base: string): Promise<void> {
+  if (document.getElementById('neo3d-sprite')) return Promise.resolve()
+  if (spriteLoading) return spriteLoading
+  spriteLoading = fetch(`${base}neo3d/icons.svg`)
+    .then((r) => (r.ok ? r.text() : ''))
+    .then((svg) => {
+      if (!svg || document.getElementById('neo3d-sprite')) return
+      const wrap = document.createElement('div')
+      wrap.id = 'neo3d-sprite'
+      wrap.setAttribute('aria-hidden', 'true')
+      wrap.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden'
+      wrap.innerHTML = svg
+      document.body.appendChild(wrap)
+    })
+    .catch(() => { /* icons just won't render; not fatal */ })
+  return spriteLoading
+}
+
 export function Car3DHero({ onFallback }: { onFallback: () => void }) {
   const hostRef = useRef<HTMLDivElement | null>(null)
 
@@ -112,8 +136,11 @@ export function Car3DHero({ onFallback }: { onFallback: () => void }) {
     const base = import.meta.env.BASE_URL
     const read: Read = (p) => (p === 'meta.modelId' ? 'seal-u-dmi' : readState(p))
 
-    import(/* @vite-ignore */ `${base}neo3d/3d/hero.js`)
-      .then((m: NeoHero) => {
+    Promise.all([
+      import(/* @vite-ignore */ `${base}neo3d/3d/hero.js`),
+      ensureSprite(base), // in place before mountHero builds its badges
+    ])
+      .then(([m]: [NeoHero, void]) => {
         if (destroyed || !hostRef.current) return
         handle = m.mountHero(stage, {
           read,
