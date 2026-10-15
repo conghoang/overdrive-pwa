@@ -25,17 +25,27 @@ interface HeroHandle {
 interface NeoHero { mountHero(stage: Element, opts: Record<string, unknown>): HeroHandle }
 
 /*
- * The hero labels a few things with i18n keys. We don't ship its string table,
- * so translate the handful it actually shows (the loading/reset chrome and the
- * state captions) and let anything else fall through to its own key.
+ * The hero labels things with i18n keys (the loading/reset chrome, the
+ * open-door warning pins, captions). We don't ship its string table, so
+ * translate the handful it actually shows — including the {p} part name
+ * interpolated into the "<part> open" warning — and blank anything unmapped so
+ * no raw key leaks through.
  */
 const STRINGS: Record<string, string> = {
   'ph.hero3d_loading': '',
   'ph.hero3d_reset': 'Reset view',
-  'neo.home.act_on': 'Ready to drive',
-  'ph.act.stop': 'Off',
+  'ph.home.pin_open': '{p} open',
+  'ph.home.pin_tyre': 'Check tyre',
+  'part.lf': 'Front-left door', 'part.rf': 'Front-right door',
+  'part.lr': 'Rear-left door', 'part.rr': 'Rear-right door',
+  'part.trunk': 'Tailgate', 'part.hood': 'Hood',
+  'neo.home.act_on': 'Ready to drive', 'ph.act.stop': 'Off',
 }
-const heroT = (k: string) => (k in STRINGS ? STRINGS[k] : '')
+const heroT = (k: string, p?: Record<string, unknown>) => {
+  let s = k in STRINGS ? STRINGS[k] : ''
+  if (p) for (const [key, val] of Object.entries(p)) s = s.replace('{' + key + '}', String(val))
+  return s
+}
 
 /** Every state key the hero's mapping reads — used both by the adapter and the diff. */
 const KEYS = [

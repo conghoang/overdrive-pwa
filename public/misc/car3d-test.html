@@ -207,8 +207,15 @@
   }
   document.querySelectorAll('[data-preset]').forEach(b=> b.onclick=()=>applyPreset(b.dataset.preset))
 
-  // ---- caption text: prettify keys so warnings are readable ---------------
-  const t = (k) => !k ? '' : String(k).replace(/^.*[.]/,'').replace(/[_-]/g,' ').replace(/\b\w/g,c=>c.toUpperCase())
+  // ---- label text: translate the keys the hero shows (with {p} interpolation)
+  const STRINGS = {
+    'ph.hero3d_loading':'', 'ph.hero3d_reset':'Reset view',
+    'ph.home.pin_open':'{p} open', 'ph.home.pin_tyre':'Check tyre',
+    'part.lf':'Front-left door','part.rf':'Front-right door','part.lr':'Rear-left door','part.rr':'Rear-right door',
+    'part.trunk':'Tailgate','part.hood':'Hood',
+    'neo.home.act_on':'Ready to drive','ph.act.stop':'Off',
+  }
+  const t = (k, p) => { let s = (k in STRINGS)?STRINGS[k]:''; if (p) for (const key in p) s=s.replace('{'+key+'}', String(p[key])); return s }
 
   // ---- boot: sprite + hero -----------------------------------------------
   function abs(rel){ return new URL(rel, location.href).pathname }
