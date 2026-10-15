@@ -6,7 +6,7 @@
  *
  * Renderer and scene (QA runtime recommendations, E:\OverDrive\3d\qa\QA_RESULTS.json):
  * - WebGL2, antialias, sRGB output, Khronos PBR Neutral tone mapping at exposure 0.9 (0.95 on a light palette,
- *   setTheme), transparent canvas over the hero's CSS background; pixel ratio min(devicePixelRatio, 2), 1.5 after 30
+ *   setTheme), transparent canvas over the hero's CSS background; pixel ratio min(devicePixelRatio, 3), 2 after 30
  *   slow frames in a row (> 20 ms), applied only at the next frame at rest.
  * - RoomEnvironment through PMREM at intensity 1.0 + one key light 1.6 at (3, 6, 4); no shadow maps; a code-built
  *   contact shadow (one plane, canvas gradient). The car sits in a group (body) that a slammed door rocks.
@@ -43,7 +43,7 @@ export const RENDER = {
   toneMapping: THREE.NeutralToneMapping, exposure: 0.9, environment: 1.0, keyLight: 1.6,
   // A light palette (owner 2026-10-13, handoff-home-v2 C2): exposure 0.95, the contact shadow at 0.8.
   exposureLight: 0.95, shadowLight: 0.8,
-  dprMax: 2, dprFallback: 1.5, fov: 35, near: 0.1, far: 60,
+  dprMax: 3, dprFallback: 2, fov: 35, near: 0.1, far: 60,
   // Rest views (director.js VIEWS, the approved car-engine.js angles): home = front-left 3/4 (the driver's side, LHD)
   // at az 39 el 15; while a plug is in, chargeRest = the rear-right 3/4 at az -138 el 16 shows the charge port (right
   // side) with its LED and kW label. The orbit target: 0.75 m over the model's origin (its centre).

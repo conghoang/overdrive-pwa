@@ -180,7 +180,12 @@ export function App() {
     const el = e.target as HTMLElement
     const tag = el?.tagName
     const guard =
-      tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || hasScrollableX(el)
+      tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' ||
+      // Dragging the 3D car orbits it — that horizontal drag must not also flip
+      // tabs. Only the live 3D hero mounts .car3d-host; on fallback it reverts to
+      // a plain photo, so swiping the photo still changes tabs.
+      !!el?.closest?.('.car3d-host') ||
+      hasScrollableX(el)
     swipe.current = { x: t.clientX, y: t.clientY, lastX: t.clientX, lastY: t.clientY, guard }
   }
 
