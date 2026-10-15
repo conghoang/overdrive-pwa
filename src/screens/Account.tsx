@@ -15,7 +15,7 @@ import { lazyScreen } from '../lib/lazy'
  */
 const WiCarlinkEditor = lazyScreen(() => import('../components/WiCarlinkEditor'), 'WiCarlinkEditor')
 
-import { carName, carPhoto, holdStart, holdTrunk, resetSettings, setCarName, setCarPhoto, setHoldStart, setHoldTrunk, setShowMap, setWicarlink, showMap, wicarlink } from '../lib/settings'
+import { carName, carPhoto, holdStart, holdTrunk, resetSettings, setCarName, setCarPhoto, setHoldStart, setHoldTrunk, setShow3d, setShowMap, setWicarlink, show3d, showMap, wicarlink } from '../lib/settings'
 import { fileToResizedBlob } from '../lib/image'
 import { toast } from '../lib/toast'
 import { lang, setLang, t } from '../lib/i18n'
@@ -93,6 +93,17 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
             <span class="screen-sub" style={{ marginTop: '2px' }}>{t('dev.map_desc')}</span>
           </div>
           <Switch on={showMap.value} onChange={setShowMap} />
+        </div>
+      </div>
+
+      {/* 3D car model in the hero (vs the still photo) */}
+      <div class="card" style={{ marginTop: '14px' }}>
+        <div class="srow" style={{ paddingTop: 0, paddingBottom: 0 }}>
+          <div class="stack">
+            <span class="srow-label">{t('dev.model3d')}</span>
+            <span class="screen-sub" style={{ marginTop: '2px' }}>{t('dev.model3d_desc')}</span>
+          </div>
+          <Switch on={show3d.value} onChange={setShow3d} />
         </div>
       </div>
 

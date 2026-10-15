@@ -1,7 +1,8 @@
 import { useState } from 'preact/hooks'
 import type { JSX } from 'preact'
-import { carPhoto } from '../lib/settings'
+import { carPhoto, show3d } from '../lib/settings'
 import { vehicleState } from '../lib/store'
+import { Car3DHeroLazy } from './Car3DHeroLazy'
 import { distanceUnitLabel, fmtDistance } from '../lib/format'
 import { t } from '../lib/i18n'
 import { anyOpen, windowsOpenCount } from '../lib/vehicle'
@@ -60,6 +61,10 @@ function EnergyLeg({
 export function CarHero({ s }: { s: StatusResponse }) {
   const [imgOk, setImgOk] = useState(true)
   const [doorSheet, setDoorSheet] = useState(false)
+  // 3D model is opt-in; it quietly reverts to the photo if WebGL2 or the model
+  // isn't available, so a phone that can't render it still shows the hero.
+  const [threeDBroke, setThreeDBroke] = useState(false)
+  const use3d = show3d.value && !threeDBroke
   const unit = s.distanceUnit || 'km'
   const charging = !!s.charging?.charging
   const photo = carPhoto.value || DEFAULT_PHOTO
@@ -110,7 +115,9 @@ export function CarHero({ s }: { s: StatusResponse }) {
         )}
       </div>
 
-      {imgOk ? (
+      {use3d ? (
+        <Car3DHeroLazy onFallback={() => setThreeDBroke(true)} />
+      ) : imgOk ? (
         <img class="car-photo" src={photo} alt="" onError={() => setImgOk(false)} />
       ) : (
         <div class="car-photo">

@@ -107,7 +107,10 @@ export default defineConfig({
         // navigations with the phone app's shell.
         navigateFallbackDenylist: isDevSite ? [/\/watch\//, /\/pair\//] : [/\/dev\//, /\/watch\//, /\/pair\//],
         globPatterns: ['**/*.{js,css,html,svg,webp,png,ico,woff2}'],
-        globIgnores: ['**/watch/**', '**/pair/**'],
+        // neo3d/** is the opt-in 3D hero (three.js + a 2 MB model). It's off by
+        // default, so keep it out of the precache for everyone — it's fetched
+        // from the network at runtime only once someone turns the model on.
+        globIgnores: ['**/watch/**', '**/pair/**', '**/neo3d/**'],
         // Match precached assets even with the ?v=<commit> cache-buster.
         ignoreURLParametersMatching: [/^v$/],
         cleanupOutdatedCaches: true,
