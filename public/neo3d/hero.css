@@ -21,6 +21,13 @@
 }
 .neo-hero-stage canvas { display: block; }
 
+/* The hero toggles its badges/pins with the `hidden` attribute, but the
+   component rules set display:flex/inline-flex, which outrank the UA
+   [hidden]{display:none}. Neo's base.css makes [hidden] !important globally;
+   we don't ship it, so without this every "hidden" badge rendered at the stage
+   origin — the stray circle/pins in the top-left corner. Restore it, scoped. */
+.neo-hero-stage [hidden] { display: none !important; }
+
 /* The hero's glyphs are stroke-based line icons (<use> into the sprite) and
    need the base .ico rule, or they default to a black fill and vanish on the
    dark badges — leaving just the circular pill. (From the Neo base.css.) */
