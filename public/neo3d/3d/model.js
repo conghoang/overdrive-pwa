@@ -358,38 +358,31 @@ const PLATE_SPECS = [
   { pos: [0, 0.61, 2.42], ry: 0 },         // front, faces +z
   { pos: [0, 0.59, -2.44], ry: Math.PI },  // rear, faces -z
 ];
-/** A rounded-rect path (the car's older WebView may lack ctx.roundRect). */
-function roundRectPath(x, px, py, w, h, r) {
-  r = Math.min(r, w / 2, h / 2);
-  x.beginPath();
-  x.moveTo(px + r, py);
-  x.arcTo(px + w, py, px + w, py + h, r);
-  x.arcTo(px + w, py + h, px, py + h, r);
-  x.arcTo(px, py + h, px, py, r);
-  x.arcTo(px, py, px + w, py, r);
-  x.closePath();
-}
 function paintPlate(canvas, text) {
   const x = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
-  // Rounded white plate on a transparent field: the quad slightly overfills the
-  // baked plate, so the corners (and anything past the baked edge) stay clear
-  // instead of spilling white onto the grille, and the single drawn border is
-  // the only one — no baked rim showing through as a second border.
+  // The car's plate has its text baked into the mesh and can't be erased, so to
+  // show just the new number we mask ONLY the old digits with the plate's own
+  // white (invisible against it) — no plate background or border drawn — then
+  // print the new text. The car's real plate (white + frame) still shows.
   x.clearRect(0, 0, W, H);
-  const r = Math.round(H * 0.18);
-  roundRectPath(x, 0, 0, W, H, r);
-  x.fillStyle = '#f6f6f3'; x.fill();                        // bright plate white, matches the baked one
-  const bw = Math.max(2, Math.round(H * 0.05));
-  roundRectPath(x, bw * 1.3, bw * 1.3, W - 2.6 * bw, H - 2.6 * bw, Math.max(1, r - bw));
-  x.lineWidth = bw; x.strokeStyle = '#16181b'; x.stroke();
   const s = String(text || '').trim().toUpperCase().slice(0, 12);
   if (!s) return;
+  // A rounded band over the text line only, matched to the baked plate white.
+  const mY = H * 0.24, mH = H * 0.52, mX = W * 0.07, mW = W * 0.86, mr = mH / 2;
+  x.beginPath();
+  x.moveTo(mX + mr, mY);
+  x.arcTo(mX + mW, mY, mX + mW, mY + mH, mr);
+  x.arcTo(mX + mW, mY + mH, mX, mY + mH, mr);
+  x.arcTo(mX, mY + mH, mX, mY, mr);
+  x.arcTo(mX, mY, mX + mW, mY, mr);
+  x.closePath();
+  x.fillStyle = '#f6f6f3'; x.fill();
   x.fillStyle = '#16181b'; x.textAlign = 'center'; x.textBaseline = 'middle';
-  let fs = Math.round(H * 0.56);
+  let fs = Math.round(H * 0.5);
   const fit = () => { x.font = `700 ${fs}px "Space Grotesk","Arial Narrow",system-ui,sans-serif`; return x.measureText(s).width; };
-  while (fit() > W * 0.8 && fs > 10) fs -= 2;
-  x.fillText(s, W / 2, H * 0.56);
+  while (fit() > W * 0.78 && fs > 10) fs -= 2;
+  x.fillText(s, W / 2, H * 0.52);
 }
 function onePlate(text) {
   const canvas = document.createElement('canvas');
