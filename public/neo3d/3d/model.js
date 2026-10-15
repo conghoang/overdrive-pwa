@@ -350,16 +350,15 @@ export function setPaint(car, css) {
 /*
  * Custom number plates. The model's baked plate text is erased (see
  * scripts/erase-baked-plates.mjs), so these thin textured quads just carry the
- * live number over each blank plate. Positions are in the car-root's local
- * space, found by probing this Sealion 6: the front plate is on the bumper at
- * (0, 0.61, 2.42) facing +z; the rear plate rides the tailgate, at rest about
- * (0, 0.87, -2.35) facing -z. setCarPlates repaints both in place.
+ * live number over each blank plate, 2 mm proud of the face. The front plate is
+ * on the bumper (car-root space). The rear plate RIDES THE TAILGATE, so it's
+ * parented to the tailgate node in that node's local space (y/z shifted by the
+ * node's rest offset 0, +1.596, -1.585) and swings up with the tailgate when it
+ * opens. setCarPlates repaints both in place.
  */
 const PLATE_SPECS = [
-  // Sit right on the plate face (front face at z 2.396, rear at -2.347), 2 mm
-  // proud so it reads as part of the plate — not a card floating in front of it.
-  { pos: [0, 0.596, 2.398], ry: 0 },         // front, faces +z  (plate centre 0, 0.596)
-  { pos: [0, 0.871, -2.349], ry: Math.PI },  // rear (tailgate, closed), faces -z  (centre 0, 0.871)
+  { on: 'root', pos: [0, 0.596, 2.398], ry: 0 },            // front bumper, faces +z (face z 2.396)
+  { on: 'tailgate', pos: [0, -0.725, -0.764], ry: Math.PI }, // rear on the tailgate, faces -z (local; world face -2.347)
 ];
 /** A rounded-rect path (the car's older WebView may lack ctx.roundRect). */
 function roundRectPath(x, px, py, w, h, r) {
@@ -420,7 +419,10 @@ export function mountCarPlates(car, text) {
       const m = onePlate(text);
       m.position.set(spec.pos[0], spec.pos[1], spec.pos[2]);
       m.rotation.set(0, spec.ry, 0);
-      car.root.add(m);
+      // Parent the rear plate to the tailgate so it swings up with it; the front
+      // plate (and any fallback) rides the car root.
+      const parent = spec.on === 'tailgate' ? (car.nodes.get('tailgate') || car.root) : car.root;
+      parent.add(m);
       return m;
     });
   } else {
