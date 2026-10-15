@@ -348,15 +348,16 @@ export function setPaint(car, css) {
 }
 
 /*
- * Custom number plates. The model's own plates are baked into body_mesh vertex
- * colours (can't be re-lettered), so we cover them with thin textured quads.
- * Positions are in the car-root's local space (where the model lives), found by
- * probing this Sealion 6: front plate ~ (0, 0.61, 2.42) facing +z, rear ~
- * (0, 0.59, -2.44) facing -z. setCarPlates repaints both in place.
+ * Custom number plates. The model's baked plate text is erased (see
+ * scripts/erase-baked-plates.mjs), so these thin textured quads just carry the
+ * live number over each blank plate. Positions are in the car-root's local
+ * space, found by probing this Sealion 6: the front plate is on the bumper at
+ * (0, 0.61, 2.42) facing +z; the rear plate rides the tailgate, at rest about
+ * (0, 0.87, -2.35) facing -z. setCarPlates repaints both in place.
  */
 const PLATE_SPECS = [
   { pos: [0, 0.61, 2.42], ry: 0 },         // front, faces +z
-  { pos: [0, 0.59, -2.44], ry: Math.PI },  // rear, faces -z
+  { pos: [0, 0.87, -2.35], ry: Math.PI },  // rear (tailgate, closed), faces -z
 ];
 function paintPlate(canvas, text) {
   const x = canvas.getContext('2d');
@@ -371,7 +372,9 @@ function paintPlate(canvas, text) {
   let fs = Math.round(H * 0.5);
   const fit = () => { x.font = `700 ${fs}px "Space Grotesk","Arial Narrow",system-ui,sans-serif`; return x.measureText(s).width; };
   while (fit() > W * 0.78 && fs > 10) fs -= 2;
-  x.fillText(s, W / 2, H * 0.52);
+  // Sit the number a touch below the canvas centre — on the plate it reads as
+  // vertically centred rather than riding high.
+  x.fillText(s, W / 2, H * 0.6);
 }
 function onePlate(text) {
   const canvas = document.createElement('canvas');

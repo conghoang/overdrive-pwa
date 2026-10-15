@@ -70,8 +70,8 @@ function erasePlate(meshName, primIdx, box) {
   console.log(`${meshName} prim ${primIdx}: white ${W.map((v) => +v.toFixed(3))}, recoloured ${changed} verts`)
 }
 
-erasePlate('body_mesh', 4, { xl: -0.25, xh: 0.25, yl: 0.53, yh: 0.66, zl: 2.385, zh: 2.40 })        // front
-erasePlate('tailgate_mesh', 0, { xl: -0.30, xh: 0.30, yl: -0.83, yh: -0.62, zl: -0.765, zh: -0.74 }) // rear
+erasePlate('body_mesh', 4, { xl: -0.29, xh: 0.29, yl: 0.52, yh: 0.665, zl: 2.384, zh: 2.402 })        // front
+erasePlate('tailgate_mesh', 0, { xl: -0.31, xh: 0.31, yl: -0.84, yh: -0.60, zl: -0.766, zh: -0.735 }) // rear
 
 await io.write(MODEL, doc)
 console.log('wrote', MODEL, statSync(MODEL).size, 'bytes')
