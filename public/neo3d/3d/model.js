@@ -21,9 +21,6 @@ const RANK = { M_Trim_Black: [1, 2], M_Caliper: [1, 2], M_Interior: [2, 4], M_In
 const EMITTER_RANK = [-1, -2];
 const TWIN = new Set(['M_Paint', 'M_Chrome']);
 const TWIN_BACK_RANK = [2, 4];
-// Brown seat tint for the interior material (multiplies the seat texture) — the
-// VN SL6 ships brown seats, not the model's grey.
-const INTERIOR_TINT = 0x9c6a42;
 const MOVER_KINDS = new Set(['hinge', 'slide', 'spin']);
 
 const isEmitter = (m) => !!m.emissiveMap || (!!m.emissive && m.emissive.r + m.emissive.g + m.emissive.b > 0);
@@ -297,12 +294,6 @@ export function prepareCar(root) {
     m.metalness = 0.05;
   }
 
-  // The VN SL6 has brown seats, not the model's grey. M_Interior multiplies the
-  // interior texture, so tinting it brown turns the light seat cushions brown
-  // while the dark dashboard/panels (already dark in the texture) stay dark.
-  root.traverse((o) => {
-    if (o.isMesh && o.material && o.material.name === 'M_Interior') o.material.color.set(INTERIOR_TINT);
-  });
 
   // Badge anchors in their part's frame (rest pose): door handles, tailgate, charge port.
   root.updateMatrixWorld(true);
