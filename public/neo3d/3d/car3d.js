@@ -562,10 +562,12 @@ export class Car3D {
 
   /**
    * The unlocked-warning ring: shown while the car is parked (ignition off),
-   * every door and lid closed, and unlocked. Fades over ~0.6 s; returns true
-   * while still fading so the frame loop keeps running until it settles.
+   * every door and lid closed, and unlocked. Fades in/out over ~0.6 s and, while
+   * up, breathes (a slow opacity + scale pulse) so it reads as a live warning,
+   * like the blue READY halo animates. Returns true while visible or fading so
+   * the frame loop keeps running the pulse (and stops once it's hidden).
    */
-  placeWarnRing(dt) {
+  placeWarnRing(now, dt) {
     const r = this.warnRing;
     if (!r) return false;
     const read = this.opts.read;
@@ -577,9 +579,17 @@ export class Car3D {
     const step = (dt > 0 ? dt : 1 / 60) / 0.6;
     const nl = lv === target ? target : Math.abs(target - lv) <= step ? target : lv + Math.sign(target - lv) * step;
     this.warn.level = nl;
-    r.visible = nl > 0.001;
-    r.material.opacity = (this.light ? WARN_RING.opacityLight : WARN_RING.opacity) * nl;
-    return nl !== target;
+    const vis = nl > 0.001;
+    r.visible = vis;
+    if (vis) {
+      // 2.4 s breath: opacity 0.6 -> 1 of base, radius ±3 %.
+      const phase = 0.5 + 0.5 * Math.sin((2 * Math.PI * now) / 2.4);
+      const base = this.light ? WARN_RING.opacityLight : WARN_RING.opacity;
+      r.material.opacity = base * nl * (0.6 + 0.4 * phase);
+      const s = 0.97 + 0.03 * phase;
+      r.scale.set(s, s, 1);
+    }
+    return vis || nl !== target;
   }
 
   /** The live state changed: what is not the director's (kW, %, paint) applies now; it compares the rest next frame. */
@@ -661,7 +671,7 @@ export class Car3D {
     this.rig.apply(this.camera);
     const st = this.mapping.step(now, this.camera);
     this.placeRing();
-    this.placeWarnRing(1 / 60);
+    this.placeWarnRing(now, 1 / 60);
     this.draw(now);
     return st;
   }
@@ -685,11 +695,12 @@ export class Car3D {
     this.rig.apply(this.camera);
     const st = this.mapping.step(now, this.camera);
     this.placeRing();
-    const warnActive = this.placeWarnRing(dt);
+    const warnActive = this.placeWarnRing(now, dt);
     const popOn = !!(this.opts.popEl && !this.opts.popEl.hidden);
-    const busy = camMoving || st.active || input.active || this.director.busy() || popOn || !!this.opts.demo || warnActive;
+    const busy = camMoving || st.active || input.active || this.director.busy() || popOn || !!this.opts.demo;
     // Only blinks, pulses or dots (or a batch still collecting): ~30 fps on vsync instead of every frame.
-    const lazy = !busy && (st.ambient || this.director.waiting());
+    // The warning ring's slow breath rides here too, so it animates at 30 fps rather than full rate.
+    const lazy = !busy && (st.ambient || this.director.waiting() || warnActive);
     // Adaptive pixel ratio: 30 frames in a row slower than 20 ms while moving -> 1.5, set at the next frame at rest.
     if (busy && gap > 0) {
       this.slow = gap > 20 && gap < 200 ? this.slow + 1 : 0;
@@ -717,7 +728,7 @@ export class Car3D {
       this.moved = this.rig.manual;
       if (this.opts.onMoved) this.opts.onMoved(this.moved);
     }
-    this.chained = busy || st.ambient || this.director.waiting();
+    this.chained = busy || st.ambient || this.director.waiting() || warnActive;
     if (this.chained) {
       if (!this.raf) this.raf = requestAnimationFrame((t) => this.frame(t));
       return;
