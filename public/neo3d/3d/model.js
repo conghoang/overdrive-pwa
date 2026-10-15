@@ -347,6 +347,66 @@ export function setPaint(car, css) {
   });
 }
 
+/*
+ * Custom number plates. The model's own plates are baked into body_mesh vertex
+ * colours (can't be re-lettered), so we cover them with thin textured quads.
+ * Positions are in the car-root's local space (where the model lives), found by
+ * probing this Sealion 6: front plate ~ (0, 0.61, 2.42) facing +z, rear ~
+ * (0, 0.59, -2.44) facing -z. setCarPlates repaints both in place.
+ */
+const PLATE_SPECS = [
+  { pos: [0, 0.61, 2.42], ry: 0 },         // front, faces +z
+  { pos: [0, 0.59, -2.44], ry: Math.PI },  // rear, faces -z
+];
+function paintPlate(canvas, text) {
+  const x = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  x.fillStyle = '#f2f2ee'; x.fillRect(0, 0, W, H);         // opaque: hides the baked plate
+  x.lineWidth = Math.round(H * 0.06); x.strokeStyle = '#15171a';
+  x.strokeRect(x.lineWidth, x.lineWidth, W - 2 * x.lineWidth, H - 2 * x.lineWidth);
+  const s = String(text || '').trim().toUpperCase().slice(0, 12);
+  if (!s) return;
+  x.fillStyle = '#15171a'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  let fs = Math.round(H * 0.58);
+  const fit = () => { x.font = `700 ${fs}px "Space Grotesk","Arial Narrow",system-ui,sans-serif`; return x.measureText(s).width; };
+  while (fit() > W * 0.84 && fs > 10) fs -= 2;
+  x.fillText(s, W / 2, H * 0.55);
+}
+function onePlate(text) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512; canvas.height = 128;
+  paintPlate(canvas, text);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.40, 0.10),
+    new THREE.MeshBasicMaterial({ map: tex, toneMapped: false })
+  );
+  mesh.userData.od = true;              // excluded from part bounding-box walks and twins
+  mesh.userData.plate = { canvas, tex };
+  mesh.renderOrder = 3;
+  return mesh;
+}
+/** Add the custom plates to the car (idempotent); '' leaves them blank. */
+export function mountCarPlates(car, text) {
+  if (!car._plates) {
+    car._plates = PLATE_SPECS.map((spec) => {
+      const m = onePlate(text);
+      m.position.set(spec.pos[0], spec.pos[1], spec.pos[2]);
+      m.rotation.set(0, spec.ry, 0);
+      car.root.add(m);
+      return m;
+    });
+  } else {
+    setCarPlates(car, text);
+  }
+}
+/** Repaint both plates with new text. */
+export function setCarPlates(car, text) {
+  if (!car._plates) return;
+  for (const m of car._plates) { paintPlate(m.userData.plate.canvas, text); m.userData.plate.tex.needsUpdate = true; }
+}
+
 /** Put a mover at t (0 = rest, 1 = extras.od max): hinge angle, slide distance, morph. */
 const _q = new THREE.Quaternion();
 export function poseMover(e, t) {

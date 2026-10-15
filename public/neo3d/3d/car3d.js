@@ -33,7 +33,7 @@ import * as THREE from '../vendor/three/three.module.min.js';
 import { GLTFLoader } from '../vendor/three/addons/GLTFLoader.js';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 import { MeshoptDecoder } from '../vendor/meshopt/meshopt_decoder.module.js';
-import { prepareCar, disposeCar } from './model.js';
+import { prepareCar, disposeCar, mountCarPlates, setCarPlates } from './model.js';
 import { Mapping, ringTexture } from './mapping.js';
 import { Badges } from './chips.js';
 import { Rig, OrbitInput, D2R } from './motion.js';
@@ -314,6 +314,8 @@ export class Car3D {
     const body = this.body = new THREE.Group();
     body.add(this.car.root);
     scene.add(body);
+    // Custom number plates covering the baked ones (front + rear).
+    if (this.opts.plate != null) mountCarPlates(this.car, this.opts.plate);
     const reduced = this.reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     const rig = this.rig = new Rig({ phMin: RENDER.minPolar * D2R, phMax: RENDER.maxPolar * D2R, rMin: RENDER.minDistance, rMax: RENDER.maxDistance });
     rig.reduced = reduced;
@@ -712,6 +714,15 @@ export class Car3D {
       queue: this.director.queue.length,
       reduced: this.reduced
     };
+  }
+
+  /** Set the custom plate text (front + rear); mounts them if the car is loaded. */
+  setPlate(text) {
+    this.opts.plate = text;
+    if (!this.car || this.dead) return;
+    if (this.car._plates) setCarPlates(this.car, text);
+    else mountCarPlates(this.car, text);
+    this.invalidate();
   }
 
   destroy() {
