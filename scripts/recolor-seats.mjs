@@ -7,12 +7,10 @@
  * Instead we recolour just the seat PIXELS in the texture. The seats occupy one
  * block of the 512x512 atlas (x 0-265, y 256-508 — found by gridding the atlas);
  * the dashboard, vents and centre console sit elsewhere and must stay black, so
- * we only touch that box. Within it, the light, near-neutral pixels (luminance
- * > 120, saturation < 0.18) are the seat faces; multiply them by the cognac tint
- * (0xb5651f / 255) — the same multiply that looked right as a material tint.
- * Dark bolster/background pixels stay put, giving cognac centres and near-black
- * bolsters like the real two-tone seat. (Recoloured pixels drop below the
- * luminance gate, so re-running is a no-op.)
+ * we only touch that box. Inside it every neutral pixel is recoloured to the
+ * cognac hue while keeping its own brightness, so creases/shading survive and
+ * the seat is one even cognac (brightness-gating left the mid-grey centres grey
+ * and patchy). Strongly-coloured pixels (saturation > 0.45) are left alone.
  *
  * webp decode/encode needs a browser, so this uses puppeteer-core + system
  * Chrome alongside the gltf-transform + meshopt toolchain:
@@ -59,7 +57,13 @@ const out = await page.evaluate(async (b64, mime) => {
   const W = c.width, H = c.height
   const d = x.getImageData(0, 0, W, H)
   const px = d.data
-  const M = [181 / 255, 101 / 255, 31 / 255] // cognac 0xb5651f as a multiply
+  // Target cognac, as a luminance-preserving recolour: each seat pixel keeps its
+  // own brightness (so creases/shading survive) but takes the cognac hue. Gating
+  // on brightness left the mid-grey seat centres grey and patchy, so recolour the
+  // WHOLE seat block — every neutral pixel — for one even cognac.
+  const COG = [170, 108, 58]
+  const cl = 0.299 * COG[0] + 0.587 * COG[1] + 0.114 * COG[2]
+  const V = [COG[0] / cl, COG[1] / cl, COG[2] / cl]
   // Seat block of the atlas (in 512-space), scaled to the actual texture size.
   const sx = W / 512, sy = H / 512
   const BX1 = 265 * sx, BY0 = 256 * sy, BY1 = 508 * sy
@@ -69,10 +73,11 @@ const out = await page.evaluate(async (b64, mime) => {
     for (let xx = 0; xx <= BX1; xx++) {
       const i = (y * W + xx) * 4
       const r = px[i], g = px[i + 1], b = px[i + 2]
-      const lum = 0.299 * r + 0.587 * g + 0.114 * b
       const mx = Math.max(r, g, b), mn = Math.min(r, g, b)
       const sat = mx ? (mx - mn) / mx : 0
-      if (lum > 120 && sat < 0.18) { px[i] = r * M[0]; px[i + 1] = g * M[1]; px[i + 2] = b * M[2]; n++ }
+      if (sat > 0.45) continue // leave strongly-coloured pixels (logos, piping)
+      const lum = 0.299 * r + 0.587 * g + 0.114 * b
+      px[i] = Math.min(255, V[0] * lum); px[i + 1] = Math.min(255, V[1] * lum); px[i + 2] = Math.min(255, V[2] * lum); n++
     }
   }
   x.putImageData(d, 0, 0)
