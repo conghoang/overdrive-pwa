@@ -53,7 +53,7 @@ const KEYS = [
   'doors.lf', 'doors.rf', 'doors.lr', 'doors.rr', 'doors.hood', 'doors.trunk', 'doors.fuel',
   'windows.lf', 'windows.rf', 'windows.lr', 'windows.rr', 'windows.sunroof', 'windows.shade',
   'mirrors.folded', 'climate.on',
-  'charge.active', 'charge.plugged', 'charge.kw', 'charge.full', 'charge.fault', 'charge.v2l',
+  'charge.active', 'charge.plugged', 'charge.kw', 'charge.kwShown', 'charge.full', 'charge.fault', 'energy.socPct',
   'lights.low', 'lights.high', 'lights.hazard', 'lights.drl',
   'lock.driver', 'lock.doors.lf', 'lock.doors.rf', 'lock.doors.lr', 'lock.doors.rr', 'lock.scope',
 ]
@@ -76,8 +76,13 @@ function readState(path: string): unknown {
     case 'climate.on': return vs?.climate?.acOn ?? null
     case 'charge.active': return s?.charging?.charging ?? null
     case 'charge.plugged': return s?.charging?.plugged ?? null
-    case 'charge.kw': { const kw = (s?.charging as { kw?: number } | undefined)?.kw; return typeof kw === 'number' ? kw : null }
-    case 'charge.full': case 'charge.fault': case 'charge.v2l': return null
+    case 'charge.kw': { const kw = s?.charging?.powerKw ?? s?.charging?.chargingPowerKW; return typeof kw === 'number' ? kw : null }
+    // The hero shows its kW label only when kwShown is true and kW > 0.
+    case 'charge.kwShown': { const kw = s?.charging?.powerKw ?? s?.charging?.chargingPowerKW; return s?.charging?.charging === true && typeof kw === 'number' && kw > 0 }
+    case 'energy.socPct': return typeof s?.soc?.percent === 'number' ? s.soc.percent : null
+    case 'charge.full': return s?.charging?.full ?? null
+    case 'charge.fault': return s?.charging?.fault ?? null
+    case 'charge.est': case 'charge.targetPct': case 'charge.v2l': return null
     case 'doors.lf': return d?.lf ?? null
     case 'doors.rf': return d?.rf ?? null
     case 'doors.lr': return d?.lr ?? null
