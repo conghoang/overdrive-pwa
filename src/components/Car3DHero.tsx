@@ -18,9 +18,24 @@ type Read = (path: string) => unknown
 interface HeroHandle {
   update(changed: string[]): void
   setTheme(light: boolean): void
+  /** Resolves with the live kind once no 3D load is in flight: '3d' on success, '2d' on failure. */
+  whenIdle(): Promise<string>
   destroy(): void
 }
 interface NeoHero { mountHero(stage: Element, opts: Record<string, unknown>): HeroHandle }
+
+/*
+ * The hero labels a few things with i18n keys. We don't ship its string table,
+ * so translate the handful it actually shows (the loading/reset chrome and the
+ * state captions) and let anything else fall through to its own key.
+ */
+const STRINGS: Record<string, string> = {
+  'ph.hero3d_loading': '',
+  'ph.hero3d_reset': 'Reset view',
+  'neo.home.act_on': 'Ready to drive',
+  'ph.act.stop': 'Off',
+}
+const heroT = (k: string) => (k in STRINGS ? STRINGS[k] : '')
 
 /** Every state key the hero's mapping reads — used both by the adapter and the diff. */
 const KEYS = [
@@ -105,13 +120,18 @@ export function Car3DHero({ onFallback }: { onFallback: () => void }) {
           modelUrl: `${base}neo3d/models/sealion6.glb`,
           eligible: () => true, // we only ship this one model
           light: false, // the hero palette we vendored is dark
-          t: (k: string) => k,
+          t: heroT,
           fmt: {
             kw: (x: number) => (typeof x === 'number' && isFinite(x) ? x.toFixed(1) + ' kW' : '--'),
             pressure: (x: number) => (typeof x === 'number' && isFinite(x) ? String(Math.round(x)) : '--'),
           },
-          onReady: (kind: string) => { if (kind !== '3d' && !destroyed) onFallback() },
         })
+
+        // Fall back to the photo only when the 3D attempt actually settles on
+        // 2D. We can't key off onReady — the hero paints a (here empty) 2D base
+        // layer and reports '2d' *before* the model loads; whenIdle() resolves
+        // with the real outcome, '3d' once the first frame renders.
+        handle.whenIdle().then((kind) => { if (kind !== '3d' && !destroyed) onFallback() })
 
         // Push live telemetry: diff the mapped keys on every signal change and
         // hand the hero only what changed, so it animates just those parts.
