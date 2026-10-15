@@ -359,22 +359,39 @@ const PLATE_SPECS = [
   { pos: [0, 0.61, 2.42], ry: 0 },         // front, faces +z
   { pos: [0, 0.87, -2.35], ry: Math.PI },  // rear (tailgate, closed), faces -z
 ];
+/** A rounded-rect path (the car's older WebView may lack ctx.roundRect). */
+function roundRectPath(x, px, py, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  x.beginPath();
+  x.moveTo(px + r, py);
+  x.arcTo(px + w, py, px + w, py + h, r);
+  x.arcTo(px + w, py + h, px, py + h, r);
+  x.arcTo(px, py + h, px, py, r);
+  x.arcTo(px, py, px + w, py, r);
+  x.closePath();
+}
 function paintPlate(canvas, text) {
   const x = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
-  // The car's baked plate text was erased from the model (its plate verts set to
-  // the plate white), so the plate is a clean blank white. We just draw the new
-  // number on it — no background, no border, transparent everywhere else.
+  // The baked plate is erased to a blank white, so the overlay draws the whole
+  // plate look: a white face with a single thin black border and the number.
+  // White-on-white hides any size mismatch with the baked plate, so the border
+  // is the only one on show (no doubling) and the rear plate keeps its frame.
   x.clearRect(0, 0, W, H);
+  const r = Math.round(H * 0.16);
+  roundRectPath(x, 0, 0, W, H, r);
+  x.fillStyle = '#f6f6f3'; x.fill();
+  const bw = Math.max(2, Math.round(H * 0.055));
+  roundRectPath(x, bw, bw, W - 2 * bw, H - 2 * bw, Math.max(1, r - bw * 0.6));
+  x.lineWidth = bw; x.strokeStyle = '#16181b'; x.stroke();
   const s = String(text || '').trim().toUpperCase().slice(0, 12);
   if (!s) return;
   x.fillStyle = '#16181b'; x.textAlign = 'center'; x.textBaseline = 'middle';
   let fs = Math.round(H * 0.5);
   const fit = () => { x.font = `700 ${fs}px "Space Grotesk","Arial Narrow",system-ui,sans-serif`; return x.measureText(s).width; };
-  while (fit() > W * 0.78 && fs > 10) fs -= 2;
-  // Sit the number a touch below the canvas centre — on the plate it reads as
-  // vertically centred rather than riding high.
-  x.fillText(s, W / 2, H * 0.6);
+  while (fit() > W * 0.72 && fs > 10) fs -= 2;
+  // A touch below centre so it reads as vertically centred on the plate.
+  x.fillText(s, W / 2, H * 0.57);
 }
 function onePlate(text) {
   const canvas = document.createElement('canvas');
