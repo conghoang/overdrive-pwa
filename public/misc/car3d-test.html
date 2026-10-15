@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>3D car test bench</title>
+<style>
+  :root{
+    color-scheme: dark;
+    --bg:#071019; --panel:#0e1b28; --panel2:#132536; --line:#1e3346;
+    --text:#e8f1f8; --muted:#8aa0b2; --accent:#35dfc1; --accent-ink:#04121a;
+    --warn:#ffb74d; --danger:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,sans-serif;padding-bottom:40px}
+  header{padding:12px 16px 8px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  header h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.2px}
+  header .st{font-size:12px;color:var(--muted)}
+  header .st b{color:var(--accent)}
+
+  /* the car stays in view while you scroll the controls */
+  .stage-wrap{position:sticky;top:0;z-index:5;background:linear-gradient(#071019 72%,rgba(7,16,25,0));padding:0 12px 8px}
+  #stage{position:relative;width:100%;max-width:520px;height:230px;margin:0 auto;
+    border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#05080d}
+  #stage .fb{position:absolute;inset:0;display:none;place-items:center;color:var(--muted);font-size:13px;text-align:center;padding:20px}
+
+  main{max-width:560px;margin:0 auto;padding:4px 14px}
+  .group{margin:14px 0}
+  .group>h2{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:0 0 8px;font-weight:700}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
+
+  button.tog{appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--text);
+    border-radius:11px;padding:11px 10px;font:inherit;font-weight:600;cursor:pointer;text-align:left;
+    display:flex;flex-direction:column;gap:3px;min-height:52px;transition:.12s}
+  button.tog .s{font-size:11px;font-weight:600;color:var(--muted)}
+  button.tog.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+  button.tog.on .s{color:rgba(4,18,26,.7)}
+  button.tog:active{transform:scale(.97)}
+
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:11px;overflow:hidden}
+  .seg button{appearance:none;border:0;background:var(--panel);color:var(--text);padding:9px 14px;font:inherit;font-weight:600;cursor:pointer}
+  .seg button+button{border-left:1px solid var(--line)}
+  .seg button.on{background:var(--accent);color:var(--accent-ink)}
+
+  .slider{border:1px solid var(--line);background:var(--panel);border-radius:11px;padding:9px 12px 11px}
+  .slider .top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
+  .slider .top b{color:var(--accent);font-variant-numeric:tabular-nums}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+
+  .presets{display:flex;flex-wrap:wrap;gap:8px}
+  .presets button{appearance:none;border:1px solid var(--accent);background:transparent;color:var(--accent);
+    border-radius:999px;padding:7px 13px;font:inherit;font-weight:700;cursor:pointer}
+  .presets button.ghost{border-color:var(--line);color:var(--muted)}
+  .note{color:var(--muted);font-size:12px;margin:2px 0 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>3D car test bench</h1>
+  <span class="st">render: <b id="kind">…</b></span>
+</header>
+
+<div class="stage-wrap">
+  <div id="stage"><div class="fb" id="fb"></div></div>
+</div>
+
+<main>
+  <div class="group">
+    <h2>Presets</h2>
+    <div class="presets">
+      <button data-preset="allClosed">All closed &amp; locked</button>
+      <button data-preset="allOpen">Everything open</button>
+      <button data-preset="charging">Charging</button>
+      <button data-preset="driving">Driving</button>
+      <button class="ghost" data-preset="reset">Reset</button>
+    </div>
+  </div>
+  <div id="controls"></div>
+  <p class="note">Mounts the same hero the app uses, fed the state below. Drag the car to orbit; the ⟳ button recenters.</p>
+</main>
+
+<script type="module">
+  const $ = (s, r=document) => r.querySelector(s)
+  const kindEl = $('#kind'), fb = $('#fb')
+
+  // ---- state: the hero's flat dotted-key store ----------------------------
+  const BASE = {
+    'meta.modelId':'seal-u-dmi', 'meta.color':'#E8E8EC', 'meta.driveSide':'lhd',
+    'power.acc':false, 'power.gear':'P',
+    'doors.lf':false,'doors.rf':false,'doors.lr':false,'doors.rr':false,'doors.hood':false,'doors.trunk':false,'doors.fuel':false,
+    'windows.lf':0,'windows.rf':0,'windows.lr':0,'windows.rr':0,'windows.sunroof':0,'windows.shade':0,
+    'lights.low':false,'lights.high':false,'lights.hazard':false,'lights.drl':false,
+    'charge.plugged':false,'charge.active':false,'charge.kw':null,
+    'climate.on':false,'mirrors.folded':false,
+    'lock.driver':true,'lock.doors.lf':true,'lock.doors.rf':true,'lock.doors.lr':true,'lock.doors.rr':true,'lock.scope':'all',
+  }
+  const LOCK_KEYS = ['lock.driver','lock.doors.lf','lock.doors.rf','lock.doors.lr','lock.doors.rr']
+  let S = {...BASE}
+  const read = (p) => (p in S ? S[p] : null)
+  let hero = null
+
+  function push(keys){ if (hero) { try { hero.update(keys) } catch(e){ console.error(e) } } }
+  function setKey(k, v){ S[k]=v; push([k]) }
+  function setLock(mode){ // 'locked' | 'unlocked' | 'unknown'
+    const v = mode==='locked' ? true : mode==='unlocked' ? false : null
+    for (const k of LOCK_KEYS) S[k]=v
+    push(LOCK_KEYS)
+  }
+  function lockMode(){ const v=S['lock.driver']; return v===true?'locked':v===false?'unlocked':'unknown' }
+
+  // ---- control definitions ------------------------------------------------
+  const DOORS = [['doors.lf','Front L'],['doors.rf','Front R'],['doors.lr','Rear L'],['doors.rr','Rear R'],['doors.hood','Hood'],['doors.trunk','Trunk'],['doors.fuel','Fuel flap']]
+  const WINDOWS = [['windows.lf','Front L'],['windows.rf','Front R'],['windows.lr','Rear L'],['windows.rr','Rear R'],['windows.sunroof','Sunroof'],['windows.shade','Sunshade']]
+  const LIGHTS = [['lights.low','Low beam'],['lights.high','High beam'],['lights.hazard','Hazards'],['lights.drl','DRL']]
+
+  function toggle(key, label){
+    const b = document.createElement('button')
+    b.className = 'tog' + (S[key]?' on':'')
+    b.innerHTML = `${label}<span class="s">${S[key]?'On':'Off'}</span>`
+    b.onclick = () => { const v=!S[key]; setKey(key,v); b.classList.toggle('on',v); b.querySelector('.s').textContent=v?'On':'Off' }
+    b._sync = () => { const v=!!S[key]; b.classList.toggle('on',v); b.querySelector('.s').textContent=v?'On':'Off' }
+    return b
+  }
+  function doorToggle(key, label){
+    const b = document.createElement('button')
+    const lab = () => S[key]?'Open':'Closed'
+    b.className = 'tog' + (S[key]?' on':'')
+    b.innerHTML = `${label}<span class="s">${lab()}</span>`
+    b.onclick = () => { const v=!S[key]; setKey(key,v); b.classList.toggle('on',v); b.querySelector('.s').textContent=lab() }
+    b._sync = () => { b.classList.toggle('on',!!S[key]); b.querySelector('.s').textContent=lab() }
+    return b
+  }
+  function slider(key, label){
+    const wrap = document.createElement('div'); wrap.className='slider'
+    wrap.innerHTML = `<div class="top"><span>${label}</span><b>${S[key]||0}%</b></div><input type="range" min="0" max="100" step="5" value="${S[key]||0}">`
+    const inp = wrap.querySelector('input'), out = wrap.querySelector('b')
+    inp.oninput = () => { const v=+inp.value; out.textContent=v+'%'; setKey(key,v) }
+    wrap._sync = () => { inp.value=S[key]||0; out.textContent=(S[key]||0)+'%' }
+    return wrap
+  }
+
+  function buildControls(){
+    const root = $('#controls'); root.innerHTML=''
+    const group = (title, nodes, cls='grid') => {
+      const g=document.createElement('div'); g.className='group'
+      g.innerHTML=`<h2>${title}</h2>`
+      const box=document.createElement('div'); box.className=cls
+      nodes.forEach(n=>box.appendChild(n)); g.appendChild(box); root.appendChild(g)
+    }
+
+    // power + lock
+    const powerTog = toggle('power.acc','Ignition')
+    const segWrap = document.createElement('div')
+    segWrap.innerHTML = `<div class="seg" id="lockseg">
+      <button data-m="locked">Locked</button><button data-m="unlocked">Unlocked</button><button data-m="unknown">Unknown</button></div>`
+    const seg = segWrap.querySelector('#lockseg')
+    const syncSeg = () => seg.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.m===lockMode()))
+    seg.querySelectorAll('button').forEach(b=> b.onclick=()=>{ setLock(b.dataset.m); syncSeg() })
+    syncSeg(); seg._sync = syncSeg
+    const pl=document.createElement('div'); pl.className='group'; pl.innerHTML='<h2>Power &amp; lock</h2>'
+    const plbox=document.createElement('div'); plbox.className='grid'; plbox.style.gridTemplateColumns='1fr'
+    const row=document.createElement('div'); row.style.cssText='display:flex;gap:10px;flex-wrap:wrap;align-items:center'
+    powerTog.style.flex='0 0 120px'; row.appendChild(powerTog); row.appendChild(segWrap)
+    pl.appendChild(row); $('#controls').appendChild(pl)
+
+    group('Doors &amp; lids', DOORS.map(([k,l])=>doorToggle(k,l)))
+    group('Windows', WINDOWS.map(([k,l])=>slider(k,l)))
+    group('Lights', LIGHTS.map(([k,l])=>toggle(k,l)))
+
+    // charge
+    const plug=toggle('charge.plugged','Plugged in')
+    const chg=toggle('charge.active','Charging')
+    const kw=document.createElement('div'); kw.className='slider'
+    kw.innerHTML=`<div class="top"><span>Power</span><b>${S['charge.kw']||0} kW</b></div><input type="range" min="0" max="150" step="1" value="${S['charge.kw']||0}">`
+    const kwi=kw.querySelector('input'), kwo=kw.querySelector('b')
+    kwi.oninput=()=>{ const v=+kwi.value; kwo.textContent=v+' kW'; setKey('charge.kw', v||null) }
+    kw._sync=()=>{ kwi.value=S['charge.kw']||0; kwo.textContent=(S['charge.kw']||0)+' kW' }
+    group('Charging', [plug,chg,kw])
+
+    group('Other', [toggle('climate.on','Climate'), toggle('mirrors.folded','Mirrors folded')])
+  }
+
+  function syncAll(){ document.querySelectorAll('[class]').forEach(()=>{}); $('#controls').querySelectorAll('*').forEach(n=>{ if (n._sync) n._sync() }) }
+
+  // ---- presets ------------------------------------------------------------
+  const PRESETS = {
+    reset: () => ({...BASE}),
+    allClosed: () => ({...BASE}),
+    allOpen: () => ({...BASE, 'power.acc':true,
+      'doors.lf':true,'doors.rf':true,'doors.lr':true,'doors.rr':true,'doors.hood':true,'doors.trunk':true,'doors.fuel':true,
+      'windows.lf':100,'windows.rf':100,'windows.lr':100,'windows.rr':100,'windows.sunroof':100,'windows.shade':100,
+      'lights.low':true,'lights.hazard':true,'mirrors.folded':false,
+      'lock.driver':false,'lock.doors.lf':false,'lock.doors.rf':false,'lock.doors.lr':false,'lock.doors.rr':false }),
+    charging: () => ({...BASE, 'charge.plugged':true,'charge.active':true,'charge.kw':62,'doors.fuel':true }),
+    driving: () => ({...BASE, 'power.acc':true,'power.gear':'D','lights.low':true,'lights.drl':true,'mirrors.folded':false,
+      'lock.driver':false,'lock.doors.lf':false,'lock.doors.rf':false,'lock.doors.lr':false,'lock.doors.rr':false }),
+  }
+  function applyPreset(name){
+    const next = PRESETS[name]()
+    const changed = Object.keys(next).filter(k => next[k]!==S[k])
+    S = next
+    push(changed.length?changed:Object.keys(S))
+    buildControls()
+  }
+  document.querySelectorAll('[data-preset]').forEach(b=> b.onclick=()=>applyPreset(b.dataset.preset))
+
+  // ---- caption text: prettify keys so warnings are readable ---------------
+  const t = (k) => !k ? '' : String(k).replace(/^.*[.]/,'').replace(/[_-]/g,' ').replace(/\b\w/g,c=>c.toUpperCase())
+
+  // ---- boot: sprite + hero -----------------------------------------------
+  function abs(rel){ return new URL(rel, location.href).pathname }
+  async function boot(){
+    buildControls()
+    if (typeof WebGL2RenderingContext !== 'function'){ fb.style.display='grid'; fb.textContent='This browser has no WebGL2 — the 3D car can’t render here.'; kindEl.textContent='no webgl2'; return }
+    try {
+      // inject the icon sprite so lock/charge/recenter glyphs resolve
+      const svg = await fetch(abs('../neo3d/icons.svg')).then(r=>r.ok?r.text():'')
+      if (svg && !document.getElementById('neo3d-sprite')){
+        const w=document.createElement('div'); w.id='neo3d-sprite'; w.setAttribute('aria-hidden','true')
+        w.style.cssText='position:absolute;width:0;height:0;overflow:hidden'; w.innerHTML=svg; document.body.appendChild(w)
+      }
+      const mod = await import(abs('../neo3d/3d/hero.js'))
+      hero = mod.mountHero($('#stage'), {
+        read, modelUrl: abs('../neo3d/models/sealion6.glb'), eligible:()=>true, light:false, t,
+        fmt:{ kw:x=>isFinite(x)?x.toFixed(1)+' kW':'--', pressure:x=>isFinite(x)?Math.round(x)+'':'--' },
+      })
+      kindEl.textContent='loading…'
+      const kind = await hero.whenIdle()
+      kindEl.textContent = kind
+      if (kind!=='3d'){ fb.style.display='grid'; fb.textContent='3D failed to load — model or WebGL error.' }
+    } catch(e){
+      console.error(e); kindEl.textContent='error'
+      fb.style.display='grid'; fb.textContent='Error: '+(e&&e.message||e)
+    }
+  }
+  boot()
+</script>
+</body>
+</html>

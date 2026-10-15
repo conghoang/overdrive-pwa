@@ -102,15 +102,15 @@ export default defineConfig({
         navigateFallback: 'index.html',
         // See isDevSite above: without this the prod SW answers dev navigations
         // with prod's shell. Empty on the dev build, which owns that path.
-        // The watch (/watch/) and pairing (/pair/) sub-apps are standalone pages
-        // (no SW of their own), so keep the main SW from answering their
-        // navigations with the phone app's shell.
-        navigateFallbackDenylist: isDevSite ? [/\/watch\//, /\/pair\//] : [/\/dev\//, /\/watch\//, /\/pair\//],
+        // The watch (/watch/) and pairing (/pair/) sub-apps and the /misc/
+        // diagnostic pages are standalone (no SW of their own), so keep the main
+        // SW from answering their navigations with the phone app's shell.
+        navigateFallbackDenylist: isDevSite ? [/\/watch\//, /\/pair\//, /\/misc\//] : [/\/dev\//, /\/watch\//, /\/pair\//, /\/misc\//],
         globPatterns: ['**/*.{js,css,html,svg,webp,png,ico,woff2}'],
         // neo3d/** is the opt-in 3D hero (three.js + a 2 MB model). It's off by
         // default, so keep it out of the precache for everyone — it's fetched
         // from the network at runtime only once someone turns the model on.
-        globIgnores: ['**/watch/**', '**/pair/**', '**/neo3d/**'],
+        globIgnores: ['**/watch/**', '**/pair/**', '**/neo3d/**', '**/misc/**'],
         // Match precached assets even with the ?v=<commit> cache-buster.
         ignoreURLParametersMatching: [/^v$/],
         cleanupOutdatedCaches: true,
