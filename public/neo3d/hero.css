@@ -21,6 +21,14 @@
 }
 .neo-hero-stage canvas { display: block; }
 
+/* The hero's glyphs are stroke-based line icons (<use> into the sprite) and
+   need the base .ico rule, or they default to a black fill and vanish on the
+   dark badges — leaving just the circular pill. (From the Neo base.css.) */
+.neo-hero-stage .ico {
+  fill: none; stroke: currentColor; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+
 .neo-hero-stage-host { position: absolute; top: 0; right: 0; bottom: 0; left: 0; }
 .neo-hero-chips {
   position: absolute; top: 8px; left: 14px; z-index: 2; display: flex; flex-direction: column; align-items: flex-start;
