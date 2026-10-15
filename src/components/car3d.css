@@ -34,8 +34,10 @@
 
 /* The car itself shows lock/door state, so the per-door lock badges (the dark
    circles pinned on the front doors) are redundant — hide them. The open-door
-   warning pins and the charge label stay. */
-.neo-hero-stage .neo-hero-lockb { display: none; }
+   warning pins and the charge label stay. The recenter (⟳) button is hidden
+   too — drag still orbits the car. */
+.neo-hero-stage .neo-hero-lockb,
+.neo-hero-stage .neo-hero-reset { display: none; }
 
 .neo-hero-stage-host { position: absolute; top: 0; right: 0; bottom: 0; left: 0; }
 .neo-hero-chips {

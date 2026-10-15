@@ -5,8 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>3D car test bench</title>
 <!-- the hero's own layout/tokens (positions the layers, sizes the canvas).
-     ?v bumped on CSS changes so browsers don't serve a stale cached copy. -->
-<link rel="stylesheet" href="../neo3d/hero.css?v=3">
+     Loaded with a per-load cache-buster so a stale copy can never mask a CSS
+     change on this dev page. -->
+<script>document.write('<link rel="stylesheet" href="../neo3d/hero.css?t=' + Date.now() + '">')</script>
 <style>
   :root{
     color-scheme: dark;
