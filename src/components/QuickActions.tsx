@@ -129,11 +129,14 @@ export function QuickActions() {
       />
       {wc51 ? (
         <QuickBtn
-          icon={<IconBolt size={22} />}
-          label={t('ctrl.start')}
+          icon={powered ? <IconPowerOff size={22} /> : <IconBolt size={22} />}
+          label={powered ? t('ctrl.stop') : t('ctrl.start')}
           disabled={disabled}
           hold={holdStart.value}
-          onFire={() => fire('start', t('ctrl.start'))}
+          // 51DK's start command toggles the engine (its own label is
+          // "Start / Stop"), so when the car is on this stops it — follow the
+          // car's state in the label, icon and toast.
+          onFire={() => fire('start', powered ? t('ctrl.stop') : t('ctrl.start'))}
         />
       ) : hasLocalKey ? (
         <QuickBtn
