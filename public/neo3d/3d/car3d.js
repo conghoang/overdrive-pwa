@@ -33,7 +33,7 @@ import * as THREE from '../vendor/three/three.module.min.js';
 import { GLTFLoader } from '../vendor/three/addons/GLTFLoader.js';
 import { RoomEnvironment } from '../vendor/three/addons/RoomEnvironment.js';
 import { MeshoptDecoder } from '../vendor/meshopt/meshopt_decoder.module.js';
-import { prepareCar, disposeCar, makePlate, setPlateText, placePlate } from './model.js';
+import { prepareCar, disposeCar } from './model.js';
 import { Mapping, ringTexture } from './mapping.js';
 import { Badges } from './chips.js';
 import { Rig, OrbitInput, D2R } from './motion.js';
@@ -314,8 +314,6 @@ export class Car3D {
     const body = this.body = new THREE.Group();
     body.add(this.car.root);
     scene.add(body);
-    // Optional front number plate (not part of the glTF).
-    if (this.opts.plate != null) this.setPlate(this.opts.plate);
     const reduced = this.reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     const rig = this.rig = new Rig({ phMin: RENDER.minPolar * D2R, phMax: RENDER.maxPolar * D2R, rMin: RENDER.minDistance, rMax: RENDER.maxDistance });
     rig.reduced = reduced;
@@ -714,25 +712,6 @@ export class Car3D {
       queue: this.director.queue.length,
       reduced: this.reduced
     };
-  }
-
-  /** Set the front plate text; '' or null removes the plate. Safe before/after load. */
-  setPlate(text) {
-    this.opts.plate = text;
-    if (!this.car || this.dead) return;   // applied on load via opts.plate
-    const has = text != null && String(text).trim() !== '';
-    if (!has) {
-      if (this.plate) { this.car.root.remove(this.plate); this.plate.geometry.dispose(); this.plate.material.map.dispose(); this.plate.material.dispose(); this.plate = null; }
-      this.invalidate();
-      return;
-    }
-    if (this.plate) { setPlateText(this.plate, text); }
-    else {
-      this.plate = makePlate(text);
-      placePlate(this.plate, this.car.bounds);
-      this.car.root.add(this.plate);
-    }
-    this.invalidate();
   }
 
   destroy() {

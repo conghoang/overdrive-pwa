@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'preact/hooks'
 import { effect } from '@preact/signals'
 import { status, vehicleState } from '../lib/store'
-import { car3dColor, carName } from '../lib/settings'
+import { car3dColor } from '../lib/settings'
 import './car3d.css'
 
 /*
@@ -19,7 +19,6 @@ type Read = (path: string) => unknown
 interface HeroHandle {
   update(changed: string[]): void
   setTheme(light: boolean): void
-  setPlate(text: string): void
   /** Resolves with the live kind once no 3D load is in flight: '3d' on success, '2d' on failure. */
   whenIdle(): Promise<string>
   destroy(): void
@@ -150,7 +149,6 @@ export function Car3DHero({ onFallback }: { onFallback: () => void }) {
     let destroyed = false
     let handle: HeroHandle | null = null
     let disposeEffect: (() => void) | null = null
-    let disposePlate: (() => void) | null = null
     const base = import.meta.env.BASE_URL
     const read: Read = (p) => (p === 'meta.modelId' ? 'seal-u-dmi' : readState(p))
 
@@ -165,7 +163,6 @@ export function Car3DHero({ onFallback }: { onFallback: () => void }) {
           modelUrl: `${base}neo3d/models/sealion6.glb`,
           eligible: () => true, // we only ship this one model
           light: false, // the hero palette we vendored is dark
-          plate: carName.value, // front number plate shows the car's name
           t: heroT,
           fmt: {
             kw: (x: number) => (typeof x === 'number' && isFinite(x) ? x.toFixed(1) + ' kW' : '--'),
@@ -192,19 +189,12 @@ export function Car3DHero({ onFallback }: { onFallback: () => void }) {
           }
           if (changed.length && handle) { try { handle.update(changed) } catch { /* ignore */ } }
         })
-
-        // Keep the plate in sync with the car name.
-        disposePlate = effect(() => {
-          const name = carName.value
-          if (handle) { try { handle.setPlate(name) } catch { /* ignore */ } }
-        })
       })
       .catch(() => { if (!destroyed) onFallback() })
 
     return () => {
       destroyed = true
       disposeEffect?.()
-      disposePlate?.()
       try { handle?.destroy() } catch { /* ignore */ }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
