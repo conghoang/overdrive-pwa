@@ -347,6 +347,64 @@ export function setPaint(car, css) {
   });
 }
 
+/*
+ * Number plate (not in the glTF): a thin textured quad we add to the car's
+ * front. The text is drawn to a canvas; setPlateText repaints it in place.
+ * Built here so model owns every mesh it creates (and its disposal).
+ */
+function drawPlate(canvas, text) {
+  const x = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  x.clearRect(0, 0, W, H);
+  x.fillStyle = '#f2f2ee';
+  x.fillRect(0, 0, W, H);
+  x.lineWidth = Math.round(H * 0.07);
+  x.strokeStyle = '#15171a';
+  x.strokeRect(x.lineWidth / 2, x.lineWidth / 2, W - x.lineWidth, H - x.lineWidth);
+  const s = String(text || '').trim().toUpperCase().slice(0, 12);
+  if (!s) return;
+  x.fillStyle = '#15171a';
+  x.textAlign = 'center';
+  x.textBaseline = 'middle';
+  let fs = Math.round(H * 0.6);
+  const fit = () => { x.font = `700 ${fs}px "Space Grotesk", "Arial Narrow", system-ui, sans-serif`; return x.measureText(s).width; };
+  while (fit() > W * 0.86 && fs > 10) fs -= 2;
+  x.fillText(s, W / 2, H * 0.54);
+}
+
+/** A front plate mesh showing `text`; call with '' for a blank plate. */
+export function makePlate(text) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512; canvas.height = 128;            // plate aspect ~ 4:1
+  drawPlate(canvas, text);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.42, 0.105),
+    new THREE.MeshBasicMaterial({ map: tex, toneMapped: false, transparent: true })
+  );
+  mesh.userData.od = true;              // excluded from part bounding-box walks and twins
+  mesh.userData.plate = { canvas, tex };
+  mesh.renderOrder = 2;
+  return mesh;
+}
+
+/** Repaint an existing plate mesh with new text (no new GPU allocation). */
+export function setPlateText(mesh, text) {
+  const p = mesh && mesh.userData && mesh.userData.plate;
+  if (!p) return;
+  drawPlate(p.canvas, text);
+  p.tex.needsUpdate = true;
+}
+
+/** Sit the plate low and centred on the front face (front = +z, from bounds). */
+export function placePlate(mesh, bounds) {
+  const sz = bounds.getSize(new THREE.Vector3());
+  mesh.position.set(0, bounds.min.y + sz.y * 0.20, bounds.max.z - 0.02);
+  mesh.rotation.set(0, 0, 0);           // faces +z (the front)
+}
+
 /** Put a mover at t (0 = rest, 1 = extras.od max): hinge angle, slide distance, morph. */
 const _q = new THREE.Quaternion();
 export function poseMover(e, t) {

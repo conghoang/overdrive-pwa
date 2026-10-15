@@ -190,6 +190,7 @@ export function mountHero(stage, opts = {}) {
   let tries = 0;
   let kind = '2d';
   let light = !!o.light;
+  let plateText = o.plate != null ? o.plate : null;   // front number plate text (not in the glTF)
   let capTimer = 0;
   let popAnim = null;
   let source = null;        // the demo script (owner's "Play all" check), never the car
@@ -324,6 +325,7 @@ export function mountHero(stage, opts = {}) {
         labels,
         light,
         fit,
+        plate: plateText,
         popEl: pop,
         onCaption,
         onPop,
@@ -434,6 +436,12 @@ export function mountHero(stage, opts = {}) {
       light = !!l;
       if (car3d) car3d.setTheme(light);
       else if (pending && pending !== true) pending.setTheme(light);
+    },
+    /** Set the front number-plate text; '' removes it. Applies whether loaded or still loading. */
+    setPlate(text) {
+      plateText = text;
+      const inst2 = car3d || (pending && pending !== true ? pending : null);
+      if (inst2) inst2.setPlate(text);
     },
     /** A command is about to be sent: {path, body}. */
     send(cmd) {
