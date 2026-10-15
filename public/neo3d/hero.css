@@ -1,0 +1,200 @@
+/*
+ * Styles for the vendored "Neo" 3D hero (public/neo3d). The hero renders the
+ * car into a WebGL canvas; these position its layers and chrome and define the
+ * neo design tokens it references (dark "aurora" palette), scoped to the host
+ * so nothing leaks into the rest of the app.
+ */
+.neo-hero-stage {
+  --bg:#05080D; --text:#EEF3F8; --muted:#8E9BAD; --accent:#35dfc1;
+  --ok:#56d68c; --warn:#f3b45e; --danger:#ff7c84; --info:#7CC8FF;
+  --charging:#6EC8FF; --open:#FF8A65; --amber:#FFB300; --unknown:#6B7480;
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14); --outline:#4A525D;
+  --sc:#14171C; --sc-high:#1C1E23; --tab:rgba(8,12,18,.94); --pin:#FFB300;
+  --nc-ease:cubic-bezier(.2,.8,.2,1);
+  --nc-font:'Be Vietnam Pro',system-ui,Roboto,'Noto Sans',sans-serif;
+  --nc-font-num:'Space Grotesk','Be Vietnam Pro',system-ui,Roboto,sans-serif;
+  --neo-act:var(--ok); --neo-act-bolt:#6CFF9A; --neo-act-ink:#FFFFFF;
+  --neo-act-light:#FFE9B0; --neo-act-power:#5AE6FF; --neo-act-unlock:var(--warn);
+  --od-beam:#FFF2BF; --od-car-glass:#3B4653; --od-car-line:#8995A3;
+  --od-car-roof:#33404D; --od-car-wheel:#1D232A; --od-paint:#E8E8EC;
+  --od-paint-op:1; --od-tail:#FF4D4D;
+}
+.neo-hero-stage canvas { display: block; }
+
+/* The hero toggles its badges/pins with the `hidden` attribute, but the
+   component rules set display:flex/inline-flex, which outrank the UA
+   [hidden]{display:none}. Neo's base.css makes [hidden] !important globally;
+   we don't ship it, so without this every "hidden" badge rendered at the stage
+   origin — the stray circle/pins in the top-left corner. Restore it, scoped. */
+.neo-hero-stage [hidden] { display: none !important; }
+
+/* The hero's glyphs are stroke-based line icons (<use> into the sprite) and
+   need the base .ico rule, or they default to a black fill and vanish on the
+   dark badges — leaving just the circular pill. (From the Neo base.css.) */
+.neo-hero-stage .ico {
+  fill: none; stroke: currentColor; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+
+/* The car itself shows lock/door state, so the per-door lock badges (the dark
+   circles pinned on the front doors) are redundant — hide them. The open-door
+   warning pins and the charge label stay. The recenter (⟳) button is hidden
+   too — drag still orbits the car. */
+.neo-hero-stage .neo-hero-lockb,
+.neo-hero-stage .neo-hero-reset,
+.neo-hero-stage .neo-hero-pop { display: none !important; }
+
+.neo-hero-stage-host { position: absolute; top: 0; right: 0; bottom: 0; left: 0; }
+.neo-hero-chips {
+  position: absolute; top: 8px; left: 14px; z-index: 2; display: flex; flex-direction: column; align-items: flex-start;
+  gap: 6px; pointer-events: none;
+}
+.neo-home.is-stale .neo-hero-chips, .neo-home.is-stale .neo-home-meta, .neo-home.is-stale .neo-home-sum,
+.neo-home.is-stale .neo-home-en { opacity: .55; }
+.neo-hero-stage {
+  --neo-act: var(--ok); --neo-act-unlock: var(--warn); --neo-act-power: #5AE6FF; --neo-act-bolt: #6CFF9A;
+  --neo-act-light: #FFE9B0; --neo-act-ink: #0B0E13;
+  /* 2D car drawing colours (FA:web/shared/od/od.css, dark) */
+  --od-car-line: #8995A3; --od-car-glass: #26303B; --od-car-roof: #2B333D; --od-car-wheel: #05070A; --od-paint-op: .78;
+  --od-beam: #FFF2BF; --od-tail: #FF4D4D;
+}
+html[data-theme="light"] .neo-hero-stage {
+  --neo-act-power: #0B6AA8; --neo-act-bolt: #2E7D32; --neo-act-light: #8A6400; --neo-act-ink: #FFFFFF;
+  --od-car-line: #5F6B78; --od-car-glass: #3B4653; --od-car-roof: #33404D; --od-car-wheel: #1D232A; --od-paint-op: 1;
+  --od-beam: #F5C518; --od-tail: #D32F2F;
+}
+.neo-hero-stage .neo-hero-layer { position: absolute; top: 0; right: 0; bottom: 0; left: 0; transition: opacity 350ms ease; }
+.neo-hero-stage .neo-hero-2d { top: 8px; right: 8px; bottom: 8px; left: 8px; }
+.neo-home-hero .neo-hero-2d { top: 8px; right: 4%; bottom: 36px; left: 36%; }
+.neo-hero-stage .neo-hero-2d.is-gone { opacity: 0; }
+.neo-hero-stage .neo-hero-3d { opacity: 0; }
+.neo-hero-stage .neo-hero-3d.is-live { opacity: 1; }
+.neo-hero-stage .neo-hero-canvas { position: absolute; top: 0; left: 0; display: block; width: 100%; height: 100%; max-width: none; outline: none; }
+.neo-hero-stage .neo-hero-labels { position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 1; overflow: hidden; pointer-events: none; }
+.neo-hero-stage .neo-hero-pin, .neo-hero-stage .neo-hero-lockb { position: absolute; left: 0; top: 0; transition: opacity .25s; }
+.neo-hero-stage .neo-hero-pin {
+  display: flex; align-items: center; gap: 5px; padding: 4px 10px 4px 8px; border-radius: 999px; white-space: nowrap;
+  background: var(--tab); color: var(--warn); border: 1px solid rgba(243, 180, 94, .35);
+  font-size: 11px; font-weight: 700; line-height: 1.25;
+  box-shadow: 0 6px 16px -6px rgba(0, 0, 0, .55);
+}
+.neo-hero-stage .neo-hero-pin .ico { color: var(--warn); }
+.neo-hero-stage .neo-hero-pin .ico { width: 12px; height: 12px; }
+.neo-hero-stage .neo-hero-pin-tyre { font-family: var(--nc-font-num); }
+.neo-hero-stage .neo-hero-lockb-in {
+  display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%;
+  background: var(--tab); border: 1.5px solid currentColor; color: var(--ok);
+  font-family: var(--nc-font-num); font-size: 13px; font-weight: 700; box-shadow: 0 4px 12px -4px rgba(0, 0, 0, .5);
+}
+.neo-hero-stage .neo-hero-lockb .ico { width: 15px; height: 15px; }
+.neo-hero-stage .neo-hero-lockb[data-state="unlocked"] .neo-hero-lockb-in { color: var(--warn); }
+.neo-hero-stage .neo-hero-lockb[data-state="unknown"] .neo-hero-lockb-in { color: var(--muted); }
+.neo-hero-stage .neo-hero-badge {
+  position: absolute; left: 0; top: 0; z-index: 1; display: inline-flex; align-items: center; justify-content: center;
+  gap: 4px; min-width: 30px; height: 30px; padding: 0 10px 0 7px; border-radius: 999px; white-space: nowrap;
+  background: var(--sc); border: 1px solid var(--line); color: var(--charging); font-size: 12px; font-weight: 700;
+  font-variant-numeric: tabular-nums; box-shadow: 0 2px 10px rgba(0, 0, 0, .28); transition: opacity .25s;
+}
+.neo-hero-stage .neo-hero-badge-ico { width: 16px; height: 16px; }
+.neo-hero-stage .neo-hero-busy {
+  position: absolute; top: 8px; right: 56px; z-index: 2; padding: 5px 10px; border-radius: 999px;
+  background: var(--tab); color: var(--muted); font-size: 12px; font-weight: 600;
+}
+.neo-hero-stage .neo-hero-reset {
+  position: absolute; top: 8px; right: 12px; z-index: 2; display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; padding: 0; border-radius: 12px; border: 1px solid var(--line); background: var(--tab);
+  color: var(--muted);
+}
+.neo-hero-stage .neo-hero-reset::after { content: ""; position: absolute; top: -6px; right: -6px; bottom: -6px; left: -6px; }
+.neo-hero-stage .neo-hero-reset .ico { width: 18px; height: 18px; }
+.neo-hero-stage .neo-hero-caption {
+  position: absolute; left: 50%; bottom: 10px; z-index: 3; display: flex; align-items: center; gap: 7px;
+  max-width: 206px; padding: 5px 12px 5px 5px; border-radius: 999px; white-space: nowrap;
+  background: var(--tab); border: 1px solid var(--line2); color: var(--text);
+  font-size: 12.5px; font-weight: 600; pointer-events: none;
+  opacity: 0; transform: translate3d(-50%, 12px, 0);
+  transition: opacity .35s ease, transform .55s var(--nc-ease);
+}
+.neo-hero-stage .neo-hero-caption.is-on { opacity: 1; transform: translate3d(-50%, 0, 0); }
+.neo-hero-stage .neo-hero-caption-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.neo-hero-stage .neo-hero-caption-ico {
+  flex: none; display: flex; align-items: center; justify-content: center; width: 22px; height: 22px;
+  border-radius: 50%; background: var(--neo-act); color: var(--neo-act-ink);
+}
+.neo-hero-stage .neo-hero-caption-ico .ico { width: 13px; height: 13px; stroke-width: 2.2; }
+.neo-hero-stage .neo-hero-caption[data-icon="unlock"] .neo-hero-caption-ico { background: var(--neo-act-unlock); }
+.neo-hero-stage .neo-hero-caption[data-icon="power"] .neo-hero-caption-ico { background: var(--neo-act-power); }
+.neo-hero-stage .neo-hero-caption[data-icon="bolt"] .neo-hero-caption-ico { background: var(--neo-act-bolt); }
+.neo-hero-stage .neo-hero-caption[data-icon="light"] .neo-hero-caption-ico { background: var(--neo-act-light); }
+.neo-hero-stage .neo-hero-pop { position: absolute; left: 0; top: 0; z-index: 2; pointer-events: none; will-change: transform; }
+.neo-hero-stage .neo-hero-pop[hidden] { display: none; }
+.neo-hero-stage .neo-hero-pop-in {
+  display: flex; align-items: center; justify-content: center; width: 50px; height: 50px; margin: -25px 0 0 -25px;
+  border-radius: 50%; background: var(--sc); border: 2px solid currentColor; color: var(--neo-act);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .3); opacity: 0;
+}
+.neo-hero-stage .neo-hero-pop-in .ico { width: 24px; height: 24px; stroke-width: 2.2; }
+.neo-hero-stage .neo-hero-pop[data-kind="unlock"] .neo-hero-pop-in { color: var(--neo-act-unlock); }
+.neo-hero-stage .neo-hero-pop[data-kind="power"] .neo-hero-pop-in { color: var(--neo-act-power); }
+.neo-hero-stage .od-car2d svg { position: absolute; top: 0; left: 0; display: block; width: 100%; height: 100%; max-width: none; overflow: visible; }
+.neo-hero-stage .c-car .is-off { display: none; }
+.neo-hero-stage .c-car { transition: opacity .15s; }
+.neo-hero-stage .c-car.is-stale { opacity: .45; }
+.neo-hero-stage .c-paint { fill: var(--od-paint, #E8E8EC); fill-opacity: var(--od-paint-op); }
+.neo-hero-stage .c-car.is-empty .c-paint { fill: var(--unknown); fill-opacity: .55; }
+.neo-hero-stage .c-line, .neo-hero-stage .c-body { stroke: var(--od-car-line); stroke-width: 1.2; stroke-linejoin: round; }
+.neo-hero-stage .c-body.is-ready { stroke: var(--accent); stroke-width: 2.6; }
+.neo-hero-stage .c-body.is-acc { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 6 4; }
+.neo-hero-stage .c-wheels rect { fill: var(--od-car-wheel); }
+.neo-hero-stage .c-glass, .neo-hero-stage .c-win-glass, .neo-hero-stage .c-roof-glass { fill: var(--od-car-glass); }
+.neo-hero-stage .c-roof-panel { fill: var(--od-car-roof); }
+.neo-hero-stage .c-crease { fill: none; stroke: var(--od-car-line); stroke-width: .8; opacity: .45; }
+.neo-hero-stage .c-lamp { fill: var(--od-car-glass); stroke: var(--od-car-line); stroke-width: .8; }
+.neo-hero-stage .c-ap { fill: var(--bg); display: none; }
+.neo-hero-stage .c-part.is-open .c-ap, .neo-hero-stage .c-door.is-open .c-ap { display: inline; }
+.neo-hero-stage .c-part.is-open .c-paint, .neo-hero-stage .c-door.is-open .c-paint { fill: var(--open); fill-opacity: 1; }
+.neo-hero-stage .c-door.is-unknown .c-paint, .neo-hero-stage .c-part.is-unknown .c-panel > .c-paint { fill-opacity: .6; }
+.neo-hero-stage .c-win-gap, .neo-hero-stage .c-roof-gap { fill: var(--open); }
+.neo-hero-stage .c-win.is-coarse .c-win-gap { fill: url(#c-hatch); }
+.neo-hero-stage .c-hatch-line { stroke: var(--open); stroke-width: 2.4; }
+.neo-hero-stage .c-shade-r { fill: var(--od-car-roof); stroke: var(--od-car-line); stroke-width: .6; stroke-dasharray: 2 2; }
+.neo-hero-stage .c-beam { fill: url(#c-beam-g); }
+.neo-hero-stage .c-beam-s0 { stop-color: var(--od-beam); stop-opacity: .75; }
+.neo-hero-stage .c-beam-s1 { stop-color: var(--od-beam); stop-opacity: 0; }
+.neo-hero-stage .c-low { opacity: .7; }
+.neo-hero-stage .c-high { opacity: 1; }
+.neo-hero-stage .c-seam { stroke: var(--od-car-line); stroke-width: .8; stroke-opacity: .6; }
+.neo-hero-stage .c-drl { fill: none; stroke: #FFFFFF; stroke-width: 2.4; stroke-linecap: round; }
+html[data-theme="light"] .neo-hero-stage .c-drl { stroke: #3B4653; }
+.neo-hero-stage .c-turn { fill: var(--amber); }
+.neo-hero-stage .c-turn-glow { stroke: var(--amber); stroke-width: 9; stroke-linejoin: round; opacity: .35; }
+.neo-hero-stage .c-tail { fill: none; stroke: var(--od-tail); stroke-width: 3; stroke-linecap: round; }
+.neo-hero-stage .c-rev-lamp { fill: #FFFFFF; stroke: var(--od-car-line); stroke-width: .5; }
+.neo-hero-stage .c-glow { fill: #FFFFFF; opacity: .16; }
+.neo-hero-stage .c-flap-door { fill: var(--open); stroke: var(--od-car-line); stroke-width: .8; }
+.neo-hero-stage .c-charge-ring { fill: var(--sc-high); stroke: var(--outline); stroke-width: 1.5; }
+.neo-hero-stage .c-charge-bolt { fill: var(--muted); }
+.neo-hero-stage .c-charge.is-active .c-charge-ring { stroke: var(--charging); fill: var(--sc); }
+.neo-hero-stage .c-charge.is-active .c-charge-bolt, .neo-hero-stage .c-charge.is-full .c-charge-bolt { fill: var(--charging); }
+.neo-hero-stage .c-charge.is-v2l .c-charge-bolt { fill: var(--amber); }
+.neo-hero-stage .c-charge.is-fault .c-charge-ring { stroke: var(--danger); }
+.neo-hero-stage .c-charge.is-fault .c-charge-bolt { fill: var(--danger); }
+.neo-hero-stage .c-ac-ring { fill: var(--sc); stroke: var(--info); stroke-width: 1.5; }
+.neo-hero-stage .c-ac-fan { fill: none; stroke: var(--info); stroke-width: 1.8; stroke-linejoin: round; }
+.neo-hero-stage .c-label { fill: var(--text); font-family: var(--nc-font); font-size: 13px; font-weight: 600; }
+.neo-hero-stage .c-ac-t { fill: var(--info); }
+.neo-hero-stage .c-charge-t { fill: var(--charging); font-size: 15px; }
+.neo-hero-stage .c-lock-cap { font-size: 11px; fill: var(--muted); font-weight: 500; }
+.neo-hero-stage .c-shackle { fill: none; stroke-width: 2.4; stroke-linecap: round; }
+.neo-hero-stage .c-lock-body { stroke: none; }
+.neo-hero-stage .c-lock-q { font-family: var(--nc-font); font-size: 11px; font-weight: 700; fill: var(--bg); display: none; }
+.neo-hero-stage .c-lock .c-shackle-open, .neo-hero-stage .c-lk .c-shackle-open { display: none; }
+.neo-hero-stage .c-lock.is-unlocked .c-shackle-open, .neo-hero-stage .c-lk.is-unlocked .c-shackle-open { display: inline; }
+.neo-hero-stage .c-lock.is-unlocked .c-shackle-closed, .neo-hero-stage .c-lk.is-unlocked .c-shackle-closed { display: none; }
+.neo-hero-stage .c-lock.is-locked .c-shackle, .neo-hero-stage .c-lk.is-locked .c-shackle { stroke: var(--ok); }
+.neo-hero-stage .c-lock.is-locked .c-lock-body, .neo-hero-stage .c-lk.is-locked .c-lock-body { fill: var(--ok); }
+.neo-hero-stage .c-lock.is-unlocked .c-shackle, .neo-hero-stage .c-lk.is-unlocked .c-shackle { stroke: var(--warn); }
+.neo-hero-stage .c-lock.is-unlocked .c-lock-body, .neo-hero-stage .c-lk.is-unlocked .c-lock-body { fill: var(--warn); }
+.neo-hero-stage .c-lock.is-unknown .c-shackle { stroke: var(--unknown); }
+.neo-hero-stage .c-lock.is-unknown .c-lock-body { fill: var(--unknown); }
+.neo-hero-stage .c-lock.is-unknown .c-lock-q { display: inline; }

@@ -44,6 +44,20 @@ export interface GpsInfo {
 export interface NetworkInfo { type?: string; ssid?: string; ip?: string }
 export interface TripStatus { enabled?: boolean; tripActive?: boolean; tripStartTime?: number; tripDurationSec?: number }
 
+/**
+ * Odometer straight from the device state — the whole-car total and, on a PHEV,
+ * the electric / hybrid split, all in km. Preferred over the trip-log reading
+ * (which only advances when a trip closes) whenever the car reports it.
+ *
+ * Served as the `odometer` block of GET /api/vehicle/state (verified on OD
+ * braveheart-v52.5: {totalKm, evKm, hevKm}); /status does not carry it.
+ */
+export interface DeviceOdometer {
+  totalKm?: number
+  evKm?: number
+  hevKm?: number
+}
+
 export interface StatusResponse {
   status?: string
   deviceId?: string
@@ -134,6 +148,8 @@ export interface VehicleState {
   trunk?: { lockStatus?: number }
   sunroof?: { state?: number; position?: number }
   battery?: { soc?: number; rangeKm?: number; bodyworkRangeKm?: number }
+  /** Device-state odometer: whole-car total plus the PHEV EV/HEV split, km. */
+  odometer?: DeviceOdometer
   lights?: LightsState
   adas?: { speedLimitWarning?: number }
   setting?: { childPresenceDetection?: boolean }

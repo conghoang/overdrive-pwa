@@ -40,6 +40,24 @@ export function setShowMap(on: boolean): void {
   localStorage.setItem(K_MAP, on ? '1' : '0')
 }
 
+// Opt-in 3D car model in the hero (off by default: it loads three.js + a ~2 MB
+// model). Falls back to the photo automatically where WebGL2 isn't available.
+const K_3D = 'odpwa.car3d'
+export const show3d = signal<boolean>(localStorage.getItem(K_3D) === '1')
+export function setShow3d(on: boolean): void {
+  show3d.value = on
+  localStorage.setItem(K_3D, on ? '1' : '0')
+}
+
+// Paint colour for the 3D car (hex). Default Aurora White.
+export const CAR3D_DEFAULT_COLOR = '#E8E8EC'
+const K_3D_COLOR = 'odpwa.car3d.color'
+export const car3dColor = signal<string>(localStorage.getItem(K_3D_COLOR) || CAR3D_DEFAULT_COLOR)
+export function setCar3dColor(hex: string): void {
+  car3dColor.value = hex
+  localStorage.setItem(K_3D_COLOR, hex)
+}
+
 /*
  * Live-view fisheye correction, 0-100, stored PER CAMERA.
  *
