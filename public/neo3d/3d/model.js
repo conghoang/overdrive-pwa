@@ -356,8 +356,10 @@ export function setPaint(car, css) {
  * (0, 0.87, -2.35) facing -z. setCarPlates repaints both in place.
  */
 const PLATE_SPECS = [
-  { pos: [0, 0.596, 2.42], ry: 0 },         // front, faces +z  (plate centre measured 0, 0.596)
-  { pos: [0, 0.871, -2.35], ry: Math.PI },  // rear (tailgate, closed), faces -z  (centre 0, 0.871)
+  // Sit right on the plate face (front face at z 2.396, rear at -2.347), 2 mm
+  // proud so it reads as part of the plate — not a card floating in front of it.
+  { pos: [0, 0.596, 2.398], ry: 0 },         // front, faces +z  (plate centre 0, 0.596)
+  { pos: [0, 0.871, -2.349], ry: Math.PI },  // rear (tailgate, closed), faces -z  (centre 0, 0.871)
 ];
 /** A rounded-rect path (the car's older WebView may lack ctx.roundRect). */
 function roundRectPath(x, px, py, w, h, r) {
