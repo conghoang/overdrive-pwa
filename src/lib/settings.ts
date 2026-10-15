@@ -49,6 +49,15 @@ export function setShow3d(on: boolean): void {
   localStorage.setItem(K_3D, on ? '1' : '0')
 }
 
+// Paint colour for the 3D car (hex). Default Aurora White.
+export const CAR3D_DEFAULT_COLOR = '#E8E8EC'
+const K_3D_COLOR = 'odpwa.car3d.color'
+export const car3dColor = signal<string>(localStorage.getItem(K_3D_COLOR) || CAR3D_DEFAULT_COLOR)
+export function setCar3dColor(hex: string): void {
+  car3dColor.value = hex
+  localStorage.setItem(K_3D_COLOR, hex)
+}
+
 /*
  * Live-view fisheye correction, 0-100, stored PER CAMERA.
  *

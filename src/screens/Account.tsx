@@ -15,7 +15,13 @@ import { lazyScreen } from '../lib/lazy'
  */
 const WiCarlinkEditor = lazyScreen(() => import('../components/WiCarlinkEditor'), 'WiCarlinkEditor')
 
-import { carName, carPhoto, holdStart, holdTrunk, resetSettings, setCarName, setCarPhoto, setHoldStart, setHoldTrunk, setShow3d, setShowMap, setWicarlink, show3d, showMap, wicarlink } from '../lib/settings'
+import { car3dColor, carName, carPhoto, holdStart, holdTrunk, resetSettings, setCar3dColor, setCarName, setCarPhoto, setHoldStart, setHoldTrunk, setShow3d, setShowMap, setWicarlink, show3d, showMap, wicarlink } from '../lib/settings'
+
+// A few realistic paint options plus a free picker for anything else.
+const CAR3D_SWATCHES = [
+  ['#E8E8EC', 'White'], ['#C7CBCE', 'Silver'], ['#6E747A', 'Grey'],
+  ['#17181B', 'Black'], ['#9B1D2E', 'Red'], ['#1E3C6E', 'Blue'], ['#2E5B4F', 'Green'],
+] as const
 import { fileToResizedBlob } from '../lib/image'
 import { toast } from '../lib/toast'
 import { lang, setLang, t } from '../lib/i18n'
@@ -105,6 +111,49 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
           </div>
           <Switch on={show3d.value} onChange={setShow3d} />
         </div>
+
+        {show3d.value && (
+          <div class="srow" style={{ paddingBottom: 0, borderTop: '1px solid var(--line)', marginTop: '12px', paddingTop: '12px' }}>
+            <div class="stack">
+              <span class="srow-label">{t('dev.model3d_color')}</span>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px', alignItems: 'center' }}>
+                {CAR3D_SWATCHES.map(([hex, name]) => (
+                  <button
+                    key={hex}
+                    type="button"
+                    title={name}
+                    aria-label={name}
+                    aria-pressed={car3dColor.value.toLowerCase() === hex.toLowerCase()}
+                    onClick={() => setCar3dColor(hex)}
+                    style={{
+                      width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer',
+                      background: hex,
+                      border: car3dColor.value.toLowerCase() === hex.toLowerCase()
+                        ? '2px solid var(--accent)' : '1px solid var(--line2)',
+                      boxShadow: car3dColor.value.toLowerCase() === hex.toLowerCase() ? '0 0 0 2px var(--bg)' : 'none',
+                    }}
+                  />
+                ))}
+                {/* Free picker for any other colour. */}
+                <label
+                  title={t('dev.model3d_color_custom')}
+                  style={{
+                    width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer', overflow: 'hidden',
+                    border: '1px dashed var(--line2)', display: 'inline-grid', placeItems: 'center', position: 'relative',
+                  }}
+                >
+                  <span style={{ fontSize: '15px', lineHeight: 1 }}>🎨</span>
+                  <input
+                    type="color"
+                    value={car3dColor.value}
+                    onInput={(e) => setCar3dColor((e.target as HTMLInputElement).value)}
+                    style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }}
+                  />
+                </label>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* language */}

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'preact/hooks'
 import { effect } from '@preact/signals'
 import { status, vehicleState } from '../lib/store'
+import { car3dColor } from '../lib/settings'
 import './car3d.css'
 
 /*
@@ -71,7 +72,7 @@ function readState(path: string): unknown {
   switch (path) {
     case 'power.acc': return typeof s?.acc === 'boolean' ? s.acc : null
     case 'power.gear': return 'P'
-    case 'meta.color': return '#E8E8EC' // Aurora White
+    case 'meta.color': return car3dColor.value // reading the signal here lets the update effect track colour changes
     case 'meta.driveSide': return 'lhd'
     case 'climate.on': return vs?.climate?.acOn ?? null
     case 'charge.active': return s?.charging?.charging ?? null

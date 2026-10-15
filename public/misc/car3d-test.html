@@ -183,6 +183,19 @@
     group('Charging', [plug,chg,kw])
 
     group('Other', [toggle('climate.on','Climate'), toggle('mirrors.folded','Mirrors folded')])
+
+    // paint colour
+    const SW=[['#E8E8EC','White'],['#C7CBCE','Silver'],['#6E747A','Grey'],['#17181B','Black'],['#9B1D2E','Red'],['#1E3C6E','Blue'],['#2E5B4F','Green']]
+    const sw=document.createElement('div'); sw.style.cssText='display:flex;gap:8px;flex-wrap:wrap;align-items:center'
+    const mark=()=>sw.querySelectorAll('[data-hex]').forEach(b=>b.style.outline=(S['meta.color']||'').toLowerCase()===b.dataset.hex.toLowerCase()?'2px solid var(--accent)':'none')
+    SW.forEach(([hex,name])=>{const b=document.createElement('button');b.dataset.hex=hex;b.title=name;b.style.cssText=`width:30px;height:30px;border-radius:50%;cursor:pointer;background:${hex};border:1px solid var(--line);outline-offset:2px`;b.onclick=()=>{setKey('meta.color',hex);mark()};sw.appendChild(b)})
+    const lab=document.createElement('label'); lab.title='Custom'; lab.style.cssText='width:30px;height:30px;border-radius:50%;cursor:pointer;border:1px dashed var(--line);display:grid;place-items:center;position:relative;overflow:hidden'
+    lab.innerHTML='🎨<input type="color" style="position:absolute;inset:0;opacity:0;cursor:pointer">'
+    lab.querySelector('input').value=S['meta.color']||'#E8E8EC'
+    lab.querySelector('input').oninput=e=>{setKey('meta.color',e.target.value);mark()}
+    sw.appendChild(lab)
+    const g=document.createElement('div');g.className='group';g.innerHTML='<h2>Paint colour</h2>';g.appendChild(sw);$('#controls').appendChild(g)
+    mark()
   }
 
   function syncAll(){ document.querySelectorAll('[class]').forEach(()=>{}); $('#controls').querySelectorAll('*').forEach(n=>{ if (n._sync) n._sync() }) }
