@@ -96,7 +96,7 @@
     'windows.lf':0,'windows.rf':0,'windows.lr':0,'windows.rr':0,'windows.sunroof':0,'windows.shade':0,
     'lights.low':false,'lights.high':false,'lights.hazard':false,'lights.drl':false,
     'charge.plugged':false,'charge.active':false,'charge.kw':null,
-    'climate.on':false,'mirrors.folded':false,
+    'climate.on':false,'mirrors.folded':true,
     'lock.driver':true,'lock.doors.lf':true,'lock.doors.rf':true,'lock.doors.lr':true,'lock.doors.rr':true,'lock.scope':'all',
   }
   const LOCK_KEYS = ['lock.driver','lock.doors.lf','lock.doors.rf','lock.doors.lr','lock.doors.rr']
@@ -109,7 +109,11 @@
   function setLock(mode){ // 'locked' | 'unlocked' | 'unknown'
     const v = mode==='locked' ? true : mode==='unlocked' ? false : null
     for (const k of LOCK_KEYS) S[k]=v
-    push(LOCK_KEYS)
+    // The car folds its mirrors when it locks and opens them on unlock; the turn
+    // signals flash on the lock.driver change (the director's lock/unlock shot).
+    S['mirrors.folded'] = v // null stays neutral (open)
+    push([...LOCK_KEYS, 'mirrors.folded'])
+    syncAll()
   }
   function lockMode(){ const v=S['lock.driver']; return v===true?'locked':v===false?'unlocked':'unknown' }
 

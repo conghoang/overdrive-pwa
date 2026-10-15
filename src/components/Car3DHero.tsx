@@ -98,7 +98,10 @@ function readState(path: string): unknown {
     case 'windows.rr': return pct(w?.rr)
     case 'windows.sunroof': return pct(w?.sunroof)
     case 'windows.shade': return pct(w?.sunshade)
-    case 'mirrors.folded': return null
+    // The car folds its mirrors when it locks and opens them on unlock. Telemetry
+    // carries no fold read-back, so we mirror the lock state: locked = folded,
+    // unlocked = open, unknown = leave them open (null = neutral).
+    case 'mirrors.folded': return locked
     case 'lights.low': return beam(l?.lowBeam)
     case 'lights.high': return beam(l?.highBeam)
     case 'lights.hazard': return beam(l?.hazard)
