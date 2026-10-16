@@ -82,6 +82,11 @@ export function CarHero({ s }: { s: StatusResponse }) {
   const locked = !openAjar && doorsLock === 1
   const unlocked = !openAjar && doorsLock === 2
   const winOpen = windowsOpenCount(vs?.windows)
+  // The 3D model shows power/lock/window/door state richly, so when everything
+  // is in its safe resting state — off, locked, windows up, nothing ajar — the
+  // summary row below is redundant. Hide it then (only with the 3D on); show it
+  // whenever something needs attention, a state is unknown, or there is no 3D.
+  const hideState = use3d && !powerOn && locked && winOpen === 0
 
   return (
     <div class="card car-hero-card">
@@ -129,9 +134,12 @@ export function CarHero({ s }: { s: StatusResponse }) {
         </div>
       )}
 
-      {/* Ignition / locks / windows — the walk-away checks, in the slot the
-          gear pills used to hold. Doors and windows carry Unknown states so a
-          car that hasn't reported never shows a false "Locked"/"Closed". */}
+      {/* Ignition / locks / windows — the walk-away checks. Hidden when the 3D
+          model is on and all three are safe (it shows this state itself); shown
+          whenever something needs attention, a state is unknown, or there is no
+          3D. Doors and windows carry Unknown states so a car that hasn't
+          reported never shows a false "Locked"/"Closed". */}
+      {!hideState && (
       <div class="hero-state">
         <div class="hs-cell">
           <span class="hs-ico"><IconBolt size={18} /></span>
@@ -185,6 +193,7 @@ export function CarHero({ s }: { s: StatusResponse }) {
           <span class="hs-lbl">{t('status.windows')}</span>
         </div>
       </div>
+      )}
 
       {/* No charging line here — the dedicated charging card owns that, and
           repeating "Charging · kW · ETA" under the strip only duplicated it.
