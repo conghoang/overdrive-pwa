@@ -267,6 +267,7 @@ const EN: Record<string, string> = {
   'dev.pair_step3': 'On the watch, tap {icon} if it hasn’t connected after a few seconds.',
   'dev.edit_51dk': 'Edit 51DK buttons',
   'dev.refresh': 'Refresh now',
+  'dev.refresh_desc': 'Clears all cached data and reloads the latest version. Your car and sign-in are kept.',
   'dev.sign_out': 'Sign out',
   'dev.footer': 'BYD Sealion 6 Vietnam Group',
 
@@ -560,6 +561,7 @@ const VI: Record<string, string> = {
   'dev.pair_step3': 'Trên đồng hồ, nhấn {icon} nếu chưa kết nối sau vài giây.',
   'dev.edit_51dk': 'Sửa nút 51DK',
   'dev.refresh': 'Làm mới',
+  'dev.refresh_desc': 'Xóa mọi bộ nhớ đệm và tải lại phiên bản mới nhất. Xe và đăng nhập của bạn được giữ nguyên.',
   'dev.sign_out': 'Đăng xuất',
   'dev.footer': 'BYD Sealion 6 Vietnam Group',
 
