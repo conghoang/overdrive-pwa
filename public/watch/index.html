@@ -382,13 +382,13 @@ const T={
      'seat.driver':'Driver','seat.passenger':'Passenger',
      'st.ended':'Session ended','st.repair':'Re-pair from the phone',
      'st.unreach':'Can\u2019t reach car','st.retry':'Retry','st.unavail':'Pairing unavailable',
-     'pair.check':'Check now','toast.fail':'failed','seat':'Seat'},
+     'pair.check':'Check now','toast.fail':'failed','seat':'Seat','st.repair_btn':'Re-pair'},
  vi:{'b.lock':'Kh\u00f3a','b.unlock':'M\u1edf kh\u00f3a','b.trunk':'C\u1ed1p','b.find':'T\u00ecm xe','b.start':'Kh\u1edfi \u0111\u1ed9ng',
      'b.wc51':'51DK','b.signout':'\u0110\u0103ng xu\u1ea5t','ac.on':'\u0110H B\u1eacT','ac.off':'\u0110H T\u1eaeT','fan':'Qu\u1ea1t',
      'seat.driver':'Gh\u1ebf l\u00e1i','seat.passenger':'Gh\u1ebf ph\u1ee5',
      'st.ended':'Phi\u00ean \u0111\u00e3 k\u1ebft th\u00fac','st.repair':'Gh\u00e9p l\u1ea1i t\u1eeb \u0111i\u1ec7n tho\u1ea1i',
      'st.unreach':'Kh\u00f4ng k\u1ebft n\u1ed1i \u0111\u01b0\u1ee3c xe','st.retry':'Th\u1eed l\u1ea1i','st.unavail':'Kh\u00f4ng gh\u00e9p \u0111\u01b0\u1ee3c',
-     'pair.check':'Ki\u1ec3m tra','toast.fail':'th\u1ea5t b\u1ea1i','seat':'Gh\u1ebf'}
+     'pair.check':'Ki\u1ec3m tra','toast.fail':'th\u1ea5t b\u1ea1i','seat':'Gh\u1ebf','st.repair_btn':'Gh\u00e9p l\u1ea1i'}
 };
 const t=(k)=>(T[lang]&&T[lang][k])||T.en[k]||k;
 function applyI18n(){
@@ -665,13 +665,19 @@ async function _load(silent){
     $('devid').textContent=demo?'DEMO-SEAL-01':'';
     _offline=false;
     if(!silent) hideState();
-  }catch(e){if(e.auth)return showState('<p>'+t('st.ended')+'</p><p class="sub">'+t('st.repair')+'</p>');
+  }catch(e){if(e.auth)return sessionEnded();
     // A silent refresh already has a working screen up — don't replace it with a
     // full error page over a transient blip; a toast is enough.
     if(silent){if(!_offline){_offline=true;toast(t('st.unreach'),true);}return;}
     showState('<p>'+t('st.unreach')+'</p><button class="retry" data-act="load-retry">'+t('st.retry')+'</button>');}
 }
 function showState(h){$('state').innerHTML=h;$('state').hidden=false;$('pager').hidden=true;$('dots').hidden=true;}
+// Auth lost (401): the paired token is dead. Drop it so a reopen can't silently
+// retry the same dead token into this same screen (the loop users hit), and give
+// the screen a Re-pair button — the only control that reaches pairing now that the
+// pager (with its Sign out) is hidden behind this state.
+function sessionEnded(){try{localStorage.removeItem('odw.jwt');localStorage.removeItem('odw.baseUrl');}catch{}
+  showState('<p>'+t('st.ended')+'</p><p class="sub">'+t('st.repair')+'</p><button class="retry" data-act="pair-retry">'+t('st.repair_btn')+'</button>');}
 function hideState(){$('state').hidden=true;$('pager').hidden=false;$('dots').hidden=false;try{focusPager();}catch{}}
 let toastT;function toast(m,err){const t=$('toast');t.textContent=m;t.className='show'+(err?' err':'');clearTimeout(toastT);toastT=setTimeout(()=>t.className='',1700);}
 let _tapEl=null;   // control the user just tapped — shown as pending during its request
@@ -680,7 +686,7 @@ async function fire(label,path,body){
   const el=_tapEl;_tapEl=null;if(el)el.classList.add('pending');
   try{const r=await api(path,{method:'POST',body:body?JSON.stringify(body):undefined});
     toast(r.success===false?(r.error||label+' '+t('toast.fail')):label+' ✓',r.success===false);if(r.success!==false)await load(true,true);}
-  catch(e){if(e.auth)return showState('<p>'+t('st.ended')+'</p><p class="sub">'+t('st.repair')+'</p>');toast(label+' '+t('toast.fail'),true);
+  catch(e){if(e.auth)return sessionEnded();toast(label+' '+t('toast.fail'),true);
     // A timed-out command may still have reached the car: re-read the real state.
     setTimeout(()=>load(true,true),0);}
   finally{busy=false;if(el)el.classList.remove('pending');}
