@@ -56,13 +56,35 @@ if (!tex) throw new Error('interior texture not found')
 const srcB64 = Buffer.from(tex.getImage()).toString('base64')
 const mime = tex.getMimeType() // image/webp
 
+// Side-facing seat surfaces (the bolsters/sides, inner AND outer) are the SAME
+// light colour as the centre panel in the texture — only their geometry differs
+// — so no colour rule finds them. Collect the front-seat triangles whose normal
+// faces sideways (|nx| > SIDE_NX; the interior node has an identity transform, so
+// local nx == world nx) and rasterise them into the black mask in the browser.
+const SIDE_NX = 0.4
+const prim = doc.getRoot().listNodes().find((n) => n.getName() === 'interior').getMesh().listPrimitives()[0]
+const uvA = prim.getAttribute('TEXCOORD_0'), nmA = prim.getAttribute('NORMAL'), ix = prim.getIndices()
+const sideTris = []
+{
+  const ua = [0, 0], ub = [0, 0], uc = [0, 0], na = [0, 0, 0], nb = [0, 0, 0], nc = [0, 0, 0]
+  const nI = ix ? ix.getCount() : uvA.getCount(), gi = (k) => (ix ? ix.getScalar(k) : k)
+  for (let i = 0; i < nI; i += 3) {
+    const i0 = gi(i), i1 = gi(i + 1), i2 = gi(i + 2)
+    uvA.getElement(i0, ua); uvA.getElement(i1, ub); uvA.getElement(i2, uc)
+    const cu = (ua[0] + ub[0] + uc[0]) / 3, cv = (ua[1] + ub[1] + uc[1]) / 3
+    if (!(cu < 0.52 && cv < 0.5)) continue // front-seat atlas block
+    nmA.getElement(i0, na); nmA.getElement(i1, nb); nmA.getElement(i2, nc)
+    if (Math.abs((na[0] + nb[0] + nc[0]) / 3) > SIDE_NX) sideTris.push([ua.slice(), ub.slice(), uc.slice()])
+  }
+}
+
 const browser = await puppeteer.launch({
   executablePath: CHROME,
   headless: 'new',
   args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
 })
 const page = await browser.newPage()
-const out = await page.evaluate(async (b64, mime) => {
+const out = await page.evaluate(async (b64, mime, sideTris) => {
   const img = new Image()
   img.src = `data:${mime};base64,${b64}`
   await img.decode()
@@ -81,16 +103,15 @@ const out = await page.evaluate(async (b64, mime) => {
   const sx = W / 512, sy = H / 512
   const BX1 = (265 * sx) | 0, BY0 = (256 * sy) | 0, BY1 = (508 * sy) | 0
 
-  // Split fabric from black trim by SPATIAL MAJORITY, not per-pixel. The grey
-  // fabric panels and the black navy bolsters/sides/headrests OVERLAP in both
-  // luminance (lit navy reaches the fabric's range) and hue (the grey fabric is
-  // itself cool/bluish), so no per-pixel threshold separates them cleanly — a
-  // luminance gate browned the lit bolster into mud. Instead: build a dark mask
-  // (lum < DARK_T), BLUR it to a density field, and BLEND cognac -> black by that
-  // density. A bolster (densely dark) is fully black through its highlights; a
-  // fabric panel (densely light) is cognac through its seams; and the blend
-  // FEATHERS the boundary so it isn't a jagged per-pixel cut.
-  const DARK_T = 70, BLUR = 4
+  // Build the black (trim) mask two ways, then feather it. The grey fabric and
+  // the navy trim OVERLAP in luminance and hue, and the SIDE bolsters are the
+  // same light colour as the centre panel, so neither colour nor a per-pixel
+  // threshold separates them. So the mask = (A) dark pixels (lum < DARK_T: the
+  // navy bolsters/headrests) UNION (B) the side-facing triangles from sideTris
+  // (the light inner/outer bolsters). BLUR it to a density field and BLEND cognac
+  // -> black by that density, so each region takes its neighbourhood's class
+  // through its highlights/seams and the boundary is feathered, not a jagged cut.
+  const DARK_T = 70, BLUR = 3
   const src = x.getImageData(0, 0, W, H).data
   const mc = document.createElement('canvas'); mc.width = W; mc.height = H
   const mx2 = mc.getContext('2d'); mx2.fillStyle = '#000'; mx2.fillRect(0, 0, W, H)
@@ -100,6 +121,15 @@ const out = await page.evaluate(async (b64, mime) => {
     if (0.299 * src[i] + 0.587 * src[i + 1] + 0.114 * src[i + 2] < DARK_T) { mp[i] = mp[i + 1] = mp[i + 2] = mp[i + 3] = 255 }
   }
   mx2.putImageData(md, 0, 0)
+  // (B) paint the side-facing seat triangles white (UV v is flipped vs image Y)
+  mx2.fillStyle = '#fff'; mx2.strokeStyle = '#fff'; mx2.lineWidth = 2; mx2.lineJoin = 'round'
+  for (const t of sideTris) {
+    mx2.beginPath()
+    mx2.moveTo(t[0][0] * W, (1 - t[0][1]) * H)
+    mx2.lineTo(t[1][0] * W, (1 - t[1][1]) * H)
+    mx2.lineTo(t[2][0] * W, (1 - t[2][1]) * H)
+    mx2.closePath(); mx2.fill(); mx2.stroke()
+  }
   const bc = document.createElement('canvas'); bc.width = W; bc.height = H
   const bx = bc.getContext('2d'); bx.filter = `blur(${BLUR}px)`; bx.drawImage(mc, 0, 0)
   const bd = bx.getImageData(0, 0, W, H).data
@@ -126,7 +156,7 @@ const out = await page.evaluate(async (b64, mime) => {
   }
   x.putImageData(d, 0, 0)
   return { webp: c.toDataURL('image/webp', 0.95).split(',')[1], n }
-}, srcB64, mime)
+}, srcB64, mime, sideTris)
 await browser.close()
 console.log(`recoloured ${out.n} seat fabric pixels (bolsters/sides/headrests blended to black)`)
 
