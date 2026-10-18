@@ -29,16 +29,18 @@ const isDevSite = base.endsWith('/dev/')
 // the app's asset URLs so each deploy busts caches — without renaming files.
 const commit = (process.env.VITE_COMMIT || process.env.GITHUB_SHA || 'dev').slice(0, 7)
 
-// The 3D model is cached by the service worker (StaleWhileRevalidate, below), so
-// its URL carries ?v=<content-hash>: a new model is a new URL — a guaranteed
-// fresh fetch that bypasses any stale cached copy — while an unchanged model
-// keeps the same URL and stays cached. Computed in a plain-JS helper (no
-// @types/node here) and resolved before the config object is built.
+// The 3D model gets a content-hashed FILENAME (sealion6-<hash>.glb), emitted
+// below. A changed model is a brand-new file path, so no cache — service worker,
+// browser or CDN — can serve the old bytes under it; an unchanged model keeps its
+// path. Stronger than a ?v= query (which an intermediary can strip). Computed in
+// a plain-JS helper (no @types/node here), resolved before the config is built.
 const modelHashHelper = './scripts/model-hash.mjs'
+const MODEL_SRC = 'public/neo3d/models/sealion6.glb'
 
 export default defineConfig(async (): Promise<UserConfig> => {
-  const { modelHash } = await import(/* @vite-ignore */ modelHashHelper)
-  const modelV: string = modelHash('public/neo3d/models/sealion6.glb') || commit
+  const { modelHash, readModel } = await import(/* @vite-ignore */ modelHashHelper)
+  const modelV: string = modelHash(MODEL_SRC) || commit
+  const modelBuf: Uint8Array | null = readModel(MODEL_SRC)
 
   return {
   base,
@@ -76,6 +78,16 @@ export default defineConfig(async (): Promise<UserConfig> => {
       enforce: 'post',
       transformIndexHtml(html) {
         return html.replace(/(\bhref=")(\/[^"]+\.css)"/g, `$1$2?v=${commit}"`)
+      },
+    },
+    {
+      // Emit the 3D model under its content-hashed filename, so the hero's URL
+      // (sealion6-<hash>.glb, see Car3DHero) is a new path whenever the model
+      // changes — the bulletproof cache-bust the user asked for. The plain
+      // public/ copy is still shipped as a harmless fallback.
+      name: 'emit-hashed-model',
+      generateBundle() {
+        if (modelBuf) this.emitFile({ type: 'asset', fileName: `neo3d/models/sealion6-${modelV}.glb`, source: modelBuf })
       },
     },
     {
