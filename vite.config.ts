@@ -1,4 +1,4 @@
-import { defineConfig, type UserConfig } from 'vite'
+import { defineConfig } from 'vite'
 import preact from '@preact/preset-vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
@@ -29,22 +29,10 @@ const isDevSite = base.endsWith('/dev/')
 // the app's asset URLs so each deploy busts caches — without renaming files.
 const commit = (process.env.VITE_COMMIT || process.env.GITHUB_SHA || 'dev').slice(0, 7)
 
-// Content hash of the 3D model, appended as ?v= to its URL. The service worker
-// caches the 2 MB GLB CacheFirst (see runtimeCaching below), so without a per-
-// content key a model update would never reach anyone who'd cached the old one;
-// with it, the GLB is re-downloaded ONLY when its bytes change, not every deploy.
-// The hash is computed in a plain-JS helper (no @types/node in this project; see
-// build-watch above) and resolved before the config object is built.
-const modelHashHelper = './scripts/model-hash.mjs'
 
-
-export default defineConfig(async (): Promise<UserConfig> => {
-  const { modelHash } = await import(/* @vite-ignore */ modelHashHelper)
-  const modelV: string = modelHash('public/neo3d/models/sealion6.glb') || commit
-
-  return {
+export default defineConfig({
   base,
-  define: { __COMMIT__: JSON.stringify(commit), __MODEL_V__: JSON.stringify(modelV) },
+  define: { __COMMIT__: JSON.stringify(commit) },
   plugins: [
     preact(),
     {
@@ -126,33 +114,8 @@ export default defineConfig(async (): Promise<UserConfig> => {
         // Match precached assets even with the ?v=<commit> cache-buster.
         ignoreURLParametersMatching: [/^v$/],
         cleanupOutdatedCaches: true,
-        runtimeCaching: [
-          {
-            // The opt-in 3D hero's heavy, rarely-changing bytes: the ~2 MB car
-            // model and the ~0.9 MB three.js runtime. These are in globIgnores
-            // above (never precached, so non-users pay nothing), but once a user
-            // turns the hero on we DON'T want to re-pull 3 MB over mobile data on
-            // every view. CacheFirst = fetched once, then served from the SW cache
-            // forever (offline included) with no network, no re-download.
-            //   - The model URL carries ?v=<content-hash> (see modelV), so a new
-            //     model busts its own entry and is the only thing re-downloaded.
-            //   - The vendored three.js is stable; bump this cacheName if you ever
-            //     upgrade it, so clients pick up the new runtime.
-            //   - The small hero.js / car3d.js / icons.svg / hero.css are left OUT
-            //     of this rule on purpose, so hero-logic fixes still reach everyone
-            //     through normal HTTP revalidation instead of sitting stale here.
-            urlPattern: /\/neo3d\/(models|vendor)\//,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'neo3d-assets',
-              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365, purgeOnQuotaError: true },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-        ],
       }
     })
   ],
   server: { host: true }
-  }
 })
