@@ -86,10 +86,11 @@ const out = await page.evaluate(async (b64, mime) => {
   // luminance (lit navy reaches the fabric's range) and hue (the grey fabric is
   // itself cool/bluish), so no per-pixel threshold separates them cleanly — a
   // luminance gate browned the lit bolster into mud. Instead: build a dark mask
-  // (lum < DARK_T), BLUR it, and treat a pixel as trim when its neighbourhood is
-  // mostly dark. A bolster (densely dark) stays black through its highlights; a
-  // fabric panel (densely light) recolours through its seams. Clean regions.
-  const DARK_T = 65, BLUR = 6
+  // (lum < DARK_T), BLUR it to a density field, and BLEND cognac -> black by that
+  // density. A bolster (densely dark) is fully black through its highlights; a
+  // fabric panel (densely light) is cognac through its seams; and the blend
+  // FEATHERS the boundary so it isn't a jagged per-pixel cut.
+  const DARK_T = 70, BLUR = 4
   const src = x.getImageData(0, 0, W, H).data
   const mc = document.createElement('canvas'); mc.width = W; mc.height = H
   const mx2 = mc.getContext('2d'); mx2.fillStyle = '#000'; mx2.fillRect(0, 0, W, H)
@@ -103,6 +104,7 @@ const out = await page.evaluate(async (b64, mime) => {
   const bx = bc.getContext('2d'); bx.filter = `blur(${BLUR}px)`; bx.drawImage(mc, 0, 0)
   const bd = bx.getImageData(0, 0, W, H).data
 
+  const BK = [16, 16, 18] // trim black
   const d = x.getImageData(0, 0, W, H)
   const px = d.data
   let n = 0
@@ -112,14 +114,21 @@ const out = await page.evaluate(async (b64, mime) => {
     const mx = Math.max(r, g, b), mn = Math.min(r, g, b)
     const sat = mx ? (mx - mn) / mx : 0
     if (sat > 0.5 && r >= g && g >= b) continue // leave warm piping / logos
-    if (bd[i] > 128) { px[i] = 16; px[i + 1] = 16; px[i + 2] = 18 } // trim region -> solid black
-    else { const lum = 0.299 * r + 0.587 * g + 0.114 * b; px[i] = Math.min(255, V[0] * lum); px[i + 1] = Math.min(255, V[1] * lum); px[i + 2] = Math.min(255, V[2] * lum); n++ }
+    // density of dark neighbourhood in [0,1], remapped to a tight-but-feathered
+    // transition band so panels stay crisp while the boundary isn't a jagged cut.
+    let a = Math.min(1, Math.max(0, (bd[i] / 255 - 0.35) / 0.3))
+    const lum = 0.299 * r + 0.587 * g + 0.114 * b
+    const cr = Math.min(255, V[0] * lum), cg = Math.min(255, V[1] * lum), cb = Math.min(255, V[2] * lum)
+    px[i] = cr * (1 - a) + BK[0] * a
+    px[i + 1] = cg * (1 - a) + BK[1] * a
+    px[i + 2] = cb * (1 - a) + BK[2] * a
+    if (a < 0.5) n++
   }
   x.putImageData(d, 0, 0)
   return { webp: c.toDataURL('image/webp', 0.95).split(',')[1], n }
 }, srcB64, mime)
 await browser.close()
-console.log(`recoloured ${out.n} seat fabric pixels (bolsters/sides/headrests set black)`)
+console.log(`recoloured ${out.n} seat fabric pixels (bolsters/sides/headrests blended to black)`)
 
 tex.setImage(new Uint8Array(Buffer.from(out.webp, 'base64')))
 tex.setMimeType('image/webp')
