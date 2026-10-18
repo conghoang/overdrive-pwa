@@ -224,7 +224,9 @@ export function Car3DHero({ onFallback }: { onFallback: () => void }) {
         if (destroyed || !hostRef.current) return
         handle = m.mountHero(stage, {
           read,
-          modelUrl: `${base}neo3d/models/sealion6.glb`,
+          // ?v=<content-hash>: the model is cached by the service worker, so a new
+          // model needs a new URL to be fetched instead of the stale cached copy.
+          modelUrl: `${base}neo3d/models/sealion6.glb?v=${__MODEL_V__}`,
           eligible: () => true, // we only ship this one model
           light: false, // the hero palette we vendored is dark
           fit: 1.2, // frame the car a little tighter so it fills the (taller) hero
