@@ -1,7 +1,7 @@
 import { clearAll, getBaseUrl, getDeviceId } from '../lib/api'
 import { connected, reset, status } from '../lib/store'
+import { hardReset } from '../lib/updater'
 import { IconPower, IconRefresh } from '../components/icons-extra'
-import * as store from '../lib/store'
 import { useState } from 'preact/hooks'
 import { AppHeader } from '../components/AppHeader'
 import { DEFAULT_PHOTO } from '../components/CarHero'
@@ -259,10 +259,14 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
       </div>
 
       <div class="card" style={{ marginTop: '14px' }}>
-        <button class="btn block" onClick={() => store.refresh()}>
+        {/* Clears every cache + the service worker and reloads fresh — the escape
+            hatch when the app is stuck on a stale build. Keeps the car URL and
+            sign-in (those live in localStorage, which this does not touch). */}
+        <button class="btn block" onClick={() => { void hardReset() }}>
           <IconRefresh size={18} /> {t('dev.refresh')}
         </button>
-        <button class="btn block danger" style={{ marginTop: '10px' }} onClick={signOut}>
+        <p class="screen-sub" style={{ margin: '6px 2px 0', fontSize: '12px' }}>{t('dev.refresh_desc')}</p>
+        <button class="btn block danger" style={{ marginTop: '12px' }} onClick={signOut}>
           <IconPower size={18} /> {t('dev.sign_out')}
         </button>
       </div>

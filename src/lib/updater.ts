@@ -45,6 +45,38 @@ async function purgeRetiredCaches(): Promise<void> {
   }
 }
 
+/**
+ * Clear every cache and force a fresh load — the escape hatch for a device stuck
+ * on stale content, backing both the auto-recovery above and the Settings
+ * "Refresh" button. Wipes all Cache Storage, unregisters every service worker,
+ * and reloads with a ?fresh= query that also sidesteps the browser's own HTTP
+ * cache of the HTML. Deliberately leaves localStorage alone, so the car URL,
+ * sign-in and preferences survive — this clears caches, not the user's account.
+ */
+export async function hardReset(): Promise<void> {
+  try {
+    if ('caches' in window) {
+      const keys = await caches.keys()
+      await Promise.all(keys.map((k) => caches.delete(k)))
+    }
+  } catch {
+    /* ignore */
+  }
+  try {
+    const regs = (await navigator.serviceWorker?.getRegistrations()) ?? []
+    await Promise.all(regs.map((r) => r.unregister()))
+  } catch {
+    /* ignore */
+  }
+  try {
+    const u = new URL(location.href)
+    u.searchParams.set('fresh', String(Date.now()))
+    location.replace(u.href)
+  } catch {
+    location.reload()
+  }
+}
+
 export function startUpdateChecks(): void {
   // Runs on every build (even dev / the first load after a revert): a wedged
   // neo3d cache must be cleared regardless of the version-check path below.
@@ -89,33 +121,10 @@ export function startUpdateChecks(): void {
   let busy = false
 
   /**
-   * Last resort: the service worker keeps serving a stale shell. Wipe every
-   * cache, unregister the worker, and force a network load of a fresh shell.
-   * The ?fresh= query sidesteps the browser's own 10-min HTTP cache of the HTML.
+   * Last resort: the service worker keeps serving a stale shell. Delegates to the
+   * exported hardReset, which also backs the Settings "Refresh" button.
    */
-  async function hardRecover(): Promise<void> {
-    try {
-      if ('caches' in window) {
-        const keys = await caches.keys()
-        await Promise.all(keys.map((k) => caches.delete(k)))
-      }
-    } catch {
-      /* ignore */
-    }
-    try {
-      const regs = (await navigator.serviceWorker?.getRegistrations()) ?? []
-      await Promise.all(regs.map((r) => r.unregister()))
-    } catch {
-      /* ignore */
-    }
-    try {
-      const u = new URL(location.href)
-      u.searchParams.set('fresh', String(Date.now()))
-      location.replace(u.href)
-    } catch {
-      location.reload()
-    }
-  }
+  const hardRecover = hardReset
 
   async function moveToUpdate(target: string): Promise<void> {
     if (busy) return
