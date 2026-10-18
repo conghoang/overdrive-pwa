@@ -193,6 +193,12 @@ h1, h2, h3, p { margin: 0; }
 
 /* generic buttons */
 .btn {
+  /* Centre an icon + label together: inline SVGs default to baseline alignment,
+     which left the icon sitting high against the text (e.g. Refresh / Sign out). */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   border: 1px solid var(--border-strong);
   background: var(--surface-2);
   color: var(--text);
