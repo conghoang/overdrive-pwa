@@ -19,7 +19,36 @@
  * bundle makes version.json keep looking "newer" forever. Attempts are capped
  * per target commit in sessionStorage so nothing can loop.
  */
+/**
+ * Self-heal a cache left behind by a retired feature. The 3D hero briefly
+ * shipped with service-worker caching (cache names neo3d-assets / neo3d-logic).
+ * A bad entry pinned there is never re-fetched (CacheFirst), so on a device that
+ * ran that build it could keep feeding the hero a broken model or runtime and
+ * wedge it into the 2D photo fallback — permanently, since reverting the code
+ * doesn't touch a cache the old worker already filled. This build caches no
+ * neo3d assets at all, so any such cache is a stale leftover: delete it, and if
+ * one actually existed, reload once (guarded) so the hero re-fetches clean. Same
+ * principle as hardRecover — the app fixes itself, the user never clears caches.
+ */
+async function purgeRetiredCaches(): Promise<void> {
+  if (!('caches' in window)) return
+  try {
+    const stale = (await caches.keys()).filter((k) => /^neo3d-/.test(k))
+    if (!stale.length) return
+    await Promise.all(stale.map((k) => caches.delete(k)))
+    if (!sessionStorage.getItem('odpwa.purged')) {
+      sessionStorage.setItem('odpwa.purged', '1')
+      location.reload()
+    }
+  } catch {
+    /* no Cache API / private mode — nothing to purge */
+  }
+}
+
 export function startUpdateChecks(): void {
+  // Runs on every build (even dev / the first load after a revert): a wedged
+  // neo3d cache must be cleared regardless of the version-check path below.
+  void purgeRetiredCaches()
   if (typeof __COMMIT__ === 'undefined' || __COMMIT__ === 'dev') return
   // Tidy the ?fresh= cache-buster a hard recovery may have left in the URL.
   try {
