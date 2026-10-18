@@ -124,33 +124,13 @@ export default defineConfig(async (): Promise<UserConfig> => {
         // Match precached assets even with the ?v=<commit> cache-buster.
         ignoreURLParametersMatching: [/^v$/],
         cleanupOutdatedCaches: true,
-        runtimeCaching: [
-          {
-            // Cache ONLY the 2 MB 3D car model (a binary fetched by GLTFLoader) so
-            // it isn't re-pulled over mobile data on every hero view. Deliberately
-            // narrow and deliberately NOT CacheFirst:
-            //   - StaleWhileRevalidate self-heals. It serves the cached copy
-            //     instantly (fast) and ALWAYS revalidates in the background, so a
-            //     changed OR a bad entry is replaced on the next load. CacheFirst
-            //     never re-fetched — one truncated download pinned a broken model
-            //     forever and wedged the hero into the 2D fallback. Never again.
-            //   - Revalidation is a conditional request (304 when unchanged), so
-            //     there's no 2 MB re-download — the bandwidth win is kept.
-            //   - Only the model. The three.js runtime and hero.js are ES modules
-            //     loaded via import(); they stay on normal browser caching (cheap
-            //     304s) rather than being served from the SW, which keeps this
-            //     change to the one asset that actually costs data.
-            //   - cacheName is NOT neo3d-* so the retired-cache self-heal in
-            //     updater.ts leaves it alone. Only 200s are cached (no partials).
-            urlPattern: /\/neo3d\/models\//,
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'car3d-model',
-              expiration: { maxEntries: 3, maxAgeSeconds: 60 * 60 * 24 * 180, purgeOnQuotaError: true },
-              cacheableResponse: { statuses: [200] },
-            },
-          },
-        ],
+        // No runtimeCaching for the 3D model: it is edited often, and a service-
+        // worker cache (even StaleWhileRevalidate) kept serving stale copies that
+        // masked model updates for a whole saga. The model now loads straight from
+        // the network — GitHub Pages' ETag means an unchanged model is a cheap 304,
+        // a changed one comes down fresh, and nothing can pin an old render. The
+        // retired car3d-model cache is purged on boot (see updater.ts). Re-add
+        // caching only once the model has stopped changing.
       }
     })
   ],
