@@ -154,6 +154,17 @@ const out = await page.evaluate(async (b64, mime, sideTris) => {
     px[i + 2] = cb * (1 - a) + BK[2] * a
     if (a < 0.5) n++
   }
+
+  // Second pass, WHOLE texture: the REAR seats map to their own atlas region the
+  // front-seat box never touched — their centres share the front's cognac UV, but
+  // their headrests/sides are a separate NAVY trim. Set the remaining dark navy
+  // (bluish and not bright) to solid black so the rear matches the front. Cognac
+  // is warm (r>b) and the trim black is neutral, so neither is affected; the blue
+  // screens are bright (lum excluded) so they're left alone.
+  for (let i = 0; i < px.length; i += 4) {
+    const r = px[i], g = px[i + 1], b = px[i + 2]
+    if (b - r >= 6 && b >= g - 2 && (0.299 * r + 0.587 * g + 0.114 * b) < 120) { px[i] = BK[0]; px[i + 1] = BK[1]; px[i + 2] = BK[2] }
+  }
   x.putImageData(d, 0, 0)
   return { webp: c.toDataURL('image/webp', 0.95).split(',')[1], n }
 }, srcB64, mime, sideTris)
