@@ -13,10 +13,11 @@
  * we leave the texture alone and TINT PER VERTEX from the geometry:
  *   - a vertex is a seat if it sits in the seat volume (seat height, cabin depth,
  *     either side of the centre console — the console and dash are excluded);
- *   - within a seat it is TRIM (black) when its surface faces sideways
- *     (|normal.x| > 0.4, i.e. a bolster/side), is up at headrest height
- *     (y > 1.33), or faces rearward (normal.z < -0.3, the seat back); otherwise
- *     it is the CENTRE panel (cognac);
+ *   - within a seat it is TRIM (black) when its surface faces STEEPLY sideways
+ *     (|normal.x| > 0.72, i.e. the actual bolster — not the shallow walls of the
+ *     centre panel's sculpted channels, which a lower gate would paint as black
+ *     lines down the seat), is up at headrest height (y > 1.33), or faces rearward
+ *     (normal.z < -0.3, the seat back); otherwise it is the CENTRE panel (cognac);
  *   - every other vertex stays white (unchanged).
  * grey texel x cognac tint = cognac; grey texel x near-black tint = black; and
  * because vertex colours interpolate across each triangle the centre->trim
@@ -68,7 +69,7 @@ for (let i = 0; i < N; i++) {
   let tint = WHITE
   if (isSeat(p[0], p[1], p[2])) {
     nrm.getElement(i, n)
-    const isTrim = Math.abs(n[0]) > 0.40 || p[1] > 1.33 || n[2] < -0.3
+    const isTrim = Math.abs(n[0]) > 0.72 || p[1] > 1.33 || n[2] < -0.3
     if (isTrim) { tint = BLACK; trim++ } else { tint = COGNAC; cognac++ }
   }
   c[0] = tint[0]; c[1] = tint[1]; c[2] = tint[2]
