@@ -224,7 +224,10 @@ export function Car3DHero({ onFallback }: { onFallback: () => void }) {
         if (destroyed || !hostRef.current) return
         handle = m.mountHero(stage, {
           read,
-          modelUrl: `${base}neo3d/models/sealion6.glb`,
+          // ?v=<content-hash>: lets the service worker cache the 2 MB model
+          // CacheFirst (no re-download per view) while still re-fetching it when
+          // the model's bytes actually change. See runtimeCaching in vite.config.
+          modelUrl: `${base}neo3d/models/sealion6.glb?v=${__MODEL_V__}`,
           eligible: () => true, // we only ship this one model
           light: false, // the hero palette we vendored is dark
           fit: 1.2, // frame the car a little tighter so it fills the (taller) hero
