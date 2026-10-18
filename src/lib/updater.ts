@@ -20,20 +20,20 @@
  * per target commit in sessionStorage so nothing can loop.
  */
 /**
- * Self-heal a cache left behind by a retired feature. The 3D hero briefly
- * shipped with service-worker caching (cache names neo3d-assets / neo3d-logic).
- * A bad entry pinned there is never re-fetched (CacheFirst), so on a device that
- * ran that build it could keep feeding the hero a broken model or runtime and
- * wedge it into the 2D photo fallback — permanently, since reverting the code
- * doesn't touch a cache the old worker already filled. This build caches no
- * neo3d assets at all, so any such cache is a stale leftover: delete it, and if
- * one actually existed, reload once (guarded) so the hero re-fetches clean. Same
- * principle as hardRecover — the app fixes itself, the user never clears caches.
+ * Self-heal a cache left behind by retired 3D-hero service-worker caching
+ * (cache names neo3d-assets / neo3d-logic / car3d-model). Those kept serving a
+ * stale model or runtime on devices that ran those builds — masking model
+ * updates and, in the CacheFirst era, wedging the hero into the 2D fallback —
+ * and reverting the code never touched a cache the old worker already filled.
+ * This build caches no 3D assets at all (the model loads straight from the
+ * network), so any such cache is a stale leftover: delete it, and if one existed
+ * reload once (guarded) so the hero re-fetches clean. Same principle as
+ * hardRecover — the app fixes itself, the user never clears caches.
  */
 async function purgeRetiredCaches(): Promise<void> {
   if (!('caches' in window)) return
   try {
-    const stale = (await caches.keys()).filter((k) => /^neo3d-/.test(k))
+    const stale = (await caches.keys()).filter((k) => /^(neo3d-|car3d-)/.test(k))
     if (!stale.length) return
     await Promise.all(stale.map((k) => caches.delete(k)))
     if (!sessionStorage.getItem('odpwa.purged')) {
