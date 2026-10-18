@@ -138,30 +138,14 @@ export default defineConfig(async (): Promise<UserConfig> => {
             //     model busts its own entry and is the only thing re-downloaded.
             //   - The vendored three.js is stable; bump this cacheName if you ever
             //     upgrade it, so clients pick up the new runtime.
+            //   - The small hero.js / car3d.js / icons.svg / hero.css are left OUT
+            //     of this rule on purpose, so hero-logic fixes still reach everyone
+            //     through normal HTTP revalidation instead of sitting stale here.
             urlPattern: /\/neo3d\/(models|vendor)\//,
             handler: 'CacheFirst',
             options: {
               cacheName: 'neo3d-assets',
               expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365, purgeOnQuotaError: true },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-          {
-            // Everything else under neo3d/ — the small hero logic modules
-            // (neo3d/3d/*.js) and the icon sprite (neo3d/icons.svg). The whole 3D
-            // hero is served by the service worker, nothing falls back to the plain
-            // browser cache — one caching mechanism. StaleWhileRevalidate (not
-            // CacheFirst) because these DO change when hero logic is fixed: serve
-            // the cached copy instantly (fast, offline) and refresh in the
-            // background so the next load has the fix. The revalidation is a
-            // conditional request (304 when unchanged), so it costs ~nothing until
-            // a file actually changes. Registered AFTER the rule above, which wins
-            // first-match for the heavy models|vendor bytes.
-            urlPattern: /\/neo3d\//,
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'neo3d-logic',
-              expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 24 * 30, purgeOnQuotaError: true },
               cacheableResponse: { statuses: [0, 200] },
             },
           },
