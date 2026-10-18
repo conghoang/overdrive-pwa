@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type UserConfig } from 'vite'
 import preact from '@preact/preset-vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
@@ -29,10 +29,20 @@ const isDevSite = base.endsWith('/dev/')
 // the app's asset URLs so each deploy busts caches — without renaming files.
 const commit = (process.env.VITE_COMMIT || process.env.GITHUB_SHA || 'dev').slice(0, 7)
 
+// The 3D model is cached by the service worker (StaleWhileRevalidate, below), so
+// its URL carries ?v=<content-hash>: a new model is a new URL — a guaranteed
+// fresh fetch that bypasses any stale cached copy — while an unchanged model
+// keeps the same URL and stays cached. Computed in a plain-JS helper (no
+// @types/node here) and resolved before the config object is built.
+const modelHashHelper = './scripts/model-hash.mjs'
 
-export default defineConfig({
+export default defineConfig(async (): Promise<UserConfig> => {
+  const { modelHash } = await import(/* @vite-ignore */ modelHashHelper)
+  const modelV: string = modelHash('public/neo3d/models/sealion6.glb') || commit
+
+  return {
   base,
-  define: { __COMMIT__: JSON.stringify(commit) },
+  define: { __COMMIT__: JSON.stringify(commit), __MODEL_V__: JSON.stringify(modelV) },
   plugins: [
     preact(),
     {
@@ -145,4 +155,5 @@ export default defineConfig({
     })
   ],
   server: { host: true }
+  }
 })
