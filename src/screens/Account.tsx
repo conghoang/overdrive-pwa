@@ -256,6 +256,15 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
           </button>
         </div>
         <PairHowTo />
+        <div class="srow" style={{ paddingTop: '14px', paddingBottom: 0 }}>
+          <div class="stack">
+            <span class="srow-label">{t('dev.pair_app')}</span>
+            <span class="screen-sub" style={{ marginTop: '2px' }}>{t('dev.pair_app_desc')}</span>
+          </div>
+          <button class="btn ghost" onClick={() => { location.href = import.meta.env.BASE_URL + 'pair-app/' }}>
+            {t('dev.pair_open')}
+          </button>
+        </div>
       </div>
 
       <div class="card" style={{ marginTop: '14px' }}>

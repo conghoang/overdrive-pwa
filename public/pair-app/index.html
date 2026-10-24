@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Pair the CarView app · OverDrive</title>
+<style>
+  :root{--bg:#071019;--surface:#0c1724;--border:rgba(168,198,220,.12);--accent:#35dfc1;
+    --on-accent:#071019;--text:#f5f9fc;--mid:#8497a8;--danger:#ff6b6b;--ok:#56d68c}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100dvh;background:var(--bg);color:var(--text);
+    font-family:system-ui,-apple-system,"Roboto",sans-serif;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;padding:32px 22px;gap:18px;text-align:center}
+  .bolt{width:40px;height:40px}
+  h1{font-size:20px;font-weight:800;margin:0}
+  p{margin:0;color:var(--mid);font-size:14px;line-height:1.45;max-width:30ch}
+  .card{width:100%;max-width:340px;background:var(--surface);border:1px solid var(--border);
+    border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:14px}
+  label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);font-weight:700;text-align:left}
+  input{width:100%;background:#0a1622;border:1px solid var(--border);border-radius:12px;color:var(--text);
+    font-size:24px;font-weight:800;letter-spacing:.22em;text-align:center;padding:14px 10px;text-transform:uppercase}
+  input:focus{outline:none;border-color:var(--accent)}
+  button{width:100%;height:50px;border:0;border-radius:25px;background:var(--accent);color:var(--on-accent);
+    font-size:16px;font-weight:800;cursor:pointer}
+  button:disabled{opacity:.5}
+  .msg{font-size:14px;font-weight:600;min-height:20px}
+  .msg.ok{color:var(--ok)}.msg.err{color:var(--danger)}
+  .big{font-size:44px;line-height:1}
+  .spin{width:26px;height:26px;border:3px solid var(--accent);border-right-color:transparent;
+    border-radius:50%;animation:spin .7s linear infinite;margin:6px auto}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .scanbtn{display:flex;align-items:center;justify-content:center;gap:8px}
+  .scanbtn svg{width:20px;height:20px}
+  .or{display:flex;align-items:center;gap:10px;color:var(--mid);font-size:12px;font-weight:600}
+  .or::before,.or::after{content:'';flex:1;height:1px;background:var(--border)}
+  .ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+  /* Full-screen camera scanner */
+  #scanview{position:fixed;inset:0;background:#000;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  #cam{width:100%;height:100%;object-fit:cover}
+  .scanframe{position:absolute;width:62vw;max-width:280px;aspect-ratio:1;border:3px solid var(--accent);
+    border-radius:22px;box-shadow:0 0 0 100vmax rgba(0,0,0,.45)}
+  .scantip{position:absolute;top:12%;left:0;right:0;color:#fff;font-size:14px;font-weight:600;text-shadow:0 1px 3px #000}
+  #scancancel{position:absolute;bottom:8%;width:auto;padding:0 26px;background:rgba(255,255,255,.14);color:#fff}
+  .qr{background:#fff;border-radius:14px;padding:12px;align-self:center;line-height:0}
+  .qr svg{width:220px;height:220px}
+  .code{font-size:30px;font-weight:800;letter-spacing:.24em}
+  .ask{font-size:16px;font-weight:700;color:var(--text)}
+  .row{display:flex;gap:10px}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+  <svg class="bolt" viewBox="0 0 24 24"><path d="M13 2.5 5 13.2h5.2l-1 8.3 8-11.2h-5.2z" fill="#35dfc1"/></svg>
+  <h1>Pair the CarView app</h1>
+
+  <!-- Showing the QR -->
+  <div class="card" id="show" hidden>
+    <div class="qr" id="qr"></div>
+    <label style="text-align:center">Or type this code in CarView</label>
+    <div class="code" id="code">——————</div>
+    <div class="msg" id="left"></div>
+  </div>
+
+  <!-- A device scanned: ask before handing over the session -->
+  <div class="card" id="ask" hidden>
+    <div class="ask" id="askmsg">Allow this device?</div>
+    <p style="max-width:none">It will be able to read your car and send the quick actions you choose (lock, unlock, climate…). You can sign it out any time by changing OverDrive's access code.</p>
+    <div class="row">
+      <button class="ghost" id="deny">Cancel</button>
+      <button id="allow">Allow</button>
+    </div>
+  </div>
+
+  <div id="status" hidden>
+    <div class="spin" id="spin"></div>
+    <div class="msg" id="statusmsg"></div>
+  </div>
+
+  <p id="hint">In CarView: OverDrive › Scan QR. The code is single-use and changes every two minutes.</p>
+
+<script>
+// Pairing with the PWA showing the QR (the reverse of the watch flow), on the same bridge:
+//  1. Here: ephemeral key A; POST /new {watchPub:A} -> code1. QR = "ODPAIR1:<code1>:<A>".
+//  2. CarView: scans, makes key B, POST /new {watchPub:B} -> code2 (its reply slot), then
+//     POST /put {code:code1, phonePub:B, iv, ct=AES-GCM_ECDH(A,B)({reply:code2,name})}.
+//  3. Here: GET /get?code1 -> B + sealed {reply,name}; the owner allows; we seal the session
+//     to ECDH(A,B) and POST /put {code:code2, phonePub:A, iv, ct}.
+//  4. CarView: GET /get?code2 -> decrypts the session. The bridge only ever sees ciphertext.
+const ls=(k)=>{try{return localStorage.getItem(k)}catch{return null}};
+const PAIR_API=(ls('odw.pairApi')||'https://watch-pair.sl6vn.link').replace(/\/$/,'');
+const $=(id)=>document.getElementById(id);
+const b64u=(buf)=>btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const ub64=(s)=>Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
+const SC=crypto.subtle,EC={name:'ECDH',namedCurve:'P-256'};
+// Background tabs get throttled timers; coming back to the page cuts the wait short so the
+// "Allow?" question shows the moment the owner returns from scanning.
+let wake=null;
+const sleep=(ms)=>new Promise(r=>{const t=setTimeout(r,ms);wake=()=>{clearTimeout(t);r();};});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&wake)wake();});
+
+function session(){
+  const baseUrl=ls('odpwa.baseUrl'),jwt=ls('odpwa.jwt');
+  if(!baseUrl||!jwt||baseUrl==='demo') return null;
+  return {baseUrl,jwt,deviceId:ls('odpwa.deviceId')||''};
+}
+function show(id){for(const x of ['show','ask','status'])$(x).hidden=x!==id;}
+function status(msg,cls,spin){show('status');$('statusmsg').className='msg '+(cls||'');$('statusmsg').innerHTML=msg;$('spin').hidden=!spin;}
+
+function loadQr(){return new Promise((res,rej)=>{if(window.qrcode)return res();
+  const s=document.createElement('script');s.src='../watch/qrcode.min.js';s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
+
+let run=0;
+async function start(){
+  const my=++run;
+  if(!session()){status('Sign in to OverDrive on this device first, then come back here.','err');$('hint').hidden=true;return;}
+  try{
+    const kp=await SC.generateKey(EC,false,['deriveKey']);
+    const pub=b64u(await SC.exportKey('raw',kp.publicKey));
+    const r=await fetch(PAIR_API+'/new',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({watchPub:pub})}).then(x=>x.json());
+    if(!r.code) throw new Error('Pairing service unavailable.');
+    await loadQr();
+    const q=qrcode(0,'M');q.addData('ODPAIR1:'+r.code+':'+pub);q.make();
+    $('qr').innerHTML=q.createSvgTag({cellSize:4,margin:2});
+    $('code').textContent=r.code;show('show');$('hint').hidden=false;
+    const until=Date.now()+(r.ttl||120)*1000;
+    while(my===run&&Date.now()<until){
+      $('left').textContent='New code in '+Math.max(0,Math.ceil((until-Date.now())/1000))+' s';
+      let g=null;try{g=await fetch(PAIR_API+'/get?code='+r.code).then(x=>x.json());}catch{}
+      if(g&&g.status==='ready') return await ask(kp,g);
+      if(g&&g.status==='expired') break;
+      await sleep(2000);
+    }
+    if(my===run) start();
+  }catch(e){status(e.message||'Pairing failed.','err');setTimeout(()=>{if(my===run)start();},3000);}
+}
+
+async function ask(kp,g){
+  const theirs=await SC.importKey('raw',ub64(g.phonePub),EC,false,[]);
+  const aes=await SC.deriveKey({name:'ECDH',public:theirs},kp.privateKey,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+  let hello;
+  try{hello=JSON.parse(new TextDecoder().decode(await SC.decrypt({name:'AES-GCM',iv:ub64(g.iv)},aes,ub64(g.ct))));}
+  catch{status('That scan could not be read. Showing a new code…','err');setTimeout(start,2000);return;}
+  $('askmsg').textContent='Allow '+(hello.name||'this device')+'?';
+  show('ask');$('hint').hidden=true;
+  const ok=await new Promise(res=>{$('allow').onclick=()=>res(true);$('deny').onclick=()=>res(false);});
+  if(!ok){status('Cancelled. Showing a new code…','');setTimeout(start,1500);return;}
+  status('Sending…','',true);
+  try{
+    const iv=crypto.getRandomValues(new Uint8Array(12));
+    const ct=await SC.encrypt({name:'AES-GCM',iv},aes,new TextEncoder().encode(JSON.stringify(session())));
+    const myPub=b64u(await SC.exportKey('raw',kp.publicKey));
+    const r=await fetch(PAIR_API+'/put',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({code:hello.reply,phonePub:myPub,iv:b64u(iv),ct:b64u(ct)})}).then(x=>x.json());
+    if(!r.ok) throw new Error(r.status==='expired'?'Took too long. Scan again.':'Pairing failed.');
+    status('&#10003; Paired<br><span style="color:var(--mid);font-weight:400">'+(hello.name||'The app')+' is connecting.</span>','ok');
+  }catch(e){status(e.message,'err');setTimeout(start,2500);}
+}
+start();
+</script>
+</body>
+</html>
