@@ -127,12 +127,12 @@ export default defineConfig(async (): Promise<UserConfig> => {
         // The watch (/watch/) and pairing (/pair/) sub-apps and the /misc/
         // diagnostic pages are standalone (no SW of their own), so keep the main
         // SW from answering their navigations with the phone app's shell.
-        navigateFallbackDenylist: isDevSite ? [/\/watch\//, /\/pair\//, /\/pair-app\//, /\/misc\//] : [/\/dev\//, /\/watch\//, /\/pair\//, /\/pair-app\//, /\/misc\//],
+        navigateFallbackDenylist: isDevSite ? [/\/watch\//, /\/pair\//, /\/misc\//] : [/\/dev\//, /\/watch\//, /\/pair\//, /\/misc\//],
         globPatterns: ['**/*.{js,css,html,svg,webp,png,ico,woff2}'],
         // neo3d/** is the opt-in 3D hero (three.js + a 2 MB model). It's off by
         // default, so keep it out of the precache for everyone — it's fetched
         // from the network at runtime only once someone turns the model on.
-        globIgnores: ['**/watch/**', '**/pair/**', '**/pair-app/**', '**/neo3d/**', '**/misc/**'],
+        globIgnores: ['**/watch/**', '**/pair/**', '**/neo3d/**', '**/misc/**'],
         // Match precached assets even with the ?v=<commit> cache-buster.
         ignoreURLParametersMatching: [/^v$/],
         cleanupOutdatedCaches: true,
