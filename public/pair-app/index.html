@@ -76,7 +76,7 @@
     <div class="msg" id="statusmsg"></div>
   </div>
 
-  <p id="hint">In CarView: OverDrive › Scan QR. The code is single-use and changes every two minutes.</p>
+  <p id="hint">In CarView: OverDrive › Scan QR. The code is single-use and changes every few minutes.</p>
 
 <script>
 // Pairing with the PWA showing the QR (the reverse of the watch flow), on the same bridge:
@@ -94,9 +94,16 @@ const ub64=(s)=>Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')),c=>c
 const SC=crypto.subtle,EC={name:'ECDH',namedCurve:'P-256'};
 // Background tabs get throttled timers; coming back to the page cuts the wait short so the
 // "Allow?" question shows the moment the owner returns from scanning.
-let wake=null;
+// Android Chrome also FREEZES background tabs, which can leave a fetch hanging forever: every
+// request gets a timeout, and returning to the tab aborts the stuck one and polls straight away.
+let wake=null,inflight=null;
 const sleep=(ms)=>new Promise(r=>{const t=setTimeout(r,ms);wake=()=>{clearTimeout(t);r();};});
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&wake)wake();});
+function fetchT(url,opts,ms){const c=new AbortController();inflight=c;const t=setTimeout(()=>c.abort(),ms||6000);
+  return fetch(url,{...(opts||{}),signal:c.signal,cache:'no-store'}).finally(()=>{clearTimeout(t);if(inflight===c)inflight=null;});}
+function nudge(){if(document.hidden)return;if(inflight)inflight.abort();if(wake)wake();}
+document.addEventListener('visibilitychange',nudge);
+window.addEventListener('pageshow',nudge);
+document.addEventListener('resume',nudge);
 
 function session(){
   const baseUrl=ls('odpwa.baseUrl'),jwt=ls('odpwa.jwt');
@@ -116,7 +123,7 @@ async function start(){
   try{
     const kp=await SC.generateKey(EC,false,['deriveKey']);
     const pub=b64u(await SC.exportKey('raw',kp.publicKey));
-    const r=await fetch(PAIR_API+'/new',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({watchPub:pub})}).then(x=>x.json());
+    const r=await fetchT(PAIR_API+'/new',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({watchPub:pub})}).then(x=>x.json());
     if(!r.code) throw new Error('Pairing service unavailable.');
     await loadQr();
     const q=qrcode(0,'M');q.addData('ODPAIR1:'+r.code+':'+pub);q.make();
@@ -125,10 +132,10 @@ async function start(){
     const until=Date.now()+(r.ttl||120)*1000;
     while(my===run&&Date.now()<until){
       $('left').textContent='New code in '+Math.max(0,Math.ceil((until-Date.now())/1000))+' s';
-      let g=null;try{g=await fetch(PAIR_API+'/get?code='+r.code).then(x=>x.json());}catch{}
+      let g=null;try{g=await fetchT(PAIR_API+'/get?code='+r.code).then(x=>x.json());}catch{}
       if(g&&g.status==='ready') return await ask(kp,g);
       if(g&&g.status==='expired') break;
-      await sleep(2000);
+      await sleep(1500);
     }
     if(my===run) start();
   }catch(e){status(e.message||'Pairing failed.','err');setTimeout(()=>{if(my===run)start();},3000);}
@@ -149,7 +156,7 @@ async function ask(kp,g){
     const iv=crypto.getRandomValues(new Uint8Array(12));
     const ct=await SC.encrypt({name:'AES-GCM',iv},aes,new TextEncoder().encode(JSON.stringify(session())));
     const myPub=b64u(await SC.exportKey('raw',kp.publicKey));
-    const r=await fetch(PAIR_API+'/put',{method:'POST',headers:{'Content-Type':'application/json'},
+    const r=await fetchT(PAIR_API+'/put',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({code:hello.reply,phonePub:myPub,iv:b64u(iv),ct:b64u(ct)})}).then(x=>x.json());
     if(!r.ok) throw new Error(r.status==='expired'?'Took too long. Scan again.':'Pairing failed.');
     status('&#10003; Paired<br><span style="color:var(--mid);font-weight:400">'+(hello.name||'The app')+' is connecting.</span>','ok');
