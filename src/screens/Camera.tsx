@@ -104,7 +104,7 @@ export function Camera() {
   const supported = webCodecsSupported()
   const base = api.getBaseUrl()
   const isDemo = !/^https?:\/\//i.test(base)
-  // The stream needs the tunnel; OD Cloud has no camera. Starting it would only
+  // The stream needs the tunnel; SL6VN Cloud has no camera. Starting it would only
   // wake nothing and spin, so the screen waits for the tunnel instead.
   const viaCloud = onCloud()
 

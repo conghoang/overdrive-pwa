@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
  * breaker (module state) never leaks from one test into the next.
  */
 const CAR = 'https://car.example'
-const CLOUD = 'https://od-cloud.conghoang.workers.dev'
+const CLOUD = 'https://sl6vn-cloud.conghoang.workers.dev'
 const NOW = 1_800_000_000_000
 const DAY = 24 * 3600 * 1000
 
@@ -120,7 +120,7 @@ describe('fallback', () => {
     signIn(); enroll()
     const api = await load()
     handler = (url) => (url.startsWith(CAR) ? down() : json({ success: false, offline: true }, 503))
-    await expect(api.unlock()).rejects.toThrow(/OD Cloud/)
+    await expect(api.unlock()).rejects.toThrow(/SL6VN Cloud/)
   })
 })
 

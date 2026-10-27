@@ -1,8 +1,8 @@
 /*
- * OD Cloud fallback — the decisions, kept free of fetch, storage and signals so
+ * SL6VN Cloud fallback — the decisions, kept free of fetch, storage and signals so
  * they can be reasoned about (and tested) on their own. api.ts does the I/O.
  *
- * OD Cloud mirrors a slice of OverDrive's HTTP API from the car's MQTT feed. It
+ * SL6VN Cloud mirrors a slice of OverDrive's HTTP API from the car's MQTT feed. It
  * is a BACKUP: the tunnel is always tried first, and the cloud only answers
  * when the tunnel cannot. Anything the cloud does not serve never goes there —
  * it would only come back as a 503, and some of it (the 51DK shell, camera) has
@@ -14,7 +14,7 @@ const CLOUD_COMMANDS = new Set(['lock', 'unlock', 'power-on', 'power-off', 'flas
 /** GETs the cloud serves from its MQTT snapshot. */
 const CLOUD_READS = new Set(['/status', '/api/vehicle/state', '/api/launcher/v1/summary', '/api/vehicle/cloud-status'])
 
-/** Whether OD Cloud can serve this request. Query strings never matter here. */
+/** Whether SL6VN Cloud can serve this request. Query strings never matter here. */
 export function cloudSupports(method: string, path: string): boolean {
   const p = path.split('?')[0]
   if (method === 'GET') return CLOUD_READS.has(p)

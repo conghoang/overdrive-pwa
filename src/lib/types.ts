@@ -80,9 +80,9 @@ export interface StatusResponse {
   safeZoneName?: string
   tripStatus?: TripStatus
   recordingStatus?: { gear?: string; accOn?: boolean }
-  /** 'cloud' when OD Cloud served this instead of the car. */
+  /** 'cloud' when SL6VN Cloud served this instead of the car. */
   source?: string
-  /** OD Cloud only. online=false: the car is not connected, this is its last report. */
+  /** SL6VN Cloud only. online=false: the car is not connected, this is its last report. */
   cloud?: CloudFeed
 }
 
@@ -195,7 +195,7 @@ export interface CloudStatus {
   enabled?: boolean
   /** The on-device remote-key rail is present — the path vehicle power rides. */
   localRemoteKey?: boolean
-  /** 'cloud' when OD Cloud answered — its view of BYD Cloud is not the car's. */
+  /** 'cloud' when SL6VN Cloud answered — its view of BYD Cloud is not the car's. */
   source?: string
 }
 

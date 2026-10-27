@@ -28,7 +28,7 @@ export function AppHeader({
   const base = getBaseUrl()
   const isReal = /^https?:\/\//i.test(base)
   /*
-   * OD Cloud standing in for the tunnel is worth a word, not a banner: the
+   * SL6VN Cloud standing in for the tunnel is worth a word, not a banner: the
    * data is real, just second-hand. When the car itself has dropped off the
    * cloud, what is on screen is its last report — say how old, and don't let
    * the dot claim it is live.

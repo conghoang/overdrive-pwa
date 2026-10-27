@@ -115,7 +115,7 @@ export function QuickActions() {
   // car: off → "Power on" (switch it on), on (acc) → "Power off".
   const powered = !!status.value?.acc
   /*
-   * OD Cloud carries the native lock/unlock/power/flash commands but neither
+   * SL6VN Cloud carries the native lock/unlock/power/flash commands but neither
    * the 51DK shell nor the trunk, so on cloud those tiles are greyed out with
    * a line saying why — rather than firing into a 503.
    */

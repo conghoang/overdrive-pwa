@@ -34,7 +34,7 @@ export function Data() {
   const openCharging = () => { setSub('charging'); history.replaceState(null, '', '#/data/charging') }
   const close = () => { setSub(null); history.replaceState(null, '', '#/data') }
 
-  // A list restored from the URL would only fail on OD Cloud — stay on the summary.
+  // A list restored from the URL would only fail on SL6VN Cloud — stay on the summary.
   if (sub === 'trips' && !onCloud()) return <TripList onBack={close} />
   if (sub === 'charging' && !onCloud()) return <ChargingList onBack={close} />
 
@@ -45,7 +45,7 @@ export function Data() {
         sub={connected.value ? t('common.live') : t('common.reconnecting')}
         dot={connected.value ? 'ok' : 'wait'}
       />
-      {/* History lives in the car's own database, which OD Cloud does not
+      {/* History lives in the car's own database, which SL6VN Cloud does not
           mirror: on cloud the cards keep their last-seen numbers, greyed. */}
       <CloudOff>
         <ChargingStats onOpenDetails={openCharging} />

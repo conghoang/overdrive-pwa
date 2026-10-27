@@ -6,7 +6,7 @@ import type { DeviceOdometer, StatusResponse, VehicleState } from './types'
 export const status = signal<StatusResponse | null>(null)
 export const vehicleState = signal<VehicleState | null>(null)
 export const connected = signal(false)
-// Which path is answering — 'cloud' means OD Cloud is standing in for the tunnel.
+// Which path is answering — 'cloud' means SL6VN Cloud is standing in for the tunnel.
 export { dataSource }
 /*
  * Odometer. Read on a slower cadence than telemetry (60s vs 5s): it comes from
@@ -181,7 +181,7 @@ async function fetchCloud(): Promise<void> {
     const s = await getCloudStatus()
     if (!active) return // signed out while in flight — don't rewrite what reset() cleared
     /*
-     * OD Cloud answers this too, but from its own point of view (it reports no
+     * SL6VN Cloud answers this too, but from its own point of view (it reports no
      * BYD Cloud account, because IT has none). Caching that would rewrite the
      * car's real answer, so ask again once the tunnel is back.
      */
@@ -262,7 +262,7 @@ async function tick(): Promise<void> {
     const wantEnv = Date.now() - odoAt > ODO_INTERVAL_MS
     // Charging time-to-full: only while charging/plugged (extra call otherwise wasteful).
     const wantCharge = !!(s.charging?.charging || s.charging?.plugged)
-    // The trip log is not on OD Cloud, so while it stands in the odometer
+    // The trip log is not on SL6VN Cloud, so while it stands in the odometer
     // keeps its last reading rather than spending a request on a dead tunnel.
     if (wantEnv && dataSource.value !== 'cloud') {
       // Fire-and-forget: the odometer is nice-to-have, and a missing debug

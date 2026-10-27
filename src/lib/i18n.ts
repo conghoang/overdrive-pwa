@@ -317,7 +317,7 @@ const EN: Record<string, string> = {
   'err.network': 'Network error',
   'err.login_failed_n': 'Login failed ({status})',
 
-  'cloud.title': 'OD Cloud backup',
+  'cloud.title': 'SL6VN Cloud backup',
   'cloud.desc': 'Optional. Used automatically when the car URL can’t be reached — live status and basic controls only.',
   'cloud.enable': 'Enable cloud backup',
   'cloud.enabling': 'Setting up…',
@@ -332,9 +332,9 @@ const EN: Record<string, string> = {
   'cloud.in_use': 'In use now',
   'cloud.via': 'via cloud',
   'cloud.last_seen': 'car offline · {ago}',
-  'cloud.car_offline': 'The car is not connected to OD Cloud',
+  'cloud.car_offline': 'The car is not connected to SL6VN Cloud',
   'cloud.session_lost': 'Cloud backup was signed out — re-enable it in Settings',
-  'cloud.needs_tunnel': 'Needs the direct car connection — unavailable while on OD Cloud.',
+  'cloud.needs_tunnel': 'Needs the direct car connection — unavailable while on SL6VN Cloud.',
 
 
   'ago.now': 'just now',
@@ -631,7 +631,7 @@ const VI: Record<string, string> = {
   'err.network': 'Lỗi mạng',
   'err.login_failed_n': 'Đăng nhập thất bại ({status})',
 
-  'cloud.title': 'Dự phòng OD Cloud',
+  'cloud.title': 'Dự phòng SL6VN Cloud',
   'cloud.desc': 'Không bắt buộc. Tự động dùng khi không kết nối được địa chỉ xe — chỉ có trạng thái và điều khiển cơ bản.',
   'cloud.enable': 'Bật dự phòng cloud',
   'cloud.enabling': 'Đang thiết lập…',
@@ -646,9 +646,9 @@ const VI: Record<string, string> = {
   'cloud.in_use': 'Đang dùng',
   'cloud.via': 'qua cloud',
   'cloud.last_seen': 'xe ngoại tuyến · {ago}',
-  'cloud.car_offline': 'Xe chưa kết nối tới OD Cloud',
+  'cloud.car_offline': 'Xe chưa kết nối tới SL6VN Cloud',
   'cloud.session_lost': 'Dự phòng cloud đã bị đăng xuất — bật lại trong Cài đặt',
-  'cloud.needs_tunnel': 'Cần kết nối trực tiếp tới xe — không dùng được khi đang qua OD Cloud.',
+  'cloud.needs_tunnel': 'Cần kết nối trực tiếp tới xe — không dùng được khi đang qua SL6VN Cloud.',
 
 
   'ago.now': 'vừa xong',

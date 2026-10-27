@@ -2,11 +2,11 @@ import type { ComponentChildren } from 'preact'
 import { t } from '../lib/i18n'
 import { dataSource } from '../lib/store'
 
-/** True while OD Cloud is answering in place of the tunnel. */
+/** True while SL6VN Cloud is answering in place of the tunnel. */
 export const onCloud = (): boolean => dataSource.value === 'cloud'
 
 /**
- * Grey out something OD Cloud cannot serve, and say why.
+ * Grey out something SL6VN Cloud cannot serve, and say why.
  *
  * `inert` rather than a disabled flag threaded through every child: it takes
  * the whole block out of taps and focus at once, and it lifts the moment the

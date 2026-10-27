@@ -32,7 +32,7 @@ export function isConfigured(): boolean { return !!getBaseUrl() && !!getJwt() }
 export function clearAuth(): void { localStorage.removeItem(K_JWT) }
 
 /*
- * OD Cloud — an optional second way to reach the car (see lib/fallback.ts).
+ * SL6VN Cloud — an optional second way to reach the car (see lib/fallback.ts).
  *
  * The user types nothing for it. "Enable cloud backup" hands the cloud the car
  * URL and the tunnel JWT this app already holds; the cloud uses them once to
@@ -41,7 +41,7 @@ export function clearAuth(): void { localStorage.removeItem(K_JWT) }
  * user out of the other. Never enabled, every request goes to the tunnel
  * exactly as before.
  */
-export const CLOUD_DEFAULT_URL = 'https://od-cloud.conghoang.workers.dev'
+export const CLOUD_DEFAULT_URL = 'https://sl6vn-cloud.conghoang.workers.dev'
 const K_CLOUD_URL = 'odpwa.odcloud.url' // advanced override; empty = the default
 const K_CLOUD_TOKEN = 'odpwa.odcloud.token'
 const K_CLOUD_EXP = 'odpwa.odcloud.exp'
@@ -49,7 +49,7 @@ const K_CLOUD_EXP = 'odpwa.odcloud.exp'
 const K_CLOUD_DEVICE = 'odpwa.odcloud.device'
 
 export function getCloudUrl(): string { return localStorage.getItem(K_CLOUD_URL) || CLOUD_DEFAULT_URL }
-/** Point the app at another OD Cloud. Empty restores the default. */
+/** Point the app at another SL6VN Cloud. Empty restores the default. */
 export function setCloudUrl(url: string): void {
   const u = normalizeBase(url)
   if (!u || u === CLOUD_DEFAULT_URL) localStorage.removeItem(K_CLOUD_URL)
@@ -169,7 +169,7 @@ export async function getCloudEnrollment(): Promise<CloudEnrollment> {
 
 /*
  * Which path served the latest telemetry: 'cloud' while the tunnel is down and
- * OD Cloud is answering instead. Screens grey out what the cloud cannot do off
+ * SL6VN Cloud is answering instead. Screens grey out what the cloud cannot do off
  * the back of this. null until the first reading.
  */
 export const dataSource = signal<'tunnel' | 'cloud' | null>(null)

@@ -108,7 +108,7 @@ async function runClimate(fn: () => Promise<ControlResult>, okMsg: string): Prom
   const gen = ++climateGen
   try {
     const ok = toastResult(await fn(), okMsg)
-    // Not over OD Cloud: it relays through an automation that queues each
+    // Not over SL6VN Cloud: it relays through an automation that queues each
     // command and waits for the car to confirm, so a resend would only queue
     // a duplicate behind the first.
     if (!onCloud()) {
@@ -190,7 +190,7 @@ export function Controls() {
   //     when the daemon confirms it exists (OD's loadPowerControls).
   const hasLocalKey = localRemoteKey.value === true
   const cloudOrKey = cloudConfigured.value !== false || hasLocalKey
-  // OD Cloud relays lock/unlock/power/flash/find but not the trunk.
+  // SL6VN Cloud relays lock/unlock/power/flash/find but not the trunk.
   const viaCloud = onCloud()
 
   return (
