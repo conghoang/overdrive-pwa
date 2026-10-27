@@ -1,8 +1,10 @@
-import { clearAll, getBaseUrl, getDeviceId } from '../lib/api'
-import { connected, reset, status } from '../lib/store'
+import { CLOUD_DEFAULT_URL, clearAll, cloudState, disableCloud, enrollCloud, getBaseUrl, getCloudDeviceId, getCloudEnrollment, getCloudUrl, getDeviceId, setCloudUrl } from '../lib/api'
+import type { CloudEnrollment } from '../lib/api'
+import { connected, dataSource, reset, status } from '../lib/store'
 import { hardReset } from '../lib/updater'
+import { ago } from '../lib/format'
 import { IconPower, IconRefresh } from '../components/icons-extra'
-import { useState } from 'preact/hooks'
+import { useEffect, useState } from 'preact/hooks'
 import { AppHeader } from '../components/AppHeader'
 import { DEFAULT_PHOTO } from '../components/CarHero'
 import { Switch } from '../components/Switch'
@@ -218,6 +220,8 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
         <InfoRow label={t('dev.locale')} value={s?.locale || '--'} />
       </div>
 
+      <CloudBackup />
+
       {/* Press-and-hold guards for the actions a stray tap shouldn't fire. */}
       <div class="card" style={{ marginTop: '14px' }}>
         <div class="card-title">{t('dev.hold_title')}</div>
@@ -298,6 +302,102 @@ function PairHowTo() {
           {a3}
         </li>
       </ol>
+    </div>
+  )
+}
+
+/*
+ * OD Cloud backup. Entirely optional: never enabled, every request goes to the
+ * car URL exactly as before. Enabled, it is used on its own whenever the car
+ * URL stops answering (see lib/fallback.ts) — there is no switch to flip, which
+ * is the point of a backup. Enabling is one tap: the cloud is handed the car
+ * URL and session this app already has, and nothing is typed.
+ */
+function CloudBackup() {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [feed, setFeed] = useState<CloudEnrollment | null>(null)
+  const [url, setUrl] = useState(getCloudUrl())
+  const state = cloudState.value
+  const viaCloud = dataSource.value === 'cloud'
+  // Enrolling goes THROUGH the tunnel, so it needs the tunnel answering now.
+  const tunnelUp = connected.value && dataSource.value === 'tunnel'
+
+  // Whether the car is reachable via the cloud right now — a nice-to-have.
+  useEffect(() => {
+    if (state !== 'on') { setFeed(null); return }
+    let live = true
+    void getCloudEnrollment().then((e) => { if (live) setFeed(e) }).catch(() => {})
+    return () => { live = false }
+  }, [state])
+
+  async function enable() {
+    if (busy || !tunnelUp) return
+    setBusy(true)
+    setError(null)
+    try {
+      await enrollCloud()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.failed'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div class="card" style={{ marginTop: '14px' }}>
+      <div class="spread" style={{ marginBottom: '6px' }}>
+        <div class="card-title" style={{ margin: 0 }}>{t('cloud.title')}</div>
+        {state === 'on' && (
+          <span class={'pill ' + (viaCloud ? 'warn' : 'good')}>{viaCloud ? t('cloud.in_use') : t('common.on')}</span>
+        )}
+        {state === 'lost' && <span class="pill warn">{t('cloud.needs_reenable')}</span>}
+      </div>
+      <div class="screen-sub">{t('cloud.desc')}</div>
+
+      {state === 'on' ? (
+        <>
+          <InfoRow label={t('dev.device')} value={getCloudDeviceId() || '--'} mono />
+          <InfoRow
+            label={t('cloud.car_link')}
+            value={
+              !feed ? '--'
+              : feed.online ? t('common.connected')
+              : `${t('common.offline')}${feed.updatedAt ? ` · ${ago(feed.updatedAt)}` : ''}`
+            }
+          />
+          <button class="btn block" style={{ marginTop: '8px' }} onClick={disableCloud}>
+            {t('cloud.disable')}
+          </button>
+        </>
+      ) : (
+        <>
+          <button class="btn accent block" style={{ marginTop: '12px' }} disabled={busy || !tunnelUp} onClick={() => void enable()}>
+            {busy ? <><IconRefresh size={18} class="spin" /> {t('cloud.enabling')}</> : t('cloud.enable')}
+          </button>
+          {busy && <div class="cloud-off-hint">{t('cloud.enabling_hint')}</div>}
+          {!busy && !tunnelUp && <div class="cloud-off-hint">{t('cloud.enable_needs_tunnel')}</div>}
+          {error && <div class="screen-sub" style={{ marginTop: '8px', color: 'var(--danger)' }}>{error}</div>}
+          {/* Which cloud to enrol with. Almost nobody needs this, so it stays folded. */}
+          <details class="cloud-adv">
+            <summary>{t('cloud.advanced')}</summary>
+            <input
+              class="wc-input mono"
+              type="url"
+              inputMode="url"
+              autocomplete="off"
+              aria-label={t('cloud.url')}
+              placeholder={CLOUD_DEFAULT_URL}
+              value={url === CLOUD_DEFAULT_URL ? '' : url}
+              onInput={(e) => setUrl((e.target as HTMLInputElement).value)}
+              onBlur={(e) => {
+                setCloudUrl((e.target as HTMLInputElement).value)
+                setUrl(getCloudUrl())
+              }}
+            />
+          </details>
+        </>
+      )}
     </div>
   )
 }

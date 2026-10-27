@@ -13,6 +13,7 @@ import { WiCarlinkGrid } from '../components/WiCarlinkControls'
 import { Seats } from '../components/Seats'
 import { ClimateBanner } from '../components/ClimateBanner'
 import { AppHeader } from '../components/AppHeader'
+import { CloudOff, onCloud } from '../components/CloudOff'
 import '../components/controls.css'
 
 const TEMP_MIN = 16
@@ -107,9 +108,14 @@ async function runClimate(fn: () => Promise<ControlResult>, okMsg: string): Prom
   const gen = ++climateGen
   try {
     const ok = toastResult(await fn(), okMsg)
-    void sleep(600).then(() => {
-      if (gen === climateGen) fn().catch(() => {})
-    })
+    // Not over OD Cloud: it relays through an automation that queues each
+    // command and waits for the car to confirm, so a resend would only queue
+    // a duplicate behind the first.
+    if (!onCloud()) {
+      void sleep(600).then(() => {
+        if (gen === climateGen) fn().catch(() => {})
+      })
+    }
     return ok
   } catch (e) {
     handleError(e)
@@ -184,6 +190,8 @@ export function Controls() {
   //     when the daemon confirms it exists (OD's loadPowerControls).
   const hasLocalKey = localRemoteKey.value === true
   const cloudOrKey = cloudConfigured.value !== false || hasLocalKey
+  // OD Cloud relays lock/unlock/power/flash/find but not the trunk.
+  const viaCloud = onCloud()
 
   return (
     <div class="screen">
@@ -261,17 +269,19 @@ export function Controls() {
           work with no BYD Cloud account (see api.ventWindows). */}
       <div class="card" style={{ marginTop: '14px' }}>
         <div class="card-title">{t('ctrl.windows')}</div>
-        <div class="grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
-          <button class="btn" disabled={disabled} onClick={() => run(api.ventWindows, t('ctrl.vent'))}>
-            {t('ctrl.vent')}
-          </button>
-          <button class="btn" disabled={disabled} onClick={() => run(api.openAllWindows, t('ctrl.open_all'))}>
-            {t('ctrl.open_all')}
-          </button>
-          <button class="btn" disabled={disabled} onClick={() => run(api.closeAllWindows, t('ctrl.close_all'))}>
-            {t('ctrl.close_all')}
-          </button>
-        </div>
+        <CloudOff>
+          <div class="grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+            <button class="btn" disabled={disabled} onClick={() => run(api.ventWindows, t('ctrl.vent'))}>
+              {t('ctrl.vent')}
+            </button>
+            <button class="btn" disabled={disabled} onClick={() => run(api.openAllWindows, t('ctrl.open_all'))}>
+              {t('ctrl.open_all')}
+            </button>
+            <button class="btn" disabled={disabled} onClick={() => run(api.closeAllWindows, t('ctrl.close_all'))}>
+              {t('ctrl.close_all')}
+            </button>
+          </div>
+        </CloudOff>
       </div>
 
       <Seats />
@@ -281,79 +291,84 @@ export function Controls() {
           OverDrive's dashboard offers — Lock, Unlock, Flash, Find, Open/Close
           trunk, Power on/off — each posting to the identical endpoint OD does. */}
       {wc ? (
-        <WiCarlinkGrid />
+        <CloudOff>
+          <WiCarlinkGrid />
+        </CloudOff>
       ) : (
-        <div class="grid action-grid tight" style={{ ['--cols' as string]: 4 }}>
-          {cloudOrKey && (
+        <>
+          <div class="grid action-grid tight" style={{ ['--cols' as string]: 4 }}>
+            {cloudOrKey && (
+              <ActionButton
+                label={t('ctrl.lock')}
+                tone="accent"
+                icon={<IconLock size={22} />}
+                disabled={disabled}
+                onFire={() => run(api.lock, t('ctrl.lock'))}
+              />
+            )}
+            {cloudOrKey && (
+              <ActionButton
+                label={t('ctrl.unlock')}
+                tone="danger"
+                icon={<IconUnlock size={22} />}
+                disabled={disabled}
+                onFire={() => run(api.unlock, t('ctrl.unlock'))}
+              />
+            )}
             <ActionButton
-              label={t('ctrl.lock')}
-              tone="accent"
-              icon={<IconLock size={22} />}
+              label={t('ctrl.flash')}
+              icon={<IconBolt size={22} />}
               disabled={disabled}
-              onFire={() => run(api.lock, t('ctrl.lock'))}
+              onFire={() => run(api.flash, t('ctrl.flash'))}
             />
-          )}
-          {cloudOrKey && (
             <ActionButton
-              label={t('ctrl.unlock')}
-              tone="danger"
-              icon={<IconUnlock size={22} />}
+              label={t('ctrl.find')}
+              icon={<IconBell size={22} />}
               disabled={disabled}
-              onFire={() => run(api.unlock, t('ctrl.unlock'))}
+              onFire={() => run(api.findCar, t('ctrl.find'))}
             />
-          )}
-          <ActionButton
-            label={t('ctrl.flash')}
-            icon={<IconBolt size={22} />}
-            disabled={disabled}
-            onFire={() => run(api.flash, t('ctrl.flash'))}
-          />
-          <ActionButton
-            label={t('ctrl.find')}
-            icon={<IconBell size={22} />}
-            disabled={disabled}
-            onFire={() => run(api.findCar, t('ctrl.find'))}
-          />
-          {cloudOrKey && (
-            <ActionButton
-              label={t('ctrl.trunk_open')}
-              icon={<IconTrunk size={22} />}
-              disabled={disabled}
-              onFire={() => run(() => api.setTrunk('open'), t('ctrl.trunk_open'))}
-            />
-          )}
-          {cloudOrKey && (
-            <ActionButton
-              label={t('ctrl.trunk_close')}
-              icon={<IconTrunk size={22} />}
-              disabled={disabled}
-              onFire={() => run(() => api.setTrunk('close'), t('ctrl.trunk_close'))}
-            />
-          )}
-          {/* Power rides the local remote-key rail — shown only when it exists.
-              Plain tap by default; hold only when the owner turned on the
-              press-and-hold guard (same setting as engine start). */}
-          {hasLocalKey && (
-            <ActionButton
-              label={t('ctrl.power_on')}
-              tone="accent"
-              hold={holdStart.value}
-              icon={<IconPower size={22} />}
-              disabled={disabled}
-              onFire={() => run(api.powerOn, t('ctrl.power_on'))}
-            />
-          )}
-          {hasLocalKey && (
-            <ActionButton
-              label={t('ctrl.power_off')}
-              tone="danger"
-              hold={holdStart.value}
-              icon={<IconPowerOff size={22} />}
-              disabled={disabled}
-              onFire={() => run(api.powerOff, t('ctrl.power_off'))}
-            />
-          )}
-        </div>
+            {cloudOrKey && (
+              <ActionButton
+                label={t('ctrl.trunk_open')}
+                icon={<IconTrunk size={22} />}
+                disabled={disabled || viaCloud}
+                onFire={() => run(() => api.setTrunk('open'), t('ctrl.trunk_open'))}
+              />
+            )}
+            {cloudOrKey && (
+              <ActionButton
+                label={t('ctrl.trunk_close')}
+                icon={<IconTrunk size={22} />}
+                disabled={disabled || viaCloud}
+                onFire={() => run(() => api.setTrunk('close'), t('ctrl.trunk_close'))}
+              />
+            )}
+            {/* Power rides the local remote-key rail — shown only when it exists.
+                Plain tap by default; hold only when the owner turned on the
+                press-and-hold guard (same setting as engine start). */}
+            {hasLocalKey && (
+              <ActionButton
+                label={t('ctrl.power_on')}
+                tone="accent"
+                hold={holdStart.value}
+                icon={<IconPower size={22} />}
+                disabled={disabled}
+                onFire={() => run(api.powerOn, t('ctrl.power_on'))}
+              />
+            )}
+            {hasLocalKey && (
+              <ActionButton
+                label={t('ctrl.power_off')}
+                tone="danger"
+                hold={holdStart.value}
+                icon={<IconPowerOff size={22} />}
+                disabled={disabled}
+                onFire={() => run(api.powerOff, t('ctrl.power_off'))}
+              />
+            )}
+          </div>
+          {viaCloud && cloudOrKey && <p class="cloud-off-hint">{t('ctrl.trunk')} · {t('cloud.needs_tunnel')}</p>}
+        </>
       )}
     </div>
   )

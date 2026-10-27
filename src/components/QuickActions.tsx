@@ -9,6 +9,7 @@ import { holdStart, holdTrunk, wc, wcShell, wicarlink } from '../lib/settings'
 import { vehicleState } from '../lib/store'
 import { trunkAction } from '../lib/trunk'
 import { useHold } from './HoldButton'
+import { onCloud } from './CloudOff'
 import { IconBolt, IconLock, IconTrunk, IconUnlock } from './icons'
 import { IconPower, IconPowerOff } from './icons-extra'
 
@@ -113,62 +114,73 @@ export function QuickActions() {
   // Like OverDrive's split Power on / Power off, one tile that follows the
   // car: off → "Power on" (switch it on), on (acc) → "Power off".
   const powered = !!status.value?.acc
+  /*
+   * OD Cloud carries the native lock/unlock/power/flash commands but neither
+   * the 51DK shell nor the trunk, so on cloud those tiles are greyed out with
+   * a line saying why — rather than firing into a 503.
+   */
+  const viaCloud = onCloud()
+  const shellOff = disabled || (wc51 && viaCloud)
+  const trunkOff = disabled || viaCloud
   return (
-    <div class="quick-row">
-      <QuickBtn
-        icon={<IconLock size={22} />}
-        label={t('ctrl.lock')}
-        disabled={disabled}
-        onFire={() => (wc51 ? fire('lock', t('ctrl.lock')) : run(api.lock, t('ctrl.lock')))}
-      />
-      <QuickBtn
-        icon={<IconUnlock size={22} />}
-        label={t('ctrl.unlock')}
-        disabled={disabled}
-        onFire={() => (wc51 ? fire('unlock', t('ctrl.unlock')) : run(api.unlock, t('ctrl.unlock')))}
-      />
-      {wc51 ? (
+    <>
+      <div class="quick-row">
         <QuickBtn
-          icon={powered ? <IconPowerOff size={22} /> : <IconBolt size={22} />}
-          label={powered ? t('ctrl.stop') : t('ctrl.start')}
-          disabled={disabled}
-          hold={holdStart.value}
-          // 51DK's start command toggles the engine (its own label is
-          // "Start / Stop"), so when the car is on this stops it — follow the
-          // car's state in the label, icon and toast.
-          onFire={() => fire('start', powered ? t('ctrl.stop') : t('ctrl.start'))}
+          icon={<IconLock size={22} />}
+          label={t('ctrl.lock')}
+          disabled={shellOff}
+          onFire={() => (wc51 ? fire('lock', t('ctrl.lock')) : run(api.lock, t('ctrl.lock')))}
         />
-      ) : hasLocalKey ? (
         <QuickBtn
-          icon={powered ? <IconPowerOff size={22} /> : <IconPower size={22} />}
-          label={powered ? t('ctrl.power_off') : t('ctrl.power_on')}
-          disabled={disabled}
-          hold={holdStart.value}
+          icon={<IconUnlock size={22} />}
+          label={t('ctrl.unlock')}
+          disabled={shellOff}
+          onFire={() => (wc51 ? fire('unlock', t('ctrl.unlock')) : run(api.unlock, t('ctrl.unlock')))}
+        />
+        {wc51 ? (
+          <QuickBtn
+            icon={powered ? <IconPowerOff size={22} /> : <IconBolt size={22} />}
+            label={powered ? t('ctrl.stop') : t('ctrl.start')}
+            disabled={shellOff}
+            hold={holdStart.value}
+            // 51DK's start command toggles the engine (its own label is
+            // "Start / Stop"), so when the car is on this stops it — follow the
+            // car's state in the label, icon and toast.
+            onFire={() => fire('start', powered ? t('ctrl.stop') : t('ctrl.start'))}
+          />
+        ) : hasLocalKey ? (
+          <QuickBtn
+            icon={powered ? <IconPowerOff size={22} /> : <IconPower size={22} />}
+            label={powered ? t('ctrl.power_off') : t('ctrl.power_on')}
+            disabled={disabled}
+            hold={holdStart.value}
+            onFire={() =>
+              powered
+                ? run(api.powerOff, t('ctrl.power_off'))
+                : run(api.powerOn, t('ctrl.power_on'))
+            }
+          />
+        ) : (
+          <QuickBtn
+            icon={<IconBolt size={22} />}
+            label={t('ctrl.flash')}
+            disabled={disabled}
+            onFire={() => run(api.flash, t('ctrl.flash'))}
+          />
+        )}
+        <QuickBtn
+          icon={<IconTrunk size={22} />}
+          label={wc51 ? t('ctrl.trunk') : t(trunk.labelKey)}
+          disabled={trunkOff}
+          hold={holdTrunk.value}
           onFire={() =>
-            powered
-              ? run(api.powerOff, t('ctrl.power_off'))
-              : run(api.powerOn, t('ctrl.power_on'))
+            wc51
+              ? fire('trunk', t('ctrl.trunk'))
+              : run(() => api.setTrunk(trunk.action), t(trunk.labelKey))
           }
         />
-      ) : (
-        <QuickBtn
-          icon={<IconBolt size={22} />}
-          label={t('ctrl.flash')}
-          disabled={disabled}
-          onFire={() => run(api.flash, t('ctrl.flash'))}
-        />
-      )}
-      <QuickBtn
-        icon={<IconTrunk size={22} />}
-        label={wc51 ? t('ctrl.trunk') : t(trunk.labelKey)}
-        disabled={disabled}
-        hold={holdTrunk.value}
-        onFire={() =>
-          wc51
-            ? fire('trunk', t('ctrl.trunk'))
-            : run(() => api.setTrunk(trunk.action), t(trunk.labelKey))
-        }
-      />
-    </div>
+      </div>
+      {viaCloud && !disabled && <p class="cloud-off-hint">{wc51 ? '' : `${t('ctrl.trunk')} · `}{t('cloud.needs_tunnel')}</p>}
+    </>
   )
 }

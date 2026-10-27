@@ -1,5 +1,7 @@
 import { getBaseUrl } from '../lib/api'
+import { ago } from '../lib/format'
 import { t } from '../lib/i18n'
+import { dataSource, status } from '../lib/store'
 import { setTheme, theme } from '../lib/theme'
 import { IconMoon, IconSun, IconThemeAuto } from './icons'
 
@@ -25,11 +27,28 @@ export function AppHeader({
 }) {
   const base = getBaseUrl()
   const isReal = /^https?:\/\//i.test(base)
+  /*
+   * OD Cloud standing in for the tunnel is worth a word, not a banner: the
+   * data is real, just second-hand. When the car itself has dropped off the
+   * cloud, what is on screen is its last report — say how old, and don't let
+   * the dot claim it is live.
+   */
+  const viaCloud = dataSource.value === 'cloud'
+  const feed = viaCloud ? status.value?.cloud : undefined
+  const carOffline = feed?.online === false
   return (
     <div class="screen-head">
       <div>
         <h1 class="screen-title">{title}</h1>
-        <div class="screen-sub">{sub}</div>
+        <div class="screen-sub">
+          {sub}
+          {viaCloud && (
+            <span class="via-cloud">
+              {' · '}{t('cloud.via')}
+              {carOffline && <> · {t('cloud.last_seen', { ago: ago(feed?.updatedAt) || '--' })}</>}
+            </span>
+          )}
+        </div>
       </div>
       <div class="head-actions">
         <ThemeButton />
@@ -45,7 +64,7 @@ export function AppHeader({
             <img src={OD_LOGO} alt="OD" width="24" height="24" />
           </a>
         )}
-        <span class={'dot ' + dot} />
+        <span class={'dot ' + (carOffline && dot === 'ok' ? 'wait' : dot)} />
       </div>
     </div>
   )

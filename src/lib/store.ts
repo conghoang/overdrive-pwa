@@ -1,11 +1,13 @@
 import { signal } from '@preact/signals'
-import { AuthError, getCloudStatus, getOdometer, getStatus, getSummary, getVehicleState } from './api'
+import { AuthError, dataSource, getCloudStatus, getOdometer, getStatus, getSummary, getVehicleState, maybeRefreshCloud } from './api'
 import type { Odometer } from './api'
 import type { DeviceOdometer, StatusResponse, VehicleState } from './types'
 
 export const status = signal<StatusResponse | null>(null)
 export const vehicleState = signal<VehicleState | null>(null)
 export const connected = signal(false)
+// Which path is answering — 'cloud' means OD Cloud is standing in for the tunnel.
+export { dataSource }
 /*
  * Odometer. Read on a slower cadence than telemetry (60s vs 5s): it comes from
  * the trip log, which only advances when a trip closes, so asking on every
@@ -171,11 +173,22 @@ function readLocalKey(): boolean | null {
 }
 export const localRemoteKey = signal<boolean | null>(readLocalKey())
 let cloudFetched = false
+// Whether the cloud backup's token has been checked for renewal this session.
+let cloudTokenChecked = false
 
 async function fetchCloud(): Promise<void> {
   try {
     const s = await getCloudStatus()
     if (!active) return // signed out while in flight — don't rewrite what reset() cleared
+    /*
+     * OD Cloud answers this too, but from its own point of view (it reports no
+     * BYD Cloud account, because IT has none). Caching that would rewrite the
+     * car's real answer, so ask again once the tunnel is back.
+     */
+    if (s.source === 'cloud') {
+      cloudFetched = false
+      return
+    }
     const c = !!s.configured
     cloudConfigured.value = c
     localStorage.setItem(K_CLOUD, c ? '1' : '0')
@@ -236,15 +249,22 @@ async function tick(): Promise<void> {
     status.value = s
     connected.value = true
     lastError.value = null
-    if (!cloudFetched) {
+    // The tunnel just answered, so its session is good — the one thing a
+    // cloud token renewal needs. Once per session; silent either way.
+    if (!cloudTokenChecked && dataSource.value === 'tunnel') {
+      cloudTokenChecked = true
+      maybeRefreshCloud()
+    }
+    if (!cloudFetched && dataSource.value !== 'cloud') {
       cloudFetched = true
       void fetchCloud() // once per session; don't block the poll
     }
     const wantEnv = Date.now() - odoAt > ODO_INTERVAL_MS
     // Charging time-to-full: only while charging/plugged (extra call otherwise wasteful).
     const wantCharge = !!(s.charging?.charging || s.charging?.plugged)
-    if (wantEnv) {
-      odoAt = Date.now()
+    // The trip log is not on OD Cloud, so while it stands in the odometer
+    // keeps its last reading rather than spending a request on a dead tunnel.
+    if (wantEnv && dataSource.value !== 'cloud') {
       // Fire-and-forget: the odometer is nice-to-have, and a missing debug
       // route must never take the telemetry poll down with it.
       void getOdometer()
@@ -292,6 +312,7 @@ async function tick(): Promise<void> {
      * 5s while the cable is in, so each tick IS the retry. A failed attempt
      * leaves the previous values in place rather than blanking them.
      */
+    if (wantEnv) odoAt = Date.now()
     if (active && (wantEnv || wantCharge)) {
       const forEnv = wantEnv
       const forCharge = wantCharge
@@ -383,6 +404,7 @@ export function reset(): void {
   status.value = null
   vehicleState.value = null
   connected.value = false
+  dataSource.value = null
   lastError.value = null
   chargeEtaMin.value = null
   chargeTargetPct.value = null
@@ -401,6 +423,7 @@ export function reset(): void {
   cloudConfigured.value = null
   localRemoteKey.value = null
   cloudFetched = false
+  cloudTokenChecked = false
   localStorage.removeItem(K_CLOUD)
   localStorage.removeItem(K_LOCALKEY)
 }

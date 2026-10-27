@@ -4,6 +4,7 @@ import { CAMERA_VIEWS } from '../lib/api'
 import { connected } from '../lib/store'
 import { dewarpByView, setDewarpFor } from '../lib/settings'
 import { AppHeader } from '../components/AppHeader'
+import { onCloud } from '../components/CloudOff'
 import { t } from '../lib/i18n'
 import type { JSX } from 'preact'
 import { IconClose, IconExpand } from '../components/icons-extra'
@@ -103,6 +104,9 @@ export function Camera() {
   const supported = webCodecsSupported()
   const base = api.getBaseUrl()
   const isDemo = !/^https?:\/\//i.test(base)
+  // The stream needs the tunnel; OD Cloud has no camera. Starting it would only
+  // wake nothing and spin, so the screen waits for the tunnel instead.
+  const viaCloud = onCloud()
 
   // Presets are read from the car rather than hardcoded, so they cannot drift
   // from whatever the installed build actually supports.
@@ -181,7 +185,13 @@ export function Camera() {
   }, [])
 
   useEffect(() => {
-    if (!supported || isDemo || !visible) return
+    if (viaCloud) {
+      // A stream torn down for the cloud never reports it — and an earlier
+      // failure is not why it is off now.
+      setState('stopped')
+      setDetail(null)
+    }
+    if (!supported || isDemo || !visible || viaCloud) return
     let cancelled = false
 
     async function begin() {
@@ -221,7 +231,7 @@ export function Camera() {
       // will not await it, yet it still has to land before the next enable.
       void queued(() => api.streamDisable()).catch(() => {})
     }
-  }, [view, supported, isDemo, restartAt, visible])
+  }, [view, supported, isDemo, restartAt, visible, viaCloud])
 
   /*
    * Fullscreen is CSS first, Fullscreen API second.
@@ -302,7 +312,7 @@ export function Camera() {
           {state !== 'live' && (
             <div class="cam-overlay">
               {state === 'connecting' && <div class="cam-spinner" />}
-              <span>{isDemo ? t('cam.demo') : label}</span>
+              <span>{isDemo ? t('cam.demo') : viaCloud ? t('cloud.needs_tunnel') : label}</span>
               {/* WebCodecs is the only decoder here; OD's own viewer carries
                   software fallbacks, so send people there rather than shipping
                   an asm.js decoder for a case most phones never hit. */}
@@ -323,7 +333,7 @@ export function Camera() {
             <button
               key={v.mode}
               class={'cam-view' + (v.mode === view ? ' on' : '')}
-              disabled={!connected.value || isDemo || !supported}
+              disabled={!connected.value || isDemo || !supported || viaCloud}
               aria-pressed={v.mode === view}
               aria-label={t(v.key)}
               onClick={() => setView(v.mode)}
@@ -340,7 +350,7 @@ export function Camera() {
             <select
               class="cam-select"
               value={quality.current ?? ''}
-              disabled={!connected.value || isDemo}
+              disabled={!connected.value || isDemo || viaCloud}
               onChange={(e) => void pickQuality((e.target as HTMLSelectElement).value)}
             >
               {quality.options.map((o) => (
@@ -361,7 +371,7 @@ export function Camera() {
             value={strength}
             style={{ ['--fill' as string]: `${strength}%` }}
             aria-label={t('cam.dewarp')}
-            disabled={!connected.value || isDemo}
+            disabled={!connected.value || isDemo || viaCloud}
             onInput={(e) => setDewarpFor(view, Number((e.target as HTMLInputElement).value))}
           />
         </div>
