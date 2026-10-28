@@ -551,3 +551,46 @@ describe('refresh', () => {
     expect(JSON.parse(calls[2].init.body as string)).toEqual({ tunnelUrl: CAR, token: 'fresh-jwt' })
   })
 })
+
+describe('simulate tunnel down', () => {
+  it('sends nothing to the tunnel: reads and commands go to the cloud', async () => {
+    signIn(); enroll()
+    const api = await load()
+    api.setSimulateTunnelDown(true)
+    handler = () => json({ status: 'ok', success: true, source: 'cloud' })
+    await api.getStatus()
+    await api.lock()
+    expect(urls()).toEqual([`${CLOUD}/status`, `${CLOUD}/api/vehicle/lock`])
+    expect(api.dataSource.value).toBe('cloud')
+  })
+
+  it('cloud-unsupported requests fail like a dead tunnel, without any request', async () => {
+    signIn(); enroll()
+    const api = await load()
+    api.setSimulateTunnelDown(true)
+    await expect(api.getTrips(7)).rejects.toBeInstanceOf(api.ApiError)
+    expect(urls()).toEqual([])
+  })
+
+  it('survives a reload, and switching it off sends the next request to the tunnel again', async () => {
+    signIn(); enroll()
+    let api = await load()
+    api.setSimulateTunnelDown(true)
+    api = await load()
+    expect(api.simulateTunnelDown.value).toBe(true)
+    api.setSimulateTunnelDown(false)
+    handler = () => json({ status: 'ok' })
+    await api.getStatus()
+    expect(urls()).toEqual([`${CAR}/status`])
+    expect(api.dataSource.value).toBe('tunnel')
+  })
+
+  it('disabling the cloud backup also ends the simulation', async () => {
+    signIn(); enroll()
+    const api = await load()
+    api.setSimulateTunnelDown(true)
+    api.disableCloud()
+    expect(api.simulateTunnelDown.value).toBe(false)
+    expect(localStorage.getItem('odpwa.odcloud.simulateDown')).toBeNull()
+  })
+})

@@ -49,6 +49,8 @@ const K_CLOUD_TOKEN = 'odpwa.odcloud.token'
 const K_CLOUD_EXP = 'odpwa.odcloud.exp'
 /** Present from enrolment until Disable — it outlives a token the cloud rejects. */
 const K_CLOUD_DEVICE = 'odpwa.odcloud.device'
+// Testing aid: treat the tunnel as down so cloud mode can be tried while the car's tunnel is healthy.
+const K_SIMULATE_DOWN = 'odpwa.odcloud.simulateDown'
 
 /*
  * The cloud is handed the tunnel JWT, so where it lives is not a cosmetic
@@ -132,7 +134,23 @@ export function disableCloud(): void {
   dropCloudSession()
   localStorage.removeItem(K_CLOUD_DEVICE)
   cloudState.value = 'off'
+  setSimulateTunnelDown(false)
 }
+
+/*
+ * "Simulate tunnel down" — for trying cloud mode while the tunnel is fine. Every
+ * request to the tunnel then fails at once as a network error (exactly what a
+ * dead tunnel looks like from here), so the normal fallback takes over. Cloud
+ * requests are untouched. Kept until switched off; the header says so meanwhile.
+ */
+export const simulateTunnelDown = signal(localStorage.getItem(K_SIMULATE_DOWN) === '1')
+export function setSimulateTunnelDown(on: boolean): void {
+  if (on) localStorage.setItem(K_SIMULATE_DOWN, '1')
+  else localStorage.removeItem(K_SIMULATE_DOWN)
+  simulateTunnelDown.value = on
+  resetBreaker() // re-judge the tunnel from the next request either way
+}
+const tunnelSimulatedDown = (base: string): boolean => simulateTunnelDown.value && base === getBaseUrl()
 
 /** POST the tunnel credentials to the cloud; resolves to its new session. */
 async function cloudHandshake(path: string, ms: number): Promise<{ session: CloudSession; deviceId?: string }> {
@@ -401,6 +419,7 @@ const browserOffline = (): boolean => typeof navigator !== 'undefined' && naviga
  * answers this means exactly that case, and the command must not run twice.
  */
 async function tunnelAnswers(base: string): Promise<boolean> {
+  if (tunnelSimulatedDown(base)) return false
   const t0 = timeoutSignal(PROBE_TIMEOUT_MS)
   try {
     const res = await fetch(base + '/auth/status', { signal: t0.signal })
@@ -416,6 +435,7 @@ type Sent = { res: Response } | { fail: 'network' | 'timeout' }
 
 /** One fetch with a deadline. Never throws: a failure is an outcome to judge. */
 async function send(base: string, jwt: string, method: string, path: string, body: unknown, ms: number): Promise<Sent> {
+  if (tunnelSimulatedDown(base)) return { fail: 'network' }
   const headers: Record<string, string> = { Authorization: 'Bearer ' + jwt }
   if (body !== undefined) headers['Content-Type'] = 'application/json'
   const t0 = timeoutSignal(ms)
