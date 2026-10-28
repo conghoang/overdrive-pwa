@@ -1,4 +1,4 @@
-import { CLOUD_DEFAULT_URL, clearAll, cloudState, disableCloud, enrollCloud, getBaseUrl, getCloudDeviceId, getCloudEnrollment, getCloudUrl, getDeviceId, refreshCloud, setCloudUrl, setCloudOnly, cloudOnly } from '../lib/api'
+import { CLOUD_DEFAULT_URL, clearAll, cloudState, disableCloud, enrollCloud, getBaseUrl, getCloudEnrollment, getCloudUrl, getDeviceId, refreshCloud, setCloudUrl, setCloudOnly, cloudOnly } from '../lib/api'
 import type { CloudEnrollment } from '../lib/api'
 import { connected, dataSource, reset, status } from '../lib/store'
 import { hardReset } from '../lib/updater'
@@ -361,20 +361,18 @@ function CloudBackup() {
         )}
         {state === 'lost' && <span class="pill warn">{t('cloud.needs_reenable')}</span>}
       </div>
-      <div class="screen-sub">{t('cloud.desc')}</div>
-
       {state === 'on' ? (
         <>
-          <InfoRow label={t('dev.device')} value={getCloudDeviceId() || '--'} mono />
-          <InfoRow label={t('cloud.url')} value={getCloudUrl().replace(/^https:\/\//, '')} mono />
-          <InfoRow
-            label={t('cloud.car_link')}
-            value={
-              !feed ? '--'
-              : feed.online ? t('common.connected')
-              : `${t('common.offline')}${feed.updatedAt ? ` · ${ago(feed.updatedAt)}` : ''}`
-            }
-          />
+          {/* One line: is the car reachable through the cloud, and how fresh is it. */}
+          <div class="screen-sub">
+            {!feed ? '--'
+              : feed.online ? `${t('common.connected')}${feed.updatedAt ? ` · ${ago(feed.updatedAt)}` : ''}`
+              : `${t('common.offline')}${feed.updatedAt ? ` · ${ago(feed.updatedAt)}` : ''}`}
+          </div>
+          {/* Only worth showing when it isn't ours: a custom cloud holds the car session. */}
+          {getCloudUrl() !== CLOUD_DEFAULT_URL && (
+            <div class="cloud-off-hint mono">{getCloudUrl().replace(/^https:\/\//, '')}</div>
+          )}
           <div class="srow" style={{ paddingBottom: 0 }}>
             <div class="stack">
               <span class="srow-label">{t('cloud.only')}</span>
@@ -382,12 +380,13 @@ function CloudBackup() {
             </div>
             <Switch on={cloudOnly.value} onChange={setCloudOnly} />
           </div>
-          <button class="btn block" style={{ marginTop: '8px' }} onClick={disableCloud}>
+          <button class="btn ghost" style={{ marginTop: '4px' }} onClick={disableCloud}>
             {t('cloud.disable')}
           </button>
         </>
       ) : (
         <>
+          <div class="screen-sub">{t('cloud.desc')}</div>
           <button class="btn accent block" style={{ marginTop: '12px' }} disabled={busy || !tunnelUp} onClick={() => void enable()}>
             {busy ? <><IconRefresh size={18} class="spin" /> {t('cloud.enabling')}</> : t('cloud.enable')}
           </button>
