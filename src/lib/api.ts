@@ -128,6 +128,36 @@ function endCloudOnlyWithoutCloud(): void {
 function cloudReady(): boolean {
   return getBaseUrl() !== DEMO_BASE && cloudForThisCar() && sessionUsable(readCloudSession(), Date.now())
 }
+/** Whether there is a cloud session this car can be served from right now. */
+export const cloudUsable = (): boolean => cloudReady()
+
+/*
+ * The cloud's live socket: one connection the cloud pushes every car report
+ * down, instead of a poll asking for them (see lib/live.ts). Same token as the
+ * HTTP API, carried as ?token= for the same reason as the camera socket. '' when
+ * there is no usable session to open it with.
+ */
+function liveUrlFor(token: string): string {
+  const u = new URL(getCloudUrl())
+  u.protocol = u.protocol === 'https:' ? 'wss:' : 'ws:'
+  u.pathname = '/live'
+  u.search = `?token=${encodeURIComponent(token)}`
+  return u.toString()
+}
+export function cloudLiveUrl(): string {
+  const s = readCloudSession()
+  return s && cloudReady() ? liveUrlFor(s.token) : ''
+}
+/**
+ * The cloud closed the live socket on our token (4001) — exactly a cloud 401.
+ * Only if it is still the token we hold: one renewed since the socket opened is
+ * not the one that was turned away.
+ */
+export function cloudLiveRejected(url: string): void {
+  const s = readCloudSession()
+  if (s && liveUrlFor(s.token) === url) dropCloudSession()
+}
+
 function saveCloudSession(s: CloudSession, deviceId?: string): void {
   localStorage.setItem(K_CLOUD_TOKEN, s.token)
   localStorage.setItem(K_CLOUD_EXP, String(s.expiresAt))
@@ -422,6 +452,8 @@ const breaker = newBreaker()
  * worth nothing and the tunnel deserves a fresh try.
  */
 export function resetBreaker(): void { closeBreaker(breaker) }
+/** Whether the next cloud-servable read goes straight to the cloud. */
+export const cloudRouted = (): boolean => cloudReady() && (cloudOnly.value || breakerOpen(breaker, Date.now()))
 /** The phone itself is offline — the tunnel is not to blame, so don't trip on it. */
 const browserOffline = (): boolean => typeof navigator !== 'undefined' && navigator.onLine === false
 
@@ -502,6 +534,31 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   }
   if (!('res' in sent)) throw new ApiError(t('err.network'), 0)
   return readResponse<T>(sent.res, method, path, 'tunnel')
+}
+
+/**
+ * /status from the tunnel alone — the "is it back?" check while the cloud's live
+ * socket is feeding the app. Never asks the cloud (the socket already has its
+ * answer), and keeps to the breaker: while it is open nothing is sent at all.
+ * null when the tunnel was not asked or did not answer; the car's own answer
+ * makes the tunnel the data source again, as any /status does.
+ */
+export async function getTunnelStatus(): Promise<StatusResponse | null> {
+  const base = getBaseUrl()
+  const jwt = getJwt()
+  if (!base || !jwt) throw new AuthError('Not configured')
+  if (base === DEMO_BASE || tunnelBypassed(base) || breakerOpen(breaker, Date.now())) return null
+  const sent = await send(base, jwt, 'GET', '/status', undefined, TUNNEL_GET_TIMEOUT_MS)
+  const outcome: TunnelOutcome =
+    'res' in sent
+      ? { kind: 'response', status: sent.res.status, contentType: sent.res.headers.get('content-type') || '' }
+      : { kind: sent.fail }
+  if (!('res' in sent) || isTunnelFailure('GET', outcome)) {
+    if (!browserOffline()) noteFailure(breaker, Date.now(), outcome.kind === 'timeout')
+    return null
+  }
+  closeBreaker(breaker)
+  return readResponse<StatusResponse>(sent.res, 'GET', '/status', 'tunnel')
 }
 
 async function viaCloud<T>(method: string, path: string, body?: unknown): Promise<T> {

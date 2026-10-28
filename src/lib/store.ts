@@ -1,10 +1,13 @@
-import { signal } from '@preact/signals'
+import { batch, effect, signal } from '@preact/signals'
 import {
-  AuthError, dataSource, getCloudStatus, getOdometer, getStatus, getSummary, getVehicleState, maybeRefreshCloud, resetBreaker,
-  syncCloudState,
+  AuthError, cloudLiveRejected, cloudLiveUrl, cloudOnly, cloudRouted, cloudState, cloudUsable, dataSource, getCloudStatus, getOdometer,
+  getStatus, getSummary, getTunnelStatus, getVehicleState, maybeRefreshCloud, resetBreaker, syncCloudState,
 } from './api'
 import type { Odometer } from './api'
-import type { DeviceOdometer, StatusResponse, VehicleState } from './types'
+import { t } from './i18n'
+import { LiveLink } from './live'
+import type { LiveMessage } from './live'
+import type { CloudStatus, DeviceOdometer, LauncherSummary, StatusResponse, VehicleState } from './types'
 
 export const status = signal<StatusResponse | null>(null)
 export const vehicleState = signal<VehicleState | null>(null)
@@ -176,20 +179,57 @@ function readLocalKey(): boolean | null {
 }
 export const localRemoteKey = signal<boolean | null>(readLocalKey())
 let cloudFetched = false
+/*
+ * SL6VN Cloud answers cloud-status too, but from its own point of view (it has
+ * no BYD Cloud account, and runs power through the car's remote-key rail). That
+ * answer never changes, so it is asked for once per cloud session and kept here,
+ * in memory only: while the cloud serves the app it stands in for the car's,
+ * and the moment the tunnel is back the car's persisted answer is put back.
+ */
+let cloudAnswer: CloudStatus | null = null
+let cloudAsked = false // once per cloud session
+let showingCloudAnswer = false
+// A car-side ask the cloud answered instead: the car is asked again, but not every tick.
+let carAskedAt = 0
+const CAR_ASK_MS = 60_000
+
+/** On the cloud: show its answer (never persisted), asking for it the first time only. */
+function useCloudAnswer(): void {
+  if (!cloudAnswer) {
+    if (!cloudAsked) {
+      cloudAsked = true
+      void fetchCloud()
+    }
+    return
+  }
+  if (showingCloudAnswer) return
+  showingCloudAnswer = true
+  cloudConfigured.value = !!cloudAnswer.configured
+  localRemoteKey.value = !!cloudAnswer.localRemoteKey
+}
+
+/** Back on the tunnel: the car's own (persisted) answer again. */
+function dropCloudAnswer(): void {
+  if (!showingCloudAnswer) return
+  showingCloudAnswer = false
+  cloudConfigured.value = readCloud()
+  localRemoteKey.value = readLocalKey()
+}
 
 async function fetchCloud(): Promise<void> {
   try {
     const s = await getCloudStatus()
     if (!active) return // signed out while in flight — don't rewrite what reset() cleared
-    /*
-     * SL6VN Cloud answers this too, but from its own point of view (it reports no
-     * BYD Cloud account, because IT has none). Caching that would rewrite the
-     * car's real answer, so ask again once the tunnel is back.
-     */
+    // The cloud's own answer must not rewrite the car's: keep it aside, and ask
+    // the car again once the tunnel is back.
     if (s.source === 'cloud') {
       cloudFetched = false
+      cloudAnswer = s
+      if (dataSource.value === 'cloud') useCloudAnswer()
       return
     }
+    cloudFetched = true
+    showingCloudAnswer = false
     const c = !!s.configured
     cloudConfigured.value = c
     localStorage.setItem(K_CLOUD, c ? '1' : '0')
@@ -202,6 +242,40 @@ async function fetchCloud(): Promise<void> {
 const POLL_OK = 5000
 const POLL_RETRY = 2000
 const POLL_HIDDEN = 60000 // tab in the background
+/*
+ * On SL6VN Cloud with its live socket down. Every request is paid for out of
+ * the cloud's free plan, and its data is only as fresh as the car's last report
+ * anyway — no point asking three times as often as the car can answer.
+ */
+const POLL_CLOUD = 15_000
+/** The live socket is still coming up: look again shortly instead of polling the cloud meanwhile. */
+const LIVE_GRACE_MS = 3_000
+
+/*
+ * The cloud's live socket (lib/live.ts). Up only while the cloud is what serves
+ * the app — "Use cloud only", or the tunnel down and the cloud answering — with
+ * a usable session for this car, and the app in view. While it delivers, the
+ * poll asks the cloud nothing: each snapshot fills the same signals a poll
+ * would. The tunnel is still probed (see tick), so the app goes back to it as
+ * soon as it recovers — which closes the socket.
+ */
+const live = new LiveLink({
+  onMessage: (m) => {
+    if (active) applyLive(m)
+  },
+  // 4001 is a cloud 401: drop the session (which also ends "Use cloud only").
+  onRejected: (url) => {
+    cloudLiveRejected(url)
+    syncLive()
+    requestNow() // back to the tunnel now, not at the next cloud-paced tick
+  },
+})
+let unwatch: (() => void) | null = null
+
+function syncLive(): void {
+  const want = active && !document.hidden && cloudUsable() && (cloudOnly.value || dataSource.value === 'cloud')
+  live.want((want && cloudLiveUrl()) || null)
+}
 
 let timer: ReturnType<typeof setTimeout> | null = null
 let active = false
@@ -243,27 +317,122 @@ async function runTick(): Promise<void> {
   }
 }
 
+/*
+ * What a reading does to the app, whichever way it came — the poll or the
+ * cloud's live socket. One place each, so the two can never disagree.
+ */
+function applyStatus(s: StatusResponse): void {
+  status.value = s
+  connected.value = true
+  lastError.value = null
+}
+
+function applyVehicleState(vs: VehicleState): void {
+  vehicleState.value = vs
+  vsFails = 0
+  // The device state carries the odometer now — prefer it, live, every poll.
+  noteDeviceOdo(vs.odometer)
+}
+
+/** Charging time-to-full only means anything while charging or plugged in. */
+const wantsCharge = (s: StatusResponse): boolean => !!(s.charging?.charging || s.charging?.plugged)
+
+function applySummary(sum: LauncherSummary, forEnv: boolean, forCharge: boolean): void {
+  if (forEnv) {
+    const num = (v: unknown) => (typeof v === 'number' ? v : null)
+    outsideTempC.value = num(sum.env?.tempC)
+    pm25Inside.value = num(sum.air?.pm25Inside)
+    pm25Outside.value = num(sum.air?.pm25Outside)
+  }
+  if (forCharge) {
+    chargeEtaMin.value = sum.charging?.etaMin ?? null
+    chargeTargetPct.value = sum.charging?.targetPct ?? null
+    const kwh = sum.battery?.usableKwh
+    if (typeof kwh === 'number' && kwh > 0) {
+      batteryKwh.value = kwh
+      try {
+        localStorage.setItem(K_KWH, String(kwh))
+      } catch { /* private mode / quota */ }
+    }
+  }
+}
+
+function clearCharge(): void {
+  chargeEtaMin.value = null
+  chargeTargetPct.value = null
+}
+
+/** A message from the cloud's live socket: what a cloud poll would have brought. */
+function applyLive(m: LiveMessage): void {
+  if (m.type === 'nodata') {
+    // Never reported — what a cloud /status says too (as a 503): offline as far as anyone knows.
+    connected.value = false
+    lastError.value = t('cloud.car_offline')
+    return
+  }
+  batch(() => {
+    applyStatus(m.status)
+    dataSource.value = 'cloud'
+    if (m.state) applyVehicleState(m.state)
+    // The socket brings the summary with every report, so it costs nothing to
+    // take all of it, every time.
+    const charge = wantsCharge(m.status)
+    if (m.summary) applySummary(m.summary, true, charge)
+    if (!charge) clearCharge()
+    useCloudAnswer()
+  })
+}
+
 async function tick(): Promise<void> {
   // A cloud token can lapse while the app sits open; Settings should say so.
   syncCloudState()
+  if (cloudState.value !== 'on') {
+    // A new cloud session asks the cloud's cloud-status afresh.
+    cloudAnswer = null
+    cloudAsked = false
+  }
+  syncLive()
   try {
-    const s = await getStatus()
+    let s: StatusResponse
+    if (live.state !== 'off') {
+      /*
+       * The cloud's socket is up, or coming up, and brings everything a cloud
+       * poll would — so no cloud request at all. What is left is to notice the
+       * tunnel coming back: asked on the breaker's schedule, and never in "Use
+       * cloud only". Only the car's own answer counts; anything else waits.
+       */
+      const back = await getTunnelStatus().catch((e: unknown) => {
+        if (e instanceof AuthError) throw e
+        return null
+      })
+      if (!active) return
+      if (!back) {
+        schedule(live.state === 'live' ? POLL_CLOUD : LIVE_GRACE_MS)
+        return
+      }
+      s = back
+    } else {
+      s = await getStatus()
+    }
     if (!active) return // dropped during sign-out / auth-loss
-    status.value = s
-    connected.value = true
-    lastError.value = null
-    // The tunnel just answered, so its session is good — the one thing a
-    // cloud token renewal needs. Every such tick, because a session can be
-    // lost mid-visit; maybeRefreshCloud does nothing unless the token needs it,
-    // and rate-limits itself. Silent either way.
-    if (dataSource.value === 'tunnel') maybeRefreshCloud()
-    if (!cloudFetched && dataSource.value !== 'cloud') {
+    applyStatus(s)
+    if (dataSource.value === 'tunnel') {
+      // The tunnel just answered, so its session is good — the one thing a
+      // cloud token renewal needs. Every such tick, because a session can be
+      // lost mid-visit; maybeRefreshCloud does nothing unless the token needs it,
+      // and rate-limits itself. Silent either way.
+      maybeRefreshCloud()
+      dropCloudAnswer()
+    }
+    if (dataSource.value === 'cloud') {
+      useCloudAnswer()
+    } else if (!cloudFetched && Date.now() - carAskedAt >= CAR_ASK_MS) {
       cloudFetched = true
+      carAskedAt = Date.now()
       void fetchCloud() // once per session; don't block the poll
     }
     const wantEnv = Date.now() - odoAt > ODO_INTERVAL_MS
-    // Charging time-to-full: only while charging/plugged (extra call otherwise wasteful).
-    const wantCharge = !!(s.charging?.charging || s.charging?.plugged)
+    const wantCharge = wantsCharge(s)
     // The trip log is not on SL6VN Cloud, so while it stands in the odometer
     // keeps its last reading rather than spending a request on a dead tunnel.
     if (wantEnv && dataSource.value !== 'cloud') {
@@ -283,12 +452,7 @@ async function tick(): Promise<void> {
     // Control-surface detail; failure here shouldn't knock out the whole poll.
     try {
       const vs = await getVehicleState()
-      if (active) {
-        vehicleState.value = vs
-        vsFails = 0
-        // The device state carries the odometer now — prefer it, live, every poll.
-        noteDeviceOdo(vs.odometer)
-      }
+      if (active) applyVehicleState(vs)
     } catch (e) {
       if (e instanceof AuthError) throw e
       /*
@@ -320,24 +484,7 @@ async function tick(): Promise<void> {
       const forCharge = wantCharge
       void getSummary()
         .then((sum) => {
-          if (!active) return
-          if (forEnv) {
-            const num = (v: unknown) => (typeof v === 'number' ? v : null)
-            outsideTempC.value = num(sum.env?.tempC)
-            pm25Inside.value = num(sum.air?.pm25Inside)
-            pm25Outside.value = num(sum.air?.pm25Outside)
-          }
-          if (forCharge) {
-            chargeEtaMin.value = sum.charging?.etaMin ?? null
-            chargeTargetPct.value = sum.charging?.targetPct ?? null
-            const kwh = sum.battery?.usableKwh
-            if (typeof kwh === 'number' && kwh > 0) {
-              batteryKwh.value = kwh
-              try {
-                localStorage.setItem(K_KWH, String(kwh))
-              } catch { /* private mode / quota */ }
-            }
-          }
+          if (active) applySummary(sum, forEnv, forCharge)
         })
         .catch((e) => {
           if (e instanceof AuthError) {
@@ -355,11 +502,8 @@ async function tick(): Promise<void> {
           console.warn('summary poll failed:', e instanceof Error ? e.message : e)
         })
     }
-    if (active && !wantCharge) {
-      chargeEtaMin.value = null
-      chargeTargetPct.value = null
-    }
-    schedule(document.hidden ? POLL_HIDDEN : POLL_OK)
+    if (active && !wantCharge) clearCharge()
+    schedule(document.hidden ? POLL_HIDDEN : dataSource.value === 'cloud' ? POLL_CLOUD : POLL_OK)
   } catch (e) {
     if (e instanceof AuthError) {
       authLost.value = true
@@ -369,26 +513,39 @@ async function tick(): Promise<void> {
     if (!active) return
     connected.value = false
     lastError.value = e instanceof Error ? e.message : 'Error'
-    schedule(POLL_RETRY)
+    // A cloud that answered "no" is not asked again every two seconds.
+    schedule(cloudRouted() ? POLL_CLOUD : POLL_RETRY)
   }
 }
 
 export function start(): void {
   if (active) return
   active = true
+  // Whatever moves the app onto or off the cloud opens or closes the live socket.
+  unwatch = effect(() => {
+    void cloudOnly.value
+    void cloudState.value
+    void dataSource.value
+    syncLive()
+  })
   if (!listenerBound) {
     listenerBound = true
     // Back in view or back online: the tunnel gets a fresh try before the
-    // cloud, whatever the breaker remembers from before.
+    // cloud, whatever the breaker remembers from before. Out of view, the live
+    // socket closes; the hidden-tab poll is slow enough on its own.
     document.addEventListener('visibilitychange', () => {
-      if (active && !document.hidden) {
+      if (!active) return
+      syncLive()
+      if (!document.hidden) {
         resetBreaker()
+        live.kick()
         requestNow()
       }
     })
     // Poll immediately when the network comes back.
     window.addEventListener('online', () => {
       resetBreaker()
+      live.kick()
       requestNow()
     })
   }
@@ -398,6 +555,9 @@ export function start(): void {
 export function stop(): void {
   active = false
   pending = false
+  unwatch?.()
+  unwatch = null
+  live.want(null)
   if (timer !== null) {
     clearTimeout(timer)
     timer = null
@@ -433,6 +593,10 @@ export function reset(): void {
   cloudConfigured.value = null
   localRemoteKey.value = null
   cloudFetched = false
+  cloudAnswer = null
+  cloudAsked = false
+  showingCloudAnswer = false
+  carAskedAt = 0
   localStorage.removeItem(K_CLOUD)
   localStorage.removeItem(K_LOCALKEY)
 }

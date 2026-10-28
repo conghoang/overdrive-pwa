@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'preact/hooks'
 import { getBaseUrl, cloudOnly } from '../lib/api'
 import { ago } from '../lib/format'
 import { t } from '../lib/i18n'
@@ -38,6 +39,7 @@ export function AppHeader({
   const viaCloud = connected.value && dataSource.value === 'cloud'
   const feed = viaCloud ? status.value?.cloud : undefined
   const carOffline = feed?.online === false
+  useAgeTick(!!feed?.updatedAt)
   return (
     <div class="screen-head">
       <div>
@@ -73,6 +75,20 @@ export function AppHeader({
       </div>
     </div>
   )
+}
+
+/*
+ * Re-render every second while an age is on screen. It used to move only
+ * because a poll replaced the status every 5 s; the cloud's live socket only
+ * sends when the car reports, so the "12s ago" would otherwise stand still.
+ */
+function useAgeTick(on: boolean): void {
+  const [, setNow] = useState(0)
+  useEffect(() => {
+    if (!on) return
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [on])
 }
 
 function ThemeButton() {
