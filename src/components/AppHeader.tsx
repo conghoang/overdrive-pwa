@@ -1,4 +1,4 @@
-import { getBaseUrl, simulateTunnelDown } from '../lib/api'
+import { getBaseUrl, cloudOnly } from '../lib/api'
 import { ago } from '../lib/format'
 import { t } from '../lib/i18n'
 import { connected, dataSource, status } from '../lib/store'
@@ -46,7 +46,7 @@ export function AppHeader({
           {viaCloud && (
             <span class="via-cloud">
               {' · '}{t('cloud.via')}
-              {simulateTunnelDown.value && <> ({t('cloud.simulated')})</>}
+              {cloudOnly.value && <> ({t('cloud.only_short')})</>}
               {carOffline && <> · {t('cloud.last_seen', { ago: ago(feed?.updatedAt) || '--' })}</>}
             </span>
           )}

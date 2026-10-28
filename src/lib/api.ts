@@ -49,8 +49,14 @@ const K_CLOUD_TOKEN = 'odpwa.odcloud.token'
 const K_CLOUD_EXP = 'odpwa.odcloud.exp'
 /** Present from enrolment until Disable — it outlives a token the cloud rejects. */
 const K_CLOUD_DEVICE = 'odpwa.odcloud.device'
-// Testing aid: treat the tunnel as down so cloud mode can be tried while the car's tunnel is healthy.
-const K_SIMULATE_DOWN = 'odpwa.odcloud.simulateDown'
+// "Use cloud only": talk to SL6VN Cloud and never to the car URL.
+const K_CLOUD_ONLY = 'odpwa.odcloud.cloudOnly'
+// Earlier name of the same switch ("Simulate tunnel down"); carried over once.
+const K_CLOUD_ONLY_OLD = 'odpwa.odcloud.simulateDown'
+if (localStorage.getItem(K_CLOUD_ONLY_OLD) !== null) {
+  if (localStorage.getItem(K_CLOUD_ONLY_OLD) === '1') localStorage.setItem(K_CLOUD_ONLY, '1')
+  localStorage.removeItem(K_CLOUD_ONLY_OLD)
+}
 
 /*
  * The cloud is handed the tunnel JWT, so where it lives is not a cosmetic
@@ -111,11 +117,11 @@ export const cloudState = signal<CloudState>(readCloudState())
 export function syncCloudState(): void {
   const s = readCloudState()
   if (cloudState.value !== s) cloudState.value = s
-  endSimulationWithoutCloud()
+  endCloudOnlyWithoutCloud()
 }
-/** No usable cloud session: a running "Simulate tunnel down" ends, so the real tunnel is used again. */
-function endSimulationWithoutCloud(): void {
-  if (cloudState.value !== 'on' && simulateTunnelDown.value) setSimulateTunnelDown(false)
+/** No usable cloud session: "Use cloud only" switches itself off, so the car URL is used again. */
+function endCloudOnlyWithoutCloud(): void {
+  if (cloudState.value !== 'on' && cloudOnly.value) setCloudOnly(false)
 }
 
 /** Usable as a fallback right now. Never in demo mode: there is no car behind it. */
@@ -133,32 +139,31 @@ function dropCloudSession(): void {
   localStorage.removeItem(K_CLOUD_TOKEN)
   localStorage.removeItem(K_CLOUD_EXP)
   cloudState.value = readCloudState()
-  endSimulationWithoutCloud()
+  endCloudOnlyWithoutCloud()
 }
 /** Disable: forget the cloud session on this phone. The car is left as it is. */
 export function disableCloud(): void {
   dropCloudSession()
   localStorage.removeItem(K_CLOUD_DEVICE)
   cloudState.value = 'off'
-  setSimulateTunnelDown(false)
+  setCloudOnly(false)
 }
 
 /*
- * "Simulate tunnel down" — for trying cloud mode while the tunnel is fine. Every
- * request to the tunnel then fails at once as a network error (exactly what a
- * dead tunnel looks like from here), so the normal fallback takes over. Cloud
- * requests are untouched. Kept until switched off; the header says so meanwhile.
+ * "Use cloud only": every request goes to SL6VN Cloud, never to the car URL — for when the
+ * tunnel is unreliable or metered, or to check what the cloud shows. Requests the cloud can't
+ * serve fail as if the car URL were unreachable. Requires a usable cloud session: without one
+ * it is ignored and switches itself off, so the app is never cut off from the car (or from the
+ * tunnel it needs to renew or re-enable the cloud). The header says "cloud only" meanwhile.
  */
-export const simulateTunnelDown = signal(localStorage.getItem(K_SIMULATE_DOWN) === '1')
-export function setSimulateTunnelDown(on: boolean): void {
-  if (on) localStorage.setItem(K_SIMULATE_DOWN, '1')
-  else localStorage.removeItem(K_SIMULATE_DOWN)
-  simulateTunnelDown.value = on
+export const cloudOnly = signal(localStorage.getItem(K_CLOUD_ONLY) === '1')
+export function setCloudOnly(on: boolean): void {
+  if (on) localStorage.setItem(K_CLOUD_ONLY, '1')
+  else localStorage.removeItem(K_CLOUD_ONLY)
+  cloudOnly.value = on
   resetBreaker() // re-judge the tunnel from the next request either way
 }
-// Only while a cloud session can stand in: simulating without one would just cut the app off from the car
-// (and from the tunnel it needs to renew or re-enable the cloud).
-const tunnelSimulatedDown = (base: string): boolean => simulateTunnelDown.value && base === getBaseUrl() && cloudReady()
+const tunnelBypassed = (base: string): boolean => cloudOnly.value && base === getBaseUrl() && cloudReady()
 
 /** POST the tunnel credentials to the cloud; resolves to its new session. */
 async function cloudHandshake(path: string, ms: number): Promise<{ session: CloudSession; deviceId?: string }> {
@@ -427,7 +432,7 @@ const browserOffline = (): boolean => typeof navigator !== 'undefined' && naviga
  * answers this means exactly that case, and the command must not run twice.
  */
 async function tunnelAnswers(base: string): Promise<boolean> {
-  if (tunnelSimulatedDown(base)) return false
+  if (tunnelBypassed(base)) return false
   const t0 = timeoutSignal(PROBE_TIMEOUT_MS)
   try {
     const res = await fetch(base + '/auth/status', { signal: t0.signal })
@@ -443,7 +448,7 @@ type Sent = { res: Response } | { fail: 'network' | 'timeout' }
 
 /** One fetch with a deadline. Never throws: a failure is an outcome to judge. */
 async function send(base: string, jwt: string, method: string, path: string, body: unknown, ms: number): Promise<Sent> {
-  if (tunnelSimulatedDown(base)) return { fail: 'network' }
+  if (tunnelBypassed(base)) return { fail: 'network' }
   const headers: Record<string, string> = { Authorization: 'Bearer ' + jwt }
   if (body !== undefined) headers['Content-Type'] = 'application/json'
   const t0 = timeoutSignal(ms)

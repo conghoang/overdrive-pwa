@@ -1,4 +1,4 @@
-import { CLOUD_DEFAULT_URL, clearAll, cloudState, disableCloud, enrollCloud, getBaseUrl, getCloudDeviceId, getCloudEnrollment, getCloudUrl, getDeviceId, refreshCloud, setCloudUrl, setSimulateTunnelDown, simulateTunnelDown } from '../lib/api'
+import { CLOUD_DEFAULT_URL, clearAll, cloudState, disableCloud, enrollCloud, getBaseUrl, getCloudDeviceId, getCloudEnrollment, getCloudUrl, getDeviceId, refreshCloud, setCloudUrl, setCloudOnly, cloudOnly } from '../lib/api'
 import type { CloudEnrollment } from '../lib/api'
 import { connected, dataSource, reset, status } from '../lib/store'
 import { hardReset } from '../lib/updater'
@@ -377,10 +377,10 @@ function CloudBackup() {
           />
           <div class="srow" style={{ paddingBottom: 0 }}>
             <div class="stack">
-              <span class="srow-label">{t('cloud.simulate')}</span>
-              <span class="screen-sub" style={{ marginTop: '2px' }}>{t('cloud.simulate_desc')}</span>
+              <span class="srow-label">{t('cloud.only')}</span>
+              <span class="screen-sub" style={{ marginTop: '2px' }}>{t('cloud.only_desc')}</span>
             </div>
-            <Switch on={simulateTunnelDown.value} onChange={setSimulateTunnelDown} />
+            <Switch on={cloudOnly.value} onChange={setCloudOnly} />
           </div>
           <button class="btn block" style={{ marginTop: '8px' }} onClick={disableCloud}>
             {t('cloud.disable')}
@@ -416,13 +416,13 @@ function CloudBackup() {
         </>
       )}
 
-      {state !== 'on' && simulateTunnelDown.value && (
+      {state !== 'on' && cloudOnly.value && (
         <div class="srow" style={{ paddingBottom: 0 }}>
           <div class="stack">
-            <span class="srow-label">{t('cloud.simulate')}</span>
-            <span class="screen-sub" style={{ marginTop: '2px' }}>{t('cloud.simulate_desc')}</span>
+            <span class="srow-label">{t('cloud.only')}</span>
+            <span class="screen-sub" style={{ marginTop: '2px' }}>{t('cloud.only_desc')}</span>
           </div>
-          <Switch on={simulateTunnelDown.value} onChange={setSimulateTunnelDown} />
+          <Switch on={cloudOnly.value} onChange={setCloudOnly} />
         </div>
       )}
 

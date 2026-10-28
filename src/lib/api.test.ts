@@ -552,11 +552,11 @@ describe('refresh', () => {
   })
 })
 
-describe('simulate tunnel down', () => {
+describe('use cloud only', () => {
   it('sends nothing to the tunnel: reads and commands go to the cloud', async () => {
     signIn(); enroll()
     const api = await load()
-    api.setSimulateTunnelDown(true)
+    api.setCloudOnly(true)
     handler = () => json({ status: 'ok', success: true, source: 'cloud' })
     await api.getStatus()
     await api.lock()
@@ -567,7 +567,7 @@ describe('simulate tunnel down', () => {
   it('cloud-unsupported requests fail like a dead tunnel, without any request', async () => {
     signIn(); enroll()
     const api = await load()
-    api.setSimulateTunnelDown(true)
+    api.setCloudOnly(true)
     await expect(api.getTrips(7)).rejects.toBeInstanceOf(api.ApiError)
     expect(urls()).toEqual([])
   })
@@ -575,52 +575,63 @@ describe('simulate tunnel down', () => {
   it('survives a reload, and switching it off sends the next request to the tunnel again', async () => {
     signIn(); enroll()
     let api = await load()
-    api.setSimulateTunnelDown(true)
+    api.setCloudOnly(true)
     api = await load()
-    expect(api.simulateTunnelDown.value).toBe(true)
-    api.setSimulateTunnelDown(false)
+    expect(api.cloudOnly.value).toBe(true)
+    api.setCloudOnly(false)
     handler = () => json({ status: 'ok' })
     await api.getStatus()
     expect(urls()).toEqual([`${CAR}/status`])
     expect(api.dataSource.value).toBe('tunnel')
   })
 
-  it('disabling the cloud backup also ends the simulation', async () => {
+  it('disabling the cloud backup also turns cloud-only off', async () => {
     signIn(); enroll()
     const api = await load()
-    api.setSimulateTunnelDown(true)
+    api.setCloudOnly(true)
     api.disableCloud()
-    expect(api.simulateTunnelDown.value).toBe(false)
-    expect(localStorage.getItem('odpwa.odcloud.simulateDown')).toBeNull()
+    expect(api.cloudOnly.value).toBe(false)
+    expect(localStorage.getItem('odpwa.odcloud.cloudOnly')).toBeNull()
   })
 })
 
-describe('simulate tunnel down without a usable cloud session', () => {
-  it('an expired cloud session ends the simulation and the tunnel is used again', async () => {
+describe('use cloud only without a usable cloud session', () => {
+  it('an expired cloud session turns cloud-only off and the car URL is used again', async () => {
     signIn(); enroll(NOW + 60_000)
     const api = await load()
-    api.setSimulateTunnelDown(true)
-    vi.setSystemTime(NOW + 120_000) // cloud token lapses while simulating
+    api.setCloudOnly(true)
+    vi.setSystemTime(NOW + 120_000) // cloud token lapses in cloud-only mode
     handler = () => json({ status: 'ok' })
     await api.getStatus()
     expect(urls()).toEqual([`${CAR}/status`]) // not stuck: the real tunnel answers
     api.syncCloudState()
     expect(api.cloudState.value).toBe('lost')
-    expect(api.simulateTunnelDown.value).toBe(false)
-    expect(localStorage.getItem('odpwa.odcloud.simulateDown')).toBeNull()
+    expect(api.cloudOnly.value).toBe(false)
+    expect(localStorage.getItem('odpwa.odcloud.cloudOnly')).toBeNull()
   })
 
-  it('a cloud 401 while simulating ends the simulation', async () => {
+  it('a cloud 401 in cloud-only mode turns it off', async () => {
     signIn(); enroll()
     const api = await load()
-    api.setSimulateTunnelDown(true)
+    api.setCloudOnly(true)
     handler = () => json({ error: 'Unauthorized' }, 401)
     await expect(api.getStatus()).rejects.toBeInstanceOf(api.ApiError)
     expect(api.cloudState.value).toBe('lost')
-    expect(api.simulateTunnelDown.value).toBe(false)
+    expect(api.cloudOnly.value).toBe(false)
     handler = () => json({ status: 'ok' })
     calls = []
     await api.getStatus()
     expect(urls()).toEqual([`${CAR}/status`])
+  })
+})
+
+describe('cloud-only setting migration', () => {
+  it('carries the old "simulate tunnel down" setting over once', async () => {
+    signIn(); enroll()
+    localStorage.setItem('odpwa.odcloud.simulateDown', '1')
+    const api = await load()
+    expect(api.cloudOnly.value).toBe(true)
+    expect(localStorage.getItem('odpwa.odcloud.simulateDown')).toBeNull()
+    expect(localStorage.getItem('odpwa.odcloud.cloudOnly')).toBe('1')
   })
 })
