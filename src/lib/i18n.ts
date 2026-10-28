@@ -318,7 +318,7 @@ const EN: Record<string, string> = {
   'err.login_failed_n': 'Login failed ({status})',
 
   'cloud.title': 'Use SL6VN Cloud as backup',
-  'cloud.desc': 'When the car URL can\'t be reached, the app switches to SL6VN Cloud automatically: you still see the car\'s status and can lock, unlock, start the A/C and more. The car URL is always tried first.',
+  'cloud.desc': 'When the car URL can\'t be reached, the app switches to SL6VN Cloud automatically: you still see the car\'s status and can lock, unlock, start the A/C and more.',
   'cloud.enable': 'Enable cloud backup',
   'cloud.enabling': 'Setting up…',
   'cloud.enabling_hint': 'The cloud is configuring your car through the tunnel — this can take up to a minute.',
@@ -644,7 +644,7 @@ const VI: Record<string, string> = {
   'err.login_failed_n': 'Đăng nhập thất bại ({status})',
 
   'cloud.title': 'Dùng SL6VN Cloud làm dự phòng',
-  'cloud.desc': 'Khi không kết nối được địa chỉ xe, ứng dụng tự chuyển sang SL6VN Cloud: vẫn xem được trạng thái xe và khóa, mở khóa, bật điều hòa… Địa chỉ xe luôn được ưu tiên dùng trước.',
+  'cloud.desc': 'Khi không kết nối được địa chỉ xe, ứng dụng tự chuyển sang SL6VN Cloud: vẫn xem được trạng thái xe và khóa, mở khóa, bật điều hòa…',
   'cloud.enable': 'Bật dự phòng cloud',
   'cloud.enabling': 'Đang thiết lập…',
   'cloud.enabling_hint': 'Cloud đang cấu hình xe qua tunnel — có thể mất tới một phút.',
