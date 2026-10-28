@@ -389,13 +389,6 @@ function CloudBackup() {
             <IconInfo size={17} />
           </button>
         </div>
-        {state === 'on' && (
-          // In use right now: a cloud glyph instead of words, so the long card title keeps its room.
-          viaCloud
-            ? <span class="pill warn pill-icon" title={t('cloud.in_use')} aria-label={t('cloud.in_use')} role="img"><IconCloud size={16} /></span>
-            : <span class="pill good">{t('common.on')}</span>
-        )}
-        {state === 'lost' && <span class="pill warn">{t('cloud.needs_reenable')}</span>}
       </div>
       {state === 'on' ? (
         <>
@@ -417,9 +410,15 @@ function CloudBackup() {
             </div>
             <Switch on={cloudOnly.value} onChange={setCloudOnly} />
           </div>
-          <button class="btn ghost" style={{ marginTop: '4px' }} onClick={askDisable}>
-            {t('cloud.disable')}
-          </button>
+          {/* Turn off on the left, the state at the bottom right. */}
+          <div class="spread" style={{ marginTop: '4px' }}>
+            <button class="btn ghost" onClick={askDisable}>
+              {t('cloud.disable')}
+            </button>
+            {viaCloud
+              ? <span class="pill warn pill-icon" title={t('cloud.in_use')} aria-label={t('cloud.in_use')} role="img"><IconCloud size={16} /></span>
+              : <span class="pill good">{t('common.on')}</span>}
+          </div>
         </>
       ) : (
         <>
@@ -449,6 +448,11 @@ function CloudBackup() {
               }}
             />
           </details>
+          {state === 'lost' && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+              <span class="pill warn">{t('cloud.needs_reenable')}</span>
+            </div>
+          )}
         </>
       )}
 
