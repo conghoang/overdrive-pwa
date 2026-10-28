@@ -6,6 +6,12 @@ import { dataSource } from '../lib/store'
 export const onCloud = (): boolean => dataSource.value === 'cloud'
 
 /**
+ * Tabs with nothing SL6VN Cloud can serve: the camera streams from the car, and
+ * Data is the car's own trip/charging history. Disabled in the tab bar on cloud.
+ */
+export const tabOffOnCloud = (tab: string): boolean => onCloud() && (tab === 'camera' || tab === 'data')
+
+/**
  * Grey out something SL6VN Cloud cannot serve, and say why.
  *
  * `inert` rather than a disabled flag threaded through every child: it takes

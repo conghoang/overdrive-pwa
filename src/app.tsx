@@ -49,6 +49,7 @@ function preloadTabsWhenIdle(): void {
 }
 
 import { TabBar } from './components/TabBar'
+import { tabOffOnCloud } from './components/CloudOff'
 import { Toaster } from './components/Toaster'
 
 export type Tab = 'dashboard' | 'controls' | 'camera' | 'data' | 'account'
@@ -76,6 +77,8 @@ effect(() => {
 })
 // Back/forward or a manually edited hash updates the tab.
 addEventListener('hashchange', () => { tab.value = tabFromHash() })
+// A tab SL6VN Cloud can't serve (camera, data) is left for the Vehicle tab when the app goes on cloud.
+effect(() => { if (tabOffOnCloud(tab.value)) tab.value = 'dashboard' })
 const configured = signal(isConfigured())
 
 // True if the element (or an ancestor) can scroll horizontally — so a swipe there
@@ -229,7 +232,9 @@ export function App() {
      * covers a thumb sweeping across a phone held one-handed.
      */
     if (Math.abs(dx) >= 60 && Math.abs(dx) >= Math.abs(dy) * 1.2) {
-      const i = TAB_ORDER.indexOf(tab.value) + (dx < 0 ? 1 : -1)
+      const step = dx < 0 ? 1 : -1
+      let i = TAB_ORDER.indexOf(tab.value) + step
+      while (i >= 0 && i < TAB_ORDER.length && tabOffOnCloud(TAB_ORDER[i])) i += step // skip tabs off on cloud
       if (i >= 0 && i < TAB_ORDER.length) tab.value = TAB_ORDER[i]
     }
   }

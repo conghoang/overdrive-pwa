@@ -13,11 +13,13 @@ import { WiCarlinkGrid } from '../components/WiCarlinkControls'
 import { Seats } from '../components/Seats'
 import { ClimateBanner } from '../components/ClimateBanner'
 import { AppHeader } from '../components/AppHeader'
-import { CloudOff } from '../components/CloudOff'
+import { CloudOff, onCloud } from '../components/CloudOff'
 import '../components/controls.css'
 
 const TEMP_MIN = 16
 const TEMP_MAX = 30
+/** SL6VN Cloud's commands automation has setpoints 17–33 only (sl6vn-cloud mapping.js). */
+const CLOUD_TEMP_MIN = 17
 
 /*
  * AC AUTO. This was hidden for a while because OverDrive drove auto mode through the feature id
@@ -169,8 +171,11 @@ export function Controls() {
     setTemp(carSetpoint as number)
   }, [carSetpoint, setpointUsable])
 
+  // On SL6VN Cloud 16 °C has no command value: the stepper stops at 17 there.
+  const tempMin = onCloud() ? CLOUD_TEMP_MIN : TEMP_MIN
+
   function changeTemp(delta: number) {
-    const nt = Math.min(TEMP_MAX, Math.max(TEMP_MIN, temp + delta))
+    const nt = Math.min(TEMP_MAX, Math.max(tempMin, temp + delta))
     lastEditAt.current = Date.now() // this tap outranks the poll for a moment
     setTemp(nt)
     /*
@@ -223,7 +228,7 @@ export function Controls() {
         </div>
 
         <div class="stepper" style={{ justifyContent: 'space-between', margin: '20px 0 18px' }}>
-          <button disabled={disabled || temp <= TEMP_MIN} onClick={() => changeTemp(-1)}>
+          <button disabled={disabled || temp <= tempMin} onClick={() => changeTemp(-1)}>
             <IconMinus size={22} />
           </button>
           <div class="climate-temp mono">
