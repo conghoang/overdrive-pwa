@@ -3,7 +3,7 @@ import type { CloudEnrollment } from '../lib/api'
 import { connected, dataSource, reset, status } from '../lib/store'
 import { hardReset } from '../lib/updater'
 import { ago } from '../lib/format'
-import { IconPower, IconRefresh } from '../components/icons-extra'
+import { IconInfo, IconPower, IconRefresh } from '../components/icons-extra'
 import { useEffect, useState } from 'preact/hooks'
 import { AppHeader } from '../components/AppHeader'
 import { DEFAULT_PHOTO } from '../components/CarHero'
@@ -324,6 +324,7 @@ function CloudBackup() {
   // A non-default cloud is about to receive the tunnel JWT: ask first.
   const [confirming, setConfirming] = useState(false)
   // Turning off asks whether to also remove the car-side setup.
+  const [explaining, setExplaining] = useState(false)
   const [disabling, setDisabling] = useState(false)
   const [removing, setRemoving] = useState(false)
   const [removeError, setRemoveError] = useState<string | null>(null)
@@ -382,7 +383,12 @@ function CloudBackup() {
   return (
     <div class="card" style={{ marginTop: '14px' }}>
       <div class="spread" style={{ marginBottom: '6px' }}>
-        <div class="card-title" style={{ margin: 0 }}>{t('cloud.title')}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+          <div class="card-title" style={{ margin: 0 }}>{t('cloud.title')}</div>
+          <button class="info-btn" onClick={() => setExplaining(true)} title={t('cloud.how')} aria-label={t('cloud.how')}>
+            <IconInfo size={17} />
+          </button>
+        </div>
         {state === 'on' && (
           <span class={'pill ' + (viaCloud ? 'warn' : 'good')}>{viaCloud ? t('cloud.in_use') : t('common.on')}</span>
         )}
@@ -450,6 +456,28 @@ function CloudBackup() {
             <span class="screen-sub" style={{ marginTop: '2px' }}>{rt('cloud.only_desc')}</span>
           </div>
           <Switch on={cloudOnly.value} onChange={setCloudOnly} />
+        </div>
+      )}
+
+      {explaining && (
+        <div class="modal-backdrop" onClick={() => setExplaining(false)}>
+          <div
+            class="modal cloud-how"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cloud-how-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 class="modal-title" id="cloud-how-title">{t('cloud.how_title')}</h3>
+            {(['data', 'ctrl', 'when', 'off', 'setup'] as const).map((k) => (
+              <section key={k}>
+                <h4>{t(`cloud.how_${k}_h`)}</h4>
+                <p>{rt(`cloud.how_${k}`)}</p>
+                {k === 'ctrl' && <p>{rt('cloud.how_ctrl_list')}</p>}
+              </section>
+            ))}
+            <button class="btn block" style={{ marginTop: '16px' }} onClick={() => setExplaining(false)}>OK</button>
+          </div>
         </div>
       )}
 

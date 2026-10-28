@@ -384,3 +384,11 @@ h1, h2, h3, p { margin: 0; }
 
 /* The must-notice part of a description (see lib/rich.tsx): brighter, not louder. */
 .screen-sub b, .cloud-off-hint b, .modal-body b, .wc-note b, .pair-steps b { color: var(--text); font-weight: 600; }
+
+/* "How it works" (i) next to a card title, and its explainer dialog. */
+.info-btn { border: none; background: none; padding: 4px; margin: -4px 0; color: var(--muted); display: inline-flex; border-radius: 50%; }
+.info-btn:active { transform: scale(0.9); }
+.modal.cloud-how { max-height: 86vh; overflow-y: auto; }
+.cloud-how h4 { font-size: 13px; font-weight: 700; margin: 16px 0 4px; color: var(--text); }
+.cloud-how p { color: var(--text-secondary); font-size: 14px; line-height: 1.5; margin: 0 0 6px; }
+.cloud-how b { color: var(--text); font-weight: 600; }
