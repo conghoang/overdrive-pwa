@@ -31,8 +31,9 @@ export function AppHeader({
    * SL6VN Cloud standing in for the tunnel is worth a word, not a banner: the
    * data is real, just second-hand. When the car itself has dropped off the
    * cloud, what is on screen is its last report — say how old, and don't let
-   * the dot claim it is live. Only while connected: with both paths failing
-   * nothing is coming "via" anything.
+   * the dot claim it is live. Otherwise still say when its last report arrived:
+   * cloud data is only as fresh as the car's last MQTT update. Only while
+   * connected: with both paths failing nothing is coming "via" anything.
    */
   const viaCloud = connected.value && dataSource.value === 'cloud'
   const feed = viaCloud ? status.value?.cloud : undefined
@@ -47,7 +48,9 @@ export function AppHeader({
             <span class="via-cloud">
               {' · '}{t('cloud.via')}
               {cloudOnly.value && <> ({t('cloud.only_short')})</>}
-              {carOffline && <> · {t('cloud.last_seen', { ago: ago(feed?.updatedAt) || '--' })}</>}
+              {carOffline
+                ? <> · {t('cloud.last_seen', { ago: ago(feed?.updatedAt) || '--' })}</>
+                : feed?.updatedAt ? <> · {ago(feed.updatedAt)}</> : null}
             </span>
           )}
         </div>
