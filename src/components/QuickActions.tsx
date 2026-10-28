@@ -115,13 +115,12 @@ export function QuickActions() {
   // car: off → "Power on" (switch it on), on (acc) → "Power off".
   const powered = !!status.value?.acc
   /*
-   * SL6VN Cloud carries the native lock/unlock/power/flash commands but neither
-   * the 51DK shell nor the trunk, so on cloud those tiles are greyed out with
-   * a line saying why — rather than firing into a 503.
+   * SL6VN Cloud carries the native lock/unlock/power/flash/trunk commands but not
+   * the 51DK shell, so on cloud those tiles are greyed out with a line saying
+   * why — rather than firing into a 503.
    */
   const viaCloud = onCloud()
   const shellOff = disabled || (wc51 && viaCloud)
-  const trunkOff = disabled || viaCloud
   return (
     <>
       <div class="quick-row">
@@ -171,7 +170,7 @@ export function QuickActions() {
         <QuickBtn
           icon={<IconTrunk size={22} />}
           label={wc51 ? t('ctrl.trunk') : t(trunk.labelKey)}
-          disabled={trunkOff}
+          disabled={disabled}
           hold={holdTrunk.value}
           onFire={() =>
             wc51
@@ -180,7 +179,7 @@ export function QuickActions() {
           }
         />
       </div>
-      {viaCloud && !disabled && <p class="cloud-off-hint">{wc51 ? '' : `${t('ctrl.trunk')} · `}{t('cloud.needs_tunnel')}</p>}
+      {viaCloud && wc51 && !disabled && <p class="cloud-off-hint">{t('cloud.needs_tunnel')}</p>}
     </>
   )
 }

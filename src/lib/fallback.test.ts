@@ -13,10 +13,10 @@ describe('cloudSupports', () => {
     }
   })
   it('relays only the vehicle commands it knows', () => {
-    for (const a of ['lock', 'unlock', 'power-on', 'power-off', 'flash', 'find-car', 'climate', 'seat']) {
+    for (const a of ['lock', 'unlock', 'power-on', 'power-off', 'flash', 'find-car', 'climate', 'seat', 'trunk', 'window']) {
       expect(cloudSupports('POST', `/api/vehicle/${a}`)).toBe(true)
     }
-    for (const a of ['trunk', 'window']) expect(cloudSupports('POST', `/api/vehicle/${a}`)).toBe(false)
+    for (const a of ['sunroof', 'media', 'setting']) expect(cloudSupports('POST', `/api/vehicle/${a}`)).toBe(false)
   })
   it('never takes trips, charging, camera, keymap or settings', () => {
     expect(cloudSupports('GET', '/api/trips?days=7&limit=200')).toBe(false)

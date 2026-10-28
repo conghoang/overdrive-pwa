@@ -103,7 +103,7 @@ describe('fallback', () => {
     handler = (url) => (url.startsWith(CAR) ? down() : json({}))
     await expect(api.getTrips(7)).rejects.toBeInstanceOf(api.ApiError)
     await expect(api.fireShell('true')).rejects.toBeInstanceOf(api.ApiError)
-    await expect(api.setTrunk('open')).rejects.toBeInstanceOf(api.ApiError)
+    await expect(api.streamEnable()).rejects.toBeInstanceOf(api.ApiError)
     expect(calls.every((c) => c.url.startsWith(CAR))).toBe(true)
   })
 
@@ -633,5 +633,28 @@ describe('cloud-only setting migration', () => {
     expect(api.cloudOnly.value).toBe(true)
     expect(localStorage.getItem('odpwa.odcloud.simulateDown')).toBeNull()
     expect(localStorage.getItem('odpwa.odcloud.cloudOnly')).toBe('1')
+  })
+})
+
+describe('trunk and windows on the cloud', () => {
+  it('trunk and all-windows commands go to the cloud in cloud-only mode', async () => {
+    signIn(); enroll()
+    const api = await load()
+    api.setCloudOnly(true)
+    handler = () => json({ success: true, source: 'cloud' })
+    await api.setTrunk('open')
+    await api.closeAllWindows()
+    expect(urls()).toEqual([`${CLOUD}/api/vehicle/trunk`, `${CLOUD}/api/vehicle/window`])
+    expect(JSON.parse(String(calls[1].init.body))).toEqual({ area: 0, command: 2 })
+  })
+
+  it('vent is one cloud command (the car\'s own vent), not four window positions', async () => {
+    signIn(); enroll()
+    const api = await load()
+    api.setCloudOnly(true)
+    handler = () => json({ success: true, source: 'cloud' })
+    await api.ventWindows()
+    expect(urls()).toEqual([`${CLOUD}/api/vehicle/window`])
+    expect(JSON.parse(String(calls[0].init.body))).toEqual({ action: 'vent' })
   })
 })

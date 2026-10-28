@@ -10,7 +10,7 @@
  */
 
 /** POST /api/vehicle/<action> commands the cloud can relay to the car. */
-const CLOUD_COMMANDS = new Set(['lock', 'unlock', 'power-on', 'power-off', 'flash', 'find-car', 'climate', 'seat'])
+const CLOUD_COMMANDS = new Set(['lock', 'unlock', 'power-on', 'power-off', 'flash', 'find-car', 'climate', 'seat', 'trunk', 'window'])
 /** GETs the cloud serves from its MQTT snapshot. */
 const CLOUD_READS = new Set(['/status', '/api/vehicle/state', '/api/launcher/v1/summary', '/api/vehicle/cloud-status'])
 

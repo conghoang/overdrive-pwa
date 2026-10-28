@@ -870,6 +870,8 @@ const SIDE_WINDOWS = [1, 2, 3, 4]
  * Cloud vent stays as the fallback for a car whose SDK rejects positioning.
  */
 export async function ventWindows(): Promise<ControlResult> {
+  // SL6VN Cloud has no per-window positions, only the car's own "vent" — one command, not four.
+  if (cloudOnly.value || dataSource.value === 'cloud') return apiPost('/api/vehicle/window', { action: 'vent' })
   const results = await Promise.all(
     SIDE_WINDOWS.map((area) =>
       setWindowPercent(area, VENT_PERCENT).catch((e: unknown): ControlResult => ({

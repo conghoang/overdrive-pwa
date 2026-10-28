@@ -13,7 +13,7 @@ import { WiCarlinkGrid } from '../components/WiCarlinkControls'
 import { Seats } from '../components/Seats'
 import { ClimateBanner } from '../components/ClimateBanner'
 import { AppHeader } from '../components/AppHeader'
-import { CloudOff, onCloud } from '../components/CloudOff'
+import { CloudOff } from '../components/CloudOff'
 import '../components/controls.css'
 
 const TEMP_MIN = 16
@@ -193,8 +193,6 @@ export function Controls() {
   //     when the daemon confirms it exists (OD's loadPowerControls).
   const hasLocalKey = localRemoteKey.value === true
   const cloudOrKey = cloudConfigured.value !== false || hasLocalKey
-  // SL6VN Cloud relays lock/unlock/power/flash/find but not the trunk.
-  const viaCloud = onCloud()
 
   return (
     <div class="screen">
@@ -269,22 +267,21 @@ export function Controls() {
       </div>
 
       {/* windows — all three route through the head unit's local SDK, so they
-          work with no BYD Cloud account (see api.ventWindows). */}
+          work with no BYD Cloud account (see api.ventWindows). SL6VN Cloud relays
+          all three too (all-windows open/close and the car's own vent). */}
       <div class="card" style={{ marginTop: '14px' }}>
         <div class="card-title">{t('ctrl.windows')}</div>
-        <CloudOff>
-          <div class="grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
-            <button class="btn" disabled={disabled} onClick={() => run(api.ventWindows, t('ctrl.vent'))}>
-              {t('ctrl.vent')}
-            </button>
-            <button class="btn" disabled={disabled} onClick={() => run(api.openAllWindows, t('ctrl.open_all'))}>
-              {t('ctrl.open_all')}
-            </button>
-            <button class="btn" disabled={disabled} onClick={() => run(api.closeAllWindows, t('ctrl.close_all'))}>
-              {t('ctrl.close_all')}
-            </button>
-          </div>
-        </CloudOff>
+        <div class="grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+          <button class="btn" disabled={disabled} onClick={() => run(api.ventWindows, t('ctrl.vent'))}>
+            {t('ctrl.vent')}
+          </button>
+          <button class="btn" disabled={disabled} onClick={() => run(api.openAllWindows, t('ctrl.open_all'))}>
+            {t('ctrl.open_all')}
+          </button>
+          <button class="btn" disabled={disabled} onClick={() => run(api.closeAllWindows, t('ctrl.close_all'))}>
+            {t('ctrl.close_all')}
+          </button>
+        </div>
       </div>
 
       <Seats />
@@ -334,7 +331,7 @@ export function Controls() {
               <ActionButton
                 label={t('ctrl.trunk_open')}
                 icon={<IconTrunk size={22} />}
-                disabled={disabled || viaCloud}
+                disabled={disabled}
                 onFire={() => run(() => api.setTrunk('open'), t('ctrl.trunk_open'))}
               />
             )}
@@ -342,7 +339,7 @@ export function Controls() {
               <ActionButton
                 label={t('ctrl.trunk_close')}
                 icon={<IconTrunk size={22} />}
-                disabled={disabled || viaCloud}
+                disabled={disabled}
                 onFire={() => run(() => api.setTrunk('close'), t('ctrl.trunk_close'))}
               />
             )}
@@ -370,7 +367,6 @@ export function Controls() {
               />
             )}
           </div>
-          {viaCloud && cloudOrKey && <p class="cloud-off-hint">{t('ctrl.trunk')} · {t('cloud.needs_tunnel')}</p>}
         </>
       )}
     </div>
