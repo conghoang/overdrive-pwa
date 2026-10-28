@@ -200,6 +200,8 @@ h1, h2, h3, p { margin: 0; }
   background: var(--surface-soft); color: var(--text-secondary);
   border: 1px solid var(--border-soft);
 }
+.pill { white-space: nowrap; flex-shrink: 0; }
+.pill-icon { display: inline-flex; align-items: center; padding-top: 3px; padding-bottom: 3px; }
 .pill.good { color: var(--success); background: rgba(86, 214, 140, 0.12); border-color: rgba(86, 214, 140, 0.25); }
 .pill.warn { color: var(--warning); background: rgba(243, 180, 94, 0.12); border-color: rgba(243, 180, 94, 0.25); }
 .pill.bad  { color: var(--danger);  background: rgba(255, 124, 132, 0.12); border-color: rgba(255, 124, 132, 0.25); }

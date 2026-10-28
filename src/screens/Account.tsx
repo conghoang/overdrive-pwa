@@ -3,7 +3,7 @@ import type { CloudEnrollment } from '../lib/api'
 import { connected, dataSource, reset, status } from '../lib/store'
 import { hardReset } from '../lib/updater'
 import { ago } from '../lib/format'
-import { IconInfo, IconPower, IconRefresh } from '../components/icons-extra'
+import { IconCloud, IconInfo, IconPower, IconRefresh } from '../components/icons-extra'
 import { useEffect, useState } from 'preact/hooks'
 import { AppHeader } from '../components/AppHeader'
 import { DEFAULT_PHOTO } from '../components/CarHero'
@@ -390,7 +390,10 @@ function CloudBackup() {
           </button>
         </div>
         {state === 'on' && (
-          <span class={'pill ' + (viaCloud ? 'warn' : 'good')}>{viaCloud ? t('cloud.in_use') : t('common.on')}</span>
+          // In use right now: a cloud glyph instead of words, so the long card title keeps its room.
+          viaCloud
+            ? <span class="pill warn pill-icon" title={t('cloud.in_use')} aria-label={t('cloud.in_use')} role="img"><IconCloud size={16} /></span>
+            : <span class="pill good">{t('common.on')}</span>
         )}
         {state === 'lost' && <span class="pill warn">{t('cloud.needs_reenable')}</span>}
       </div>
