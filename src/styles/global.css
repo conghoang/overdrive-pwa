@@ -131,8 +131,10 @@ h1, h2, h3, p { margin: 0; }
 .screen-sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
 
 .head-actions { display: flex; align-items: center; gap: 12px; }
-/* "via cloud" after the header subtitle — SL6VN Cloud is answering, not the tunnel. */
-.via-cloud { color: var(--warning); }
+/* "via cloud" after the header subtitle — SL6VN Cloud is answering, not the tunnel. A normal mode, so it
+   reads like the rest of the subtitle; only "car offline" is a warning. */
+.via-cloud { color: inherit; }
+.via-cloud-off { color: var(--warning); }
 
 /* What SL6VN Cloud can't serve, greyed out while it stands in (see CloudOff). */
 .cloud-off > [inert] { opacity: 0.4; filter: grayscale(0.6); }

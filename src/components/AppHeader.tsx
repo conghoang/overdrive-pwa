@@ -51,7 +51,7 @@ export function AppHeader({
               {' · '}{t('cloud.via')}
               {cloudOnly.value && <> ({t('cloud.only_short')})</>}
               {carOffline
-                ? <> · {t('cloud.last_seen', { ago: ago(feed?.updatedAt) || '--' })}</>
+                ? <> · <span class="via-cloud-off">{t('cloud.last_seen', { ago: ago(feed?.updatedAt) || '--' })}</span></>
                 : feed?.updatedAt ? <> · {ago(feed.updatedAt)}</> : null}
             </span>
           )}
