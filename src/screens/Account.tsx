@@ -1,4 +1,4 @@
-import { CLOUD_DEFAULT_URL, clearAll, cloudState, disableCloud, enrollCloud, getBaseUrl, getCloudEnrollment, getCloudUrl, getDeviceId, refreshCloud, setCloudUrl, setCloudOnly, cloudOnly } from '../lib/api'
+import { CLOUD_DEFAULT_URL, clearAll, cloudState, disableCloud, enrollCloud, removeCloudFromCar, getBaseUrl, getCloudEnrollment, getCloudUrl, getDeviceId, refreshCloud, setCloudUrl, setCloudOnly, cloudOnly } from '../lib/api'
 import type { CloudEnrollment } from '../lib/api'
 import { connected, dataSource, reset, status } from '../lib/store'
 import { hardReset } from '../lib/updater'
@@ -322,6 +322,10 @@ function CloudBackup() {
   const [url, setUrl] = useState(getCloudUrl())
   // A non-default cloud is about to receive the tunnel JWT: ask first.
   const [confirming, setConfirming] = useState(false)
+  // Turning off asks whether to also remove the car-side setup.
+  const [disabling, setDisabling] = useState(false)
+  const [removing, setRemoving] = useState(false)
+  const [removeError, setRemoveError] = useState<string | null>(null)
   const state = cloudState.value
   const viaCloud = dataSource.value === 'cloud'
   // Enrolling goes THROUGH the tunnel, so it needs the tunnel answering now.
@@ -349,6 +353,28 @@ function CloudBackup() {
       setError(err instanceof Error ? err.message : t('common.failed'))
     } finally {
       setBusy(false)
+    }
+  }
+
+  function askDisable() {
+    setRemoveError(null)
+    setDisabling(true)
+  }
+  function turnOff() {
+    setDisabling(false)
+    disableCloud()
+  }
+  async function turnOffAndRemove() {
+    if (removing) return
+    setRemoving(true)
+    setRemoveError(null)
+    try {
+      await removeCloudFromCar()
+      turnOff()
+    } catch (err) {
+      setRemoveError(err instanceof Error ? err.message : t('cloud.remove_failed'))
+    } finally {
+      setRemoving(false)
     }
   }
 
@@ -381,7 +407,7 @@ function CloudBackup() {
             </div>
             <Switch on={cloudOnly.value} onChange={setCloudOnly} />
           </div>
-          <button class="btn ghost" style={{ marginTop: '4px' }} onClick={disableCloud}>
+          <button class="btn ghost" style={{ marginTop: '4px' }} onClick={askDisable}>
             {t('cloud.disable')}
           </button>
         </>
@@ -423,6 +449,30 @@ function CloudBackup() {
             <span class="screen-sub" style={{ marginTop: '2px' }}>{t('cloud.only_desc')}</span>
           </div>
           <Switch on={cloudOnly.value} onChange={setCloudOnly} />
+        </div>
+      )}
+
+      {disabling && (
+        <div class="modal-backdrop" onClick={() => { if (!removing) setDisabling(false) }}>
+          <div
+            class="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cloud-disable-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 class="modal-title" id="cloud-disable-title">{t('cloud.disable_title')}</h3>
+            <p class="modal-body">{t('cloud.disable_body')}</p>
+            <button class="btn danger block" disabled={removing || (!tunnelUp && !cloudOnly.value)} onClick={() => void turnOffAndRemove()}>
+              {removing ? <><IconRefresh size={18} class="spin" /> {t('cloud.removing')}</> : t('cloud.disable_remove')}
+            </button>
+            {!removing && !tunnelUp && !cloudOnly.value && <div class="cloud-off-hint">{t('cloud.remove_needs_tunnel')}</div>}
+            {removeError && <div class="screen-sub" style={{ marginTop: '8px', color: 'var(--danger)' }}>{removeError}</div>}
+            <div class="grid grid-2" style={{ marginTop: '10px' }}>
+              <button class="btn" disabled={removing} onClick={() => setDisabling(false)}>{t('wc.cancel')}</button>
+              <button class="btn" disabled={removing} onClick={turnOff}>{t('cloud.disable_keep')}</button>
+            </div>
+          </div>
         </div>
       )}
 

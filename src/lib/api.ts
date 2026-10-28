@@ -179,6 +179,57 @@ export function disableCloud(): void {
   setCloudOnly(false)
 }
 
+/** What enrollment set up on the car, by current or earlier name. */
+const CAR_SETUP_CONNECTION_NAMES = ['SL6VN Cloud', 'OD Cloud']
+const CAR_SETUP_AUTOMATION_NAMES = ['SL6VN Cloud: Commands', 'OD Cloud: Commands']
+
+/** One call to the car's own API through the tunnel (never the cloud, even in "cloud only"). */
+async function carApi(method: string, path: string): Promise<{ status: number; data: any }> {
+  const base = getBaseUrl()
+  const jwt = getJwt()
+  if (!base || !jwt) throw new AuthError('Not configured')
+  const t0 = timeoutSignal(REQUEST_TIMEOUT_MS)
+  try {
+    const res = await fetch(base + path, { method, headers: { Authorization: 'Bearer ' + jwt }, signal: t0.signal })
+    let data: any = null
+    try { data = await res.json() } catch { /* not JSON */ }
+    return { status: res.status, data }
+  } catch {
+    throw new ApiError(t('err.network'), 0)
+  } finally {
+    t0.done()
+  }
+}
+
+/**
+ * Undo the car side of enrollment through the tunnel: delete the car's MQTT connection to the
+ * cloud and the "SL6VN Cloud: Commands" automation. Missing ones are fine (already removed).
+ */
+export async function removeCloudFromCar(): Promise<void> {
+  const fail = (): never => { throw new ApiError(t('cloud.remove_failed'), 0) }
+  let cloudHost = ''
+  try { cloudHost = new URL(getCloudUrl()).host } catch { /* custom URL gone bad: match by name */ }
+  const sameHost = (u: unknown): boolean => {
+    try { return !!cloudHost && new URL(String(u)).host.replace(/:443$/, '') === cloudHost } catch { return false }
+  }
+
+  const conns = await carApi('GET', '/api/mqtt/connections')
+  if (conns.status !== 200 || !Array.isArray(conns.data?.connections)) fail()
+  for (const c of conns.data.connections as Array<{ id: string; name?: string; brokerUrl?: string }>) {
+    if (!sameHost(c.brokerUrl) && !CAR_SETUP_CONNECTION_NAMES.includes(c.name || '')) continue
+    const r = await carApi('DELETE', '/api/mqtt/connections/' + encodeURIComponent(c.id))
+    if (r.status !== 200 && r.status !== 404) fail()
+  }
+
+  const autos = await carApi('GET', '/api/automations/list')
+  if (autos.status !== 200 || !autos.data || typeof autos.data !== 'object') fail()
+  for (const [id, a] of Object.entries(autos.data as Record<string, { name?: string } | null>)) {
+    if (!a || !CAR_SETUP_AUTOMATION_NAMES.includes(a.name || '')) continue
+    const r = await carApi('DELETE', '/api/automations/automation/' + encodeURIComponent(id))
+    if (r.status !== 200 && r.status !== 404) fail()
+  }
+}
+
 /*
  * "Use cloud only": every request goes to SL6VN Cloud, never to the car URL — for when the
  * tunnel is unreliable or metered, or to check what the cloud shows. Requests the cloud can't

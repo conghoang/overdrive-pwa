@@ -462,6 +462,51 @@ describe('enrolment', () => {
     expect(localStorage.getItem('odpwa.odcloud.token')).toBeNull()
     expect(api.getCloudDeviceId()).toBe('')
   })
+
+  it('remove from car deletes only the cloud MQTT connection and commands automation, through the tunnel', async () => {
+    signIn(); enroll()
+    localStorage.setItem('odpwa.odcloud.cloudOnly', '1') // even in "cloud only", this goes to the car
+    const api = await load()
+    handler = (url, init) => {
+      if (url === `${CAR}/api/mqtt/connections` && !init.method?.match(/DELETE/)) {
+        return json({ connections: [
+          { id: 'c1', name: 'renamed', brokerUrl: 'wss://cloud.sl6vn.link:443/mqtt/' + DEV },
+          { id: 'c2', name: 'Home Assistant', brokerUrl: 'wss://ha.example:443/mqtt' },
+          { id: 'c3', name: 'OD Cloud', brokerUrl: 'wss://old.example:443/mqtt' },
+        ] })
+      }
+      if (url === `${CAR}/api/automations/list`) {
+        return json({ a1: { name: 'SL6VN Cloud: Commands' }, a2: { name: 'Lock at night' } })
+      }
+      return json({ success: true })
+    }
+    await api.removeCloudFromCar()
+    const deletes = calls.filter((c) => c.init.method === 'DELETE').map((c) => c.url)
+    expect(deletes).toEqual([
+      `${CAR}/api/mqtt/connections/c1`,
+      `${CAR}/api/mqtt/connections/c3`,
+      `${CAR}/api/automations/automation/a1`,
+    ])
+    expect(calls.every((c) => c.url.startsWith(CAR) && auth(c) === 'Bearer tunnel-jwt')).toBe(true)
+  })
+
+  it('remove from car fails when the car refuses a delete', async () => {
+    signIn(); enroll()
+    const api = await load()
+    handler = (url, init) => {
+      if (init.method === 'DELETE') return json({ success: false }, 500)
+      if (url.endsWith('/api/mqtt/connections')) return json({ connections: [{ id: 'c1', name: 'SL6VN Cloud', brokerUrl: 'x' }] })
+      return json({})
+    }
+    await expect(api.removeCloudFromCar()).rejects.toThrow('Could not remove the setup from the car')
+  })
+
+  it('remove from car fails when the tunnel is down', async () => {
+    signIn(); enroll()
+    const api = await load()
+    handler = down
+    await expect(api.removeCloudFromCar()).rejects.toBeInstanceOf(api.ApiError)
+  })
 })
 
 describe('refresh', () => {
