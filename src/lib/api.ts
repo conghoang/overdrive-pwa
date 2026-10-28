@@ -9,8 +9,14 @@ import type {
   StatusResponse,
   VehicleState,
 } from './types'
+import { signal } from '@preact/signals'
 import { DEMO_BASE, DEMO_TOKEN } from './demo'
 import { t } from './i18n'
+import {
+  breakerOpen, closeBreaker, cloudSupports, isTunnelFailure, needsRefresh, newBreaker, noteFailure, parseCloudSession,
+  route, sessionUsable,
+} from './fallback'
+import type { CloudSession, TunnelOutcome } from './fallback'
 
 // --- persisted config (entered once on the setup screen) ---
 const K_BASE = 'odpwa.baseUrl'
@@ -24,6 +30,318 @@ export function isConfigured(): boolean { return !!getBaseUrl() && !!getJwt() }
 
 /** Drop the session token but keep the URL, so re-login only needs the token. */
 export function clearAuth(): void { localStorage.removeItem(K_JWT) }
+
+/*
+ * SL6VN Cloud — an optional second way to reach the car (see lib/fallback.ts).
+ *
+ * The user types nothing for it. "Enable cloud backup" hands the cloud the car
+ * URL and the tunnel JWT this app already holds; the cloud uses them once to
+ * set the car up, and answers with a token of its own. That token is the whole
+ * cloud session — kept apart from the tunnel's, so losing one never signs the
+ * user out of the other. Never enabled, every request goes to the tunnel
+ * exactly as before.
+ */
+export const CLOUD_DEFAULT_URL = 'https://cloud.sl6vn.link'
+// The keys keep the feature's old name (OD Cloud): renaming them would sign
+// every phone out of a backup it already has.
+const K_CLOUD_URL = 'odpwa.odcloud.url' // advanced override; empty = the default
+const K_CLOUD_TOKEN = 'odpwa.odcloud.token'
+const K_CLOUD_EXP = 'odpwa.odcloud.exp'
+/** Present from enrolment until Disable — it outlives a token the cloud rejects. */
+const K_CLOUD_DEVICE = 'odpwa.odcloud.device'
+// "Use cloud only": talk to SL6VN Cloud and never to the car URL.
+const K_CLOUD_ONLY = 'odpwa.odcloud.cloudOnly'
+// Earlier name of the same switch ("Simulate tunnel down"); carried over once.
+const K_CLOUD_ONLY_OLD = 'odpwa.odcloud.simulateDown'
+if (localStorage.getItem(K_CLOUD_ONLY_OLD) !== null) {
+  if (localStorage.getItem(K_CLOUD_ONLY_OLD) === '1') localStorage.setItem(K_CLOUD_ONLY, '1')
+  localStorage.removeItem(K_CLOUD_ONLY_OLD)
+}
+
+/*
+ * The cloud is handed the tunnel JWT, so where it lives is not a cosmetic
+ * setting: an override must be https (plain http only for a cloud running on
+ * this machine), and anything else — including a value stored before this rule
+ * — is ignored in favour of the default.
+ */
+export function cloudUrlAllowed(url: string): boolean {
+  try {
+    const u = new URL(url)
+    if (u.protocol === 'https:') return true
+    return u.protocol === 'http:' && (u.hostname === 'localhost' || u.hostname === '127.0.0.1')
+  } catch {
+    return false
+  }
+}
+export function getCloudUrl(): string {
+  const u = localStorage.getItem(K_CLOUD_URL)
+  return u && cloudUrlAllowed(u) ? u : CLOUD_DEFAULT_URL
+}
+/**
+ * Point the app at another SL6VN Cloud. Empty restores the default. False (and
+ * nothing stored) for a URL that may not receive the tunnel JWT. A session
+ * from the previous cloud means nothing to the new one, so it is forgotten.
+ */
+export function setCloudUrl(url: string): boolean {
+  const u = normalizeBase(url)
+  if (u && !cloudUrlAllowed(u)) return false
+  const next = u || CLOUD_DEFAULT_URL
+  if (next !== getCloudUrl() && cloudEnrolled()) disableCloud()
+  if (next === CLOUD_DEFAULT_URL) localStorage.removeItem(K_CLOUD_URL)
+  else localStorage.setItem(K_CLOUD_URL, next)
+  return true
+}
+export function getCloudDeviceId(): string { return localStorage.getItem(K_CLOUD_DEVICE) || '' }
+function readCloudSession(): CloudSession | null {
+  const token = localStorage.getItem(K_CLOUD_TOKEN)
+  if (!token) return null
+  return { token, expiresAt: Number(localStorage.getItem(K_CLOUD_EXP)) || 0 }
+}
+const cloudEnrolled = (): boolean => !!getCloudDeviceId()
+/*
+ * The cloud session belongs to ONE car. Signing into another car with it still
+ * stored would show the old car's telemetry as this one's — and send this
+ * car's lock button to the old car — so it only counts for the car whose
+ * device id the tunnel reports.
+ */
+const cloudForThisCar = (): boolean => cloudEnrolled() && getCloudDeviceId() === getDeviceId()
+
+/** 'on' = usable; 'lost' = enabled once, but the cloud no longer takes our token. */
+export type CloudState = 'off' | 'on' | 'lost'
+function readCloudState(): CloudState {
+  if (!cloudForThisCar()) return 'off'
+  return sessionUsable(readCloudSession(), Date.now()) ? 'on' : 'lost'
+}
+export const cloudState = signal<CloudState>(readCloudState())
+/** Re-read cloudState against the clock: a token can lapse while the app is open. */
+export function syncCloudState(): void {
+  const s = readCloudState()
+  if (cloudState.value !== s) cloudState.value = s
+  endCloudOnlyWithoutCloud()
+}
+/** No usable cloud session: "Use cloud only" switches itself off, so the car URL is used again. */
+function endCloudOnlyWithoutCloud(): void {
+  if (cloudState.value !== 'on' && cloudOnly.value) setCloudOnly(false)
+}
+
+/** Usable as a fallback right now. Never in demo mode: there is no car behind it. */
+function cloudReady(): boolean {
+  return getBaseUrl() !== DEMO_BASE && cloudForThisCar() && sessionUsable(readCloudSession(), Date.now())
+}
+/** Whether there is a cloud session this car can be served from right now. */
+export const cloudUsable = (): boolean => cloudReady()
+
+/*
+ * The cloud's live socket: one connection the cloud pushes every car report
+ * down, instead of a poll asking for them (see lib/live.ts). Same token as the
+ * HTTP API, carried as ?token= for the same reason as the camera socket. '' when
+ * there is no usable session to open it with.
+ */
+function liveUrlFor(token: string): string {
+  const u = new URL(getCloudUrl())
+  u.protocol = u.protocol === 'https:' ? 'wss:' : 'ws:'
+  u.pathname = '/live'
+  u.search = `?token=${encodeURIComponent(token)}`
+  return u.toString()
+}
+export function cloudLiveUrl(): string {
+  const s = readCloudSession()
+  return s && cloudReady() ? liveUrlFor(s.token) : ''
+}
+/**
+ * The cloud closed the live socket on our token (4001) — exactly a cloud 401.
+ * Only if it is still the token we hold: one renewed since the socket opened is
+ * not the one that was turned away.
+ */
+export function cloudLiveRejected(url: string): void {
+  const s = readCloudSession()
+  if (s && liveUrlFor(s.token) === url) dropCloudSession()
+}
+
+function saveCloudSession(s: CloudSession, deviceId?: string): void {
+  localStorage.setItem(K_CLOUD_TOKEN, s.token)
+  localStorage.setItem(K_CLOUD_EXP, String(s.expiresAt))
+  if (deviceId) localStorage.setItem(K_CLOUD_DEVICE, deviceId)
+  cloudState.value = readCloudState()
+}
+/** The cloud rejected our token: drop just that, and remember it needs re-enabling. */
+function dropCloudSession(): void {
+  localStorage.removeItem(K_CLOUD_TOKEN)
+  localStorage.removeItem(K_CLOUD_EXP)
+  cloudState.value = readCloudState()
+  endCloudOnlyWithoutCloud()
+}
+/** Disable: forget the cloud session on this phone. The car is left as it is. */
+export function disableCloud(): void {
+  dropCloudSession()
+  localStorage.removeItem(K_CLOUD_DEVICE)
+  cloudState.value = 'off'
+  setCloudOnly(false)
+}
+
+/** What enrollment set up on the car, by current or earlier name. */
+const CAR_SETUP_CONNECTION_NAMES = ['SL6VN Cloud', 'OD Cloud']
+const CAR_SETUP_AUTOMATION_NAMES = ['SL6VN Cloud: Commands', 'OD Cloud: Commands']
+
+/** One call to the car's own API through the tunnel (never the cloud, even in "cloud only"). */
+async function carApi(method: string, path: string): Promise<{ status: number; data: any }> {
+  const base = getBaseUrl()
+  const jwt = getJwt()
+  if (!base || !jwt) throw new AuthError('Not configured')
+  const t0 = timeoutSignal(REQUEST_TIMEOUT_MS)
+  try {
+    const res = await fetch(base + path, { method, headers: { Authorization: 'Bearer ' + jwt }, signal: t0.signal })
+    let data: any = null
+    try { data = await res.json() } catch { /* not JSON */ }
+    return { status: res.status, data }
+  } catch {
+    throw new ApiError(t('err.network'), 0)
+  } finally {
+    t0.done()
+  }
+}
+
+/**
+ * Undo the car side of enrollment through the tunnel: delete the car's MQTT connection to the
+ * cloud and the "SL6VN Cloud: Commands" automation. Missing ones are fine (already removed).
+ */
+export async function removeCloudFromCar(): Promise<void> {
+  const fail = (): never => { throw new ApiError(t('cloud.remove_failed'), 0) }
+  let cloudHost = ''
+  try { cloudHost = new URL(getCloudUrl()).host } catch { /* custom URL gone bad: match by name */ }
+  const sameHost = (u: unknown): boolean => {
+    try { return !!cloudHost && new URL(String(u)).host.replace(/:443$/, '') === cloudHost } catch { return false }
+  }
+
+  const conns = await carApi('GET', '/api/mqtt/connections')
+  if (conns.status !== 200 || !Array.isArray(conns.data?.connections)) fail()
+  for (const c of conns.data.connections as Array<{ id: string; name?: string; brokerUrl?: string }>) {
+    if (!sameHost(c.brokerUrl) && !CAR_SETUP_CONNECTION_NAMES.includes(c.name || '')) continue
+    const r = await carApi('DELETE', '/api/mqtt/connections/' + encodeURIComponent(c.id))
+    if (r.status !== 200 && r.status !== 404) fail()
+  }
+
+  const autos = await carApi('GET', '/api/automations/list')
+  if (autos.status !== 200 || !autos.data || typeof autos.data !== 'object') fail()
+  for (const [id, a] of Object.entries(autos.data as Record<string, { name?: string } | null>)) {
+    if (!a || !CAR_SETUP_AUTOMATION_NAMES.includes(a.name || '')) continue
+    const r = await carApi('DELETE', '/api/automations/automation/' + encodeURIComponent(id))
+    if (r.status !== 200 && r.status !== 404) fail()
+  }
+}
+
+/*
+ * "Use cloud only": every request goes to SL6VN Cloud, never to the car URL — for when the
+ * tunnel is unreliable or metered, or to check what the cloud shows. Requests the cloud can't
+ * serve fail as if the car URL were unreachable. Requires a usable cloud session: without one
+ * it is ignored and switches itself off, so the app is never cut off from the car (or from the
+ * tunnel it needs to renew or re-enable the cloud). The header says "cloud only" meanwhile.
+ */
+export const cloudOnly = signal(localStorage.getItem(K_CLOUD_ONLY) === '1')
+export function setCloudOnly(on: boolean): void {
+  if (on) localStorage.setItem(K_CLOUD_ONLY, '1')
+  else localStorage.removeItem(K_CLOUD_ONLY)
+  cloudOnly.value = on
+  resetBreaker() // re-judge the tunnel from the next request either way
+}
+const tunnelBypassed = (base: string): boolean => cloudOnly.value && base === getBaseUrl() && cloudReady()
+
+/** POST the tunnel credentials to the cloud; resolves to its new session. */
+async function cloudHandshake(path: string, ms: number): Promise<{ session: CloudSession; deviceId?: string }> {
+  const base = getBaseUrl()
+  const jwt = getJwt()
+  if (!base || !jwt || base === DEMO_BASE) throw new ApiError(t('cloud.needs_tunnel'), 0)
+  // text/plain for the same reason as login: no CORS preflight to go wrong.
+  const headers: Record<string, string> = { 'Content-Type': 'text/plain;charset=UTF-8' }
+  // A car already enrolled through a different tunnel can only be re-enrolled
+  // by whoever holds its current cloud token — so prove it when we do.
+  const held = readCloudSession()
+  if (path === '/enroll' && held && cloudForThisCar()) headers.Authorization = 'Bearer ' + held.token
+  const t0 = timeoutSignal(ms)
+  let res: Response
+  try {
+    res = await fetch(getCloudUrl() + path, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ tunnelUrl: normalizeBase(base), token: jwt }),
+      signal: t0.signal,
+    })
+  } catch {
+    throw new ApiError(t0.signal.aborted ? t('cloud.timeout') : t('err.network'), 0)
+  } finally {
+    t0.done()
+  }
+  let body: unknown = null
+  try { body = await res.json() } catch { /* judged below */ }
+  const r = parseCloudSession(body, res.status)
+  if (!r.ok) {
+    throw new ApiError(r.step ? `${r.error} (${r.step})` : r.error, res.status)
+  }
+  return { session: r.session, deviceId: r.deviceId }
+}
+
+/**
+ * Enable cloud backup. Slow by nature — the cloud configures the car through
+ * the tunnel and waits for it to dial in, up to ~45 s — so it gets a minute.
+ */
+export async function enrollCloud(): Promise<void> {
+  const { session, deviceId } = await cloudHandshake('/enroll', 60_000)
+  saveCloudSession(session, deviceId || getDeviceId())
+}
+
+/*
+ * Renew the cloud token from a valid tunnel session. Silent: the backup is a
+ * convenience, and a failure here must never surface over a working app — the
+ * old token keeps working until it expires, and Settings shows if it doesn't.
+ */
+let refreshing: Promise<boolean> | null = null
+export function refreshCloud(): Promise<boolean> {
+  if (!refreshing) {
+    refreshing = cloudHandshake('/auth/exchange', REQUEST_TIMEOUT_MS)
+      .then(({ session, deviceId }) => {
+        if (!cloudEnrolled()) return false // disabled while in flight
+        saveCloudSession(session, deviceId)
+        return true
+      })
+      .catch(() => false)
+      .finally(() => { refreshing = null })
+  }
+  return refreshing
+}
+
+/*
+ * Renew only when enabled and the token is missing, lapsed or near its end —
+ * and at most every REFRESH_EVERY_MS. Called on every tick the tunnel answers,
+ * so a session the cloud dropped mid-visit comes back without a relaunch, and
+ * a cloud that keeps saying no is not asked on every poll.
+ */
+const REFRESH_EVERY_MS = 10 * 60_000
+let refreshTriedAt = 0
+export function maybeRefreshCloud(): void {
+  syncCloudState()
+  const now = Date.now()
+  if (!cloudForThisCar() || !needsRefresh(readCloudSession(), now)) return
+  if (refreshTriedAt && now - refreshTriedAt < REFRESH_EVERY_MS) return
+  refreshTriedAt = now
+  void refreshCloud()
+}
+
+/** What the cloud knows about the car right now. */
+export interface CloudEnrollment { enrolled?: boolean; deviceId?: string; connected?: boolean; online?: boolean; updatedAt?: number | null }
+export async function getCloudEnrollment(): Promise<CloudEnrollment> {
+  const s = readCloudSession()
+  if (!s) throw new ApiError(t('cloud.session_lost'), 401)
+  const sent = await send(getCloudUrl(), s.token, 'GET', '/api/cloud/enrollment', undefined, REQUEST_TIMEOUT_MS)
+  if (!('res' in sent)) throw new ApiError(t('err.network'), 0)
+  return readResponse<CloudEnrollment>(sent.res, 'GET', '/api/cloud/enrollment', 'cloud')
+}
+
+/*
+ * Which path served the latest telemetry: 'cloud' while the tunnel is down and
+ * SL6VN Cloud is answering instead. Screens grey out what the cloud cannot do off
+ * the back of this. null until the first reading.
+ */
+export const dataSource = signal<'tunnel' | 'cloud' | null>(null)
 /**
  * Full reset (sign out).
  *
@@ -47,6 +365,7 @@ export function clearAll(): void {
   for (const key of Object.keys(localStorage)) {
     if (key.startsWith('odpwa.') && !KEEP_ON_SIGN_OUT.has(key)) localStorage.removeItem(key)
   }
+  cloudState.value = 'off' // the cloud token went with the rest
 }
 
 /** Reduce a pasted URL to just its origin (scheme://host[:port]) — drops any path/query. */
@@ -134,9 +453,17 @@ export async function login(baseUrlRaw: string, accessCode: string): Promise<Log
   if (!res.ok || !data.success || !data.jwt) {
     throw new ApiError(data.error || t('err.login_failed_n', { status: res.status }), res.status)
   }
+  const dev = data.deviceId || deviceId
   localStorage.setItem(K_BASE, base)
   localStorage.setItem(K_JWT, data.jwt)
-  localStorage.setItem(K_DEVICE, data.deviceId || deviceId)
+  localStorage.setItem(K_DEVICE, dev)
+  // Another car: the stored cloud session is the previous car's, and must not
+  // outlive the switch (see cloudForThisCar).
+  if (cloudEnrolled() && getCloudDeviceId() !== dev) disableCloud()
+  closeBreaker(breaker) // whatever the old tunnel did says nothing about this one
+  // A fresh tunnel session is the moment to renew the cloud backup's token —
+  // silently, and only if it was ever enabled.
+  if (cloudEnrolled()) void refreshCloud()
   return data
 }
 
@@ -157,6 +484,72 @@ function timeoutSignal(ms: number): { signal: AbortSignal; done: () => void } {
   return { signal: ctl.signal, done: () => clearTimeout(id) }
 }
 
+/*
+ * With a cloud to fall back on, a tunnel GET is given far less patience: the
+ * cloud can answer in its place, so waiting the full 15 s first would only be
+ * 15 s of a frozen dashboard. Without one there is nothing better to wait for,
+ * and the old deadline stands. The cloud queues a command for the car and
+ * answers at once (confirmed: null), so its commands need no more than reads.
+ */
+const TUNNEL_GET_TIMEOUT_MS = 5_000
+const CLOUD_POST_TIMEOUT_MS = 15_000
+/** How long the "is the tunnel really down?" check before a command failover waits. */
+const PROBE_TIMEOUT_MS = 3_000
+
+const breaker = newBreaker()
+/*
+ * Back to tunnel-first. The breaker remembers the network as it was; when the
+ * phone comes back online, or the app back to the foreground, that memory is
+ * worth nothing and the tunnel deserves a fresh try.
+ */
+export function resetBreaker(): void { closeBreaker(breaker) }
+/** Whether the next cloud-servable read goes straight to the cloud. */
+export const cloudRouted = (): boolean => cloudReady() && (cloudOnly.value || breakerOpen(breaker, Date.now()))
+/** The phone itself is offline — the tunnel is not to blame, so don't trip on it. */
+const browserOffline = (): boolean => typeof navigator !== 'undefined' && navigator.onLine === false
+
+/*
+ * Whether the tunnel answers at all, on the public /auth/status. Asked before a
+ * command is retried on the cloud: a fetch can throw AFTER the request left
+ * (a reset mid-reply), and then the car may already have acted. A tunnel that
+ * answers this means exactly that case, and the command must not run twice.
+ */
+async function tunnelAnswers(base: string): Promise<boolean> {
+  if (tunnelBypassed(base)) return false
+  const t0 = timeoutSignal(PROBE_TIMEOUT_MS)
+  try {
+    const res = await fetch(base + '/auth/status', { signal: t0.signal })
+    return !isTunnelFailure('GET', { kind: 'response', status: res.status, contentType: res.headers.get('content-type') || '' })
+  } catch {
+    return false
+  } finally {
+    t0.done()
+  }
+}
+
+type Sent = { res: Response } | { fail: 'network' | 'timeout' }
+
+/** One fetch with a deadline. Never throws: a failure is an outcome to judge. */
+async function send(base: string, jwt: string, method: string, path: string, body: unknown, ms: number): Promise<Sent> {
+  if (tunnelBypassed(base)) return { fail: 'network' }
+  const headers: Record<string, string> = { Authorization: 'Bearer ' + jwt }
+  if (body !== undefined) headers['Content-Type'] = 'application/json'
+  const t0 = timeoutSignal(ms)
+  try {
+    const res = await fetch(base + path, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+      signal: t0.signal,
+    })
+    return { res }
+  } catch {
+    return { fail: t0.signal.aborted ? 'timeout' : 'network' }
+  } finally {
+    t0.done()
+  }
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const base = getBaseUrl()
   const jwt = getJwt()
@@ -164,25 +557,76 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
   if (base === DEMO_BASE) return demoResponse<T>(path)
 
-  const headers: Record<string, string> = { Authorization: 'Bearer ' + jwt }
-  if (body !== undefined) headers['Content-Type'] = 'application/json'
+  const way = route({
+    cloudReady: cloudReady(),
+    supported: cloudSupports(method, path),
+    open: breakerOpen(breaker, Date.now()),
+  })
+  if (way === 'cloud') return viaCloud<T>(method, path, body)
 
-  let res: Response
-  const t0 = timeoutSignal(REQUEST_TIMEOUT_MS)
-  try {
-    res = await fetch(base + path, {
-      method,
-      headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-      signal: t0.signal,
-    })
-  } catch {
-    throw new ApiError(t('err.network'), 0)
-  } finally {
-    t0.done()
+  const ms = way === 'both' && method === 'GET' ? TUNNEL_GET_TIMEOUT_MS : REQUEST_TIMEOUT_MS
+  const sent = await send(base, jwt, method, path, body, ms)
+  const outcome: TunnelOutcome =
+    'res' in sent
+      ? { kind: 'response', status: sent.res.status, contentType: sent.res.headers.get('content-type') || '' }
+      : { kind: sent.fail }
+  if (isTunnelFailure(method, outcome)) {
+    if (way === 'both') {
+      if (method !== 'GET' && outcome.kind === 'network' && (await tunnelAnswers(base))) {
+        throw new ApiError(t('cloud.cmd_unsure'), 0)
+      }
+      if (!browserOffline()) noteFailure(breaker, Date.now(), outcome.kind === 'timeout')
+      return viaCloud<T>(method, path, body)
+    }
+    // No cloud to ask. A 200 interstitial page must still not pass for data.
+    if ('res' in sent && sent.res.ok) throw new ApiError(t('err.cannot_reach'), sent.res.status)
+  } else if ('res' in sent) {
+    closeBreaker(breaker) // the car answered through the tunnel — it is back
   }
+  if (!('res' in sent)) throw new ApiError(t('err.network'), 0)
+  return readResponse<T>(sent.res, method, path, 'tunnel')
+}
 
+/**
+ * /status from the tunnel alone — the "is it back?" check while the cloud's live
+ * socket is feeding the app. Never asks the cloud (the socket already has its
+ * answer), and keeps to the breaker: while it is open nothing is sent at all.
+ * null when the tunnel was not asked or did not answer; the car's own answer
+ * makes the tunnel the data source again, as any /status does.
+ */
+export async function getTunnelStatus(): Promise<StatusResponse | null> {
+  const base = getBaseUrl()
+  const jwt = getJwt()
+  if (!base || !jwt) throw new AuthError('Not configured')
+  if (base === DEMO_BASE || tunnelBypassed(base) || breakerOpen(breaker, Date.now())) return null
+  const sent = await send(base, jwt, 'GET', '/status', undefined, TUNNEL_GET_TIMEOUT_MS)
+  const outcome: TunnelOutcome =
+    'res' in sent
+      ? { kind: 'response', status: sent.res.status, contentType: sent.res.headers.get('content-type') || '' }
+      : { kind: sent.fail }
+  if (!('res' in sent) || isTunnelFailure('GET', outcome)) {
+    if (!browserOffline()) noteFailure(breaker, Date.now(), outcome.kind === 'timeout')
+    return null
+  }
+  closeBreaker(breaker)
+  return readResponse<StatusResponse>(sent.res, 'GET', '/status', 'tunnel')
+}
+
+async function viaCloud<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const ms = method === 'GET' ? REQUEST_TIMEOUT_MS : CLOUD_POST_TIMEOUT_MS
+  const sent = await send(getCloudUrl(), readCloudSession()?.token || '', method, path, body, ms)
+  if (!('res' in sent)) throw new ApiError(t('err.network'), 0)
+  return readResponse<T>(sent.res, method, path, 'cloud')
+}
+
+async function readResponse<T>(res: Response, method: string, path: string, side: 'tunnel' | 'cloud'): Promise<T> {
   if (res.status === 401) {
+    // A rejected cloud session costs only the cloud: the tunnel login stands,
+    // so this must not become the AuthError that drops to the setup screen.
+    if (side === 'cloud') {
+      dropCloudSession()
+      throw new ApiError(t('cloud.session_lost'), 401)
+    }
     clearAuth()
     throw new AuthError('Unauthorized')
   }
@@ -190,10 +634,15 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     let msg = `HTTP ${res.status}`
     try {
       const j = await res.json()
-      msg = j.error || j.message || msg
+      // no_data: the car has never reported to the cloud — offline as far as anyone can tell.
+      msg = side === 'cloud' && (j.offline || j.status === 'no_data') ? t('cloud.car_offline') : j.error || j.message || msg
     } catch { /* ignore */ }
     throw new ApiError(msg, res.status)
   }
+
+  // Only the telemetry poll decides: a cloud command or a stray cloud read must
+  // not flip the whole UI into cloud mode while the tunnel is fine.
+  if (method === 'GET' && path.split('?')[0] === '/status') dataSource.value = side
 
   const ct = res.headers.get('content-type') || ''
   if (ct.includes('application/json')) return (await res.json()) as T
@@ -529,6 +978,8 @@ const SIDE_WINDOWS = [1, 2, 3, 4]
  * Cloud vent stays as the fallback for a car whose SDK rejects positioning.
  */
 export async function ventWindows(): Promise<ControlResult> {
+  // SL6VN Cloud has no per-window positions, only the car's own "vent" — one command, not four.
+  if (cloudOnly.value || dataSource.value === 'cloud') return apiPost('/api/vehicle/window', { action: 'vent' })
   const results = await Promise.all(
     SIDE_WINDOWS.map((area) =>
       setWindowPercent(area, VENT_PERCENT).catch((e: unknown): ControlResult => ({

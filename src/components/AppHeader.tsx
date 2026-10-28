@@ -1,5 +1,8 @@
+import { useEffect, useState } from 'preact/hooks'
 import { getBaseUrl } from '../lib/api'
+import { ago } from '../lib/format'
 import { t } from '../lib/i18n'
+import { connected, dataSource, status } from '../lib/store'
 import { setTheme, theme } from '../lib/theme'
 import { IconMoon, IconSun, IconThemeAuto } from './icons'
 
@@ -25,11 +28,33 @@ export function AppHeader({
 }) {
   const base = getBaseUrl()
   const isReal = /^https?:\/\//i.test(base)
+  /*
+   * SL6VN Cloud standing in for the tunnel is worth a word, not a banner: the
+   * data is real, just second-hand. When the car itself has dropped off the
+   * cloud, what is on screen is its last report — say how old, and don't let
+   * the dot claim it is live. Otherwise still say when its last report arrived:
+   * cloud data is only as fresh as the car's last MQTT update. Only while
+   * connected: with both paths failing nothing is coming "via" anything.
+   */
+  const viaCloud = connected.value && dataSource.value === 'cloud'
+  const feed = viaCloud ? status.value?.cloud : undefined
+  const carOffline = feed?.online === false
+  useAgeTick(!!feed?.updatedAt)
   return (
     <div class="screen-head">
       <div>
         <h1 class="screen-title">{title}</h1>
-        <div class="screen-sub">{sub}</div>
+        <div class="screen-sub">
+          {sub}
+          {viaCloud && (
+            <span class="via-cloud">
+              {' · '}{t('cloud.via')}
+              {carOffline
+                ? <> · <span class="via-cloud-off">{t('cloud.last_seen', { ago: ago(feed?.updatedAt) || '--' })}</span></>
+                : feed?.updatedAt ? <> · {ago(feed.updatedAt)}</> : null}
+            </span>
+          )}
+        </div>
       </div>
       <div class="head-actions">
         <ThemeButton />
@@ -45,10 +70,24 @@ export function AppHeader({
             <img src={OD_LOGO} alt="OD" width="24" height="24" />
           </a>
         )}
-        <span class={'dot ' + dot} />
+        <span class={'dot ' + (carOffline && dot === 'ok' ? 'wait' : dot)} />
       </div>
     </div>
   )
+}
+
+/*
+ * Re-render every second while an age is on screen. It used to move only
+ * because a poll replaced the status every 5 s; the cloud's live socket only
+ * sends when the car reports, so the "12s ago" would otherwise stand still.
+ */
+function useAgeTick(on: boolean): void {
+  const [, setNow] = useState(0)
+  useEffect(() => {
+    if (!on) return
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [on])
 }
 
 function ThemeButton() {

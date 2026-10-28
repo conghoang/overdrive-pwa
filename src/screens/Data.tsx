@@ -4,6 +4,7 @@ import { ChargingStats } from '../components/ChargingStats'
 import { TripStats } from '../components/TripStats'
 import { TripList } from '../components/TripList'
 import { ChargingList } from '../components/ChargingList'
+import { CloudOff, onCloud } from '../components/CloudOff'
 import { connected } from '../lib/store'
 import { t } from '../lib/i18n'
 
@@ -33,8 +34,9 @@ export function Data() {
   const openCharging = () => { setSub('charging'); history.replaceState(null, '', '#/data/charging') }
   const close = () => { setSub(null); history.replaceState(null, '', '#/data') }
 
-  if (sub === 'trips') return <TripList onBack={close} />
-  if (sub === 'charging') return <ChargingList onBack={close} />
+  // A list restored from the URL would only fail on SL6VN Cloud — stay on the summary.
+  if (sub === 'trips' && !onCloud()) return <TripList onBack={close} />
+  if (sub === 'charging' && !onCloud()) return <ChargingList onBack={close} />
 
   return (
     <div class="screen">
@@ -43,9 +45,13 @@ export function Data() {
         sub={connected.value ? t('common.live') : t('common.reconnecting')}
         dot={connected.value ? 'ok' : 'wait'}
       />
-      <ChargingStats onOpenDetails={openCharging} />
-      {/* Renders nothing when trip recording is off — see TripStats. */}
-      <TripStats onOpenDetails={openTrips} />
+      {/* History lives in the car's own database, which SL6VN Cloud does not
+          mirror: on cloud the cards keep their last-seen numbers, greyed. */}
+      <CloudOff>
+        <ChargingStats onOpenDetails={openCharging} />
+        {/* Renders nothing when trip recording is off — see TripStats. */}
+        <TripStats onOpenDetails={openTrips} />
+      </CloudOff>
     </div>
   )
 }

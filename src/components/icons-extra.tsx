@@ -25,6 +25,13 @@ export const IconPower = ({ size, class: c }: IconProps) =>
 export const IconPowerOff = ({ size, class: c }: IconProps) =>
   svg(<><path d="M18.4 6.6a8 8 0 1 1-12.8 0" /><path d="M12 3v6" /><path d="M4 4l16 16" /></>, size, c)
 
+/** Circled "i" — "how does this work". */
+export const IconInfo = ({ size, class: c }: IconProps) =>
+  svg(<><circle cx="12" cy="12" r="9" /><path d="M12 11v5" /><path d="M12 7.5v.01" /></>, size, c)
+
+export const IconCloud = ({ size, class: c }: IconProps) =>
+  svg(<path d="M7 18h10a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.1 9.6 4.2 4.2 0 0 0 7 18z" />, size, c)
+
 export const IconRefresh = ({ size, class: c }: IconProps) =>
   svg(<><path d="M21 12a9 9 0 1 1-3-6.7" /><path d="M21 4v5h-5" /></>, size, c)
 

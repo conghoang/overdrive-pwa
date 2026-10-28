@@ -131,6 +131,19 @@ h1, h2, h3, p { margin: 0; }
 .screen-sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
 
 .head-actions { display: flex; align-items: center; gap: 12px; }
+/* "via cloud" after the header subtitle — SL6VN Cloud is answering, not the tunnel. A normal mode, so it
+   reads like the rest of the subtitle; only "car offline" is a warning. */
+.via-cloud { color: inherit; }
+.via-cloud-off { color: var(--warning); }
+
+/* What SL6VN Cloud can't serve, greyed out while it stands in (see CloudOff). */
+.cloud-off > [inert] { opacity: 0.4; filter: grayscale(0.6); }
+/* inert is recent (Safari 15.5, Chrome 102): without it, this still keeps taps out. */
+.cloud-off > [inert] { pointer-events: none; user-select: none; -webkit-user-select: none; }
+.cloud-off-hint { color: var(--muted); font-size: 12px; line-height: 1.45; margin: 8px 2px 0; }
+.cloud-adv { margin-top: 12px; font-size: 13px; color: var(--muted); }
+.cloud-adv summary { cursor: pointer; padding: 4px 2px; }
+.cloud-adv .wc-input { margin-top: 8px; }
 .head-btn,
 .od-btn {
   width: 40px;
@@ -187,6 +200,8 @@ h1, h2, h3, p { margin: 0; }
   background: var(--surface-soft); color: var(--text-secondary);
   border: 1px solid var(--border-soft);
 }
+.pill { white-space: nowrap; flex-shrink: 0; }
+.pill-icon { display: inline-flex; align-items: center; padding-top: 3px; padding-bottom: 3px; }
 .pill.good { color: var(--success); background: rgba(86, 214, 140, 0.12); border-color: rgba(86, 214, 140, 0.25); }
 .pill.warn { color: var(--warning); background: rgba(243, 180, 94, 0.12); border-color: rgba(243, 180, 94, 0.25); }
 .pill.bad  { color: var(--danger);  background: rgba(255, 124, 132, 0.12); border-color: rgba(255, 124, 132, 0.25); }
@@ -368,3 +383,14 @@ h1, h2, h3, p { margin: 0; }
 .pair-howto li::marker { color: var(--accent); font-weight: 700; }
 .pair-addr { color: var(--accent-bright); font-weight: 700; user-select: all; -webkit-user-select: all; }
 .pair-icon { display: inline-block; width: 1.25em; height: 1.25em; vertical-align: -0.28em; margin: 0 2px; padding: 2px; border-radius: 50%; background: var(--accent); color: var(--app-bg); }
+
+/* The must-notice part of a description (see lib/rich.tsx): brighter, not louder. */
+.screen-sub b, .cloud-off-hint b, .modal-body b, .wc-note b, .pair-steps b { color: var(--text); font-weight: 600; }
+
+/* "How it works" (i) next to a card title, and its explainer dialog. */
+.info-btn { border: none; background: none; padding: 4px; margin: -4px 0; color: var(--muted); display: inline-flex; border-radius: 50%; }
+.info-btn:active { transform: scale(0.9); }
+.modal.cloud-how { max-height: 86vh; overflow-y: auto; }
+.cloud-how h4 { font-size: 13px; font-weight: 700; margin: 16px 0 4px; color: var(--text); }
+.cloud-how p { color: var(--text-secondary); font-size: 14px; line-height: 1.5; margin: 0 0 6px; }
+.cloud-how b { color: var(--text); font-weight: 600; }

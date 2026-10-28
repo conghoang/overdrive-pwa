@@ -39,4 +39,6 @@
 }
 .tab:active { transform: scale(0.92); }
 .tab.active { color: var(--accent-bright); }
+.tab:disabled { opacity: 0.35; }
+.tab:disabled:active { transform: none; }
 .tab.active svg { filter: drop-shadow(0 0 10px var(--tab-glow)); }

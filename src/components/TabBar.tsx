@@ -3,6 +3,7 @@ import type { Tab } from '../app'
 import { IconCamera, IconChart, IconGauge, IconGear, IconSliders } from './icons'
 import { t } from '../lib/i18n'
 import { tapFeedback } from '../lib/haptics'
+import { tabOffOnCloud } from './CloudOff'
 import './TabBar.css'
 
 const TABS: { id: Tab; key: string; icon: (p: { size?: number }) => JSX.Element }[] = [
@@ -19,10 +20,14 @@ export function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) =
       <div class="tabbar-inner">
         {TABS.map((item) => {
           const Icon = item.icon
+          // Nothing on this tab works through SL6VN Cloud: shown, but not tappable.
+          const off = tabOffOnCloud(item.id)
           return (
             <button
               key={item.id}
               class={'tab' + (active === item.id ? ' active' : '')}
+              disabled={off}
+              title={off ? t('cloud.needs_tunnel') : undefined}
               onClick={() => { tapFeedback(); onChange(item.id) }}
               aria-current={active === item.id ? 'page' : undefined}
             >

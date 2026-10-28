@@ -80,6 +80,17 @@ export interface StatusResponse {
   safeZoneName?: string
   tripStatus?: TripStatus
   recordingStatus?: { gear?: string; accOn?: boolean }
+  /** 'cloud' when SL6VN Cloud served this instead of the car. */
+  source?: string
+  /** SL6VN Cloud only. online=false: the car is not connected, this is its last report. */
+  cloud?: CloudFeed
+}
+
+export interface CloudFeed {
+  online?: boolean
+  connected?: boolean
+  updatedAt?: number | null
+  ageMs?: number | null
 }
 
 // --- /api/vehicle/state ---
@@ -184,6 +195,8 @@ export interface CloudStatus {
   enabled?: boolean
   /** The on-device remote-key rail is present — the path vehicle power rides. */
   localRemoteKey?: boolean
+  /** 'cloud' when SL6VN Cloud answered — its view of BYD Cloud is not the car's. */
+  source?: string
 }
 
 export interface ControlResult {
@@ -195,6 +208,10 @@ export interface ControlResult {
   path?: string
   /** Stream enable only: not a failure, means "the pipeline is still coming up — ask again". */
   starting?: boolean
+  /** 'cloud' when SL6VN Cloud relayed it — queued for the car, not yet confirmed. */
+  source?: string
+  /** Cloud relay only: null while the car has not confirmed the command. */
+  confirmed?: boolean | null
 }
 
 export interface LoginResponse {

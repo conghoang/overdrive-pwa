@@ -13,10 +13,13 @@ import { WiCarlinkGrid } from '../components/WiCarlinkControls'
 import { Seats } from '../components/Seats'
 import { ClimateBanner } from '../components/ClimateBanner'
 import { AppHeader } from '../components/AppHeader'
+import { CloudOff, onCloud } from '../components/CloudOff'
 import '../components/controls.css'
 
 const TEMP_MIN = 16
 const TEMP_MAX = 30
+/** SL6VN Cloud's commands automation has setpoints 17–33 only (sl6vn-cloud mapping.js). */
+const CLOUD_TEMP_MIN = 17
 
 /*
  * AC AUTO. This was hidden for a while because OverDrive drove auto mode through the feature id
@@ -103,13 +106,21 @@ async function run(fn: () => Promise<ControlResult>, okMsg: string): Promise<boo
 // first send. Show feedback immediately, then re-send once so a sleeping car still
 // acts — but skip the resend if a newer climate command has since been issued
 // (so a quick ON→OFF can't be undone by ON's late resend).
-async function runClimate(fn: () => Promise<ControlResult>, okMsg: string): Promise<boolean> {
+// Exported for its test (lib/controls.test.ts).
+export async function runClimate(fn: () => Promise<ControlResult>, okMsg: string): Promise<boolean> {
   const gen = ++climateGen
   try {
-    const ok = toastResult(await fn(), okMsg)
-    void sleep(600).then(() => {
-      if (gen === climateGen) fn().catch(() => {})
-    })
+    const r = await fn()
+    const ok = toastResult(r, okMsg)
+    // Not when SL6VN Cloud relayed it: the cloud queues each command for the
+    // car, so a resend would only queue a duplicate behind the first. Judged
+    // from this reply, not from dataSource — that follows the telemetry poll,
+    // and this command may well have taken the other path.
+    if (r?.source !== 'cloud') {
+      void sleep(600).then(() => {
+        if (gen === climateGen) fn().catch(() => {})
+      })
+    }
     return ok
   } catch (e) {
     handleError(e)
@@ -160,8 +171,11 @@ export function Controls() {
     setTemp(carSetpoint as number)
   }, [carSetpoint, setpointUsable])
 
+  // On SL6VN Cloud 16 °C has no command value: the stepper stops at 17 there.
+  const tempMin = onCloud() ? CLOUD_TEMP_MIN : TEMP_MIN
+
   function changeTemp(delta: number) {
-    const nt = Math.min(TEMP_MAX, Math.max(TEMP_MIN, temp + delta))
+    const nt = Math.min(TEMP_MAX, Math.max(tempMin, temp + delta))
     lastEditAt.current = Date.now() // this tap outranks the poll for a moment
     setTemp(nt)
     /*
@@ -214,7 +228,7 @@ export function Controls() {
         </div>
 
         <div class="stepper" style={{ justifyContent: 'space-between', margin: '20px 0 18px' }}>
-          <button disabled={disabled || temp <= TEMP_MIN} onClick={() => changeTemp(-1)}>
+          <button disabled={disabled || temp <= tempMin} onClick={() => changeTemp(-1)}>
             <IconMinus size={22} />
           </button>
           <div class="climate-temp mono">
@@ -258,7 +272,8 @@ export function Controls() {
       </div>
 
       {/* windows — all three route through the head unit's local SDK, so they
-          work with no BYD Cloud account (see api.ventWindows). */}
+          work with no BYD Cloud account (see api.ventWindows). SL6VN Cloud relays
+          all three too (all-windows open/close and the car's own vent). */}
       <div class="card" style={{ marginTop: '14px' }}>
         <div class="card-title">{t('ctrl.windows')}</div>
         <div class="grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
@@ -281,79 +296,83 @@ export function Controls() {
           OverDrive's dashboard offers — Lock, Unlock, Flash, Find, Open/Close
           trunk, Power on/off — each posting to the identical endpoint OD does. */}
       {wc ? (
-        <WiCarlinkGrid />
+        <CloudOff>
+          <WiCarlinkGrid />
+        </CloudOff>
       ) : (
-        <div class="grid action-grid tight" style={{ ['--cols' as string]: 4 }}>
-          {cloudOrKey && (
+        <>
+          <div class="grid action-grid tight" style={{ ['--cols' as string]: 4 }}>
+            {cloudOrKey && (
+              <ActionButton
+                label={t('ctrl.lock')}
+                tone="accent"
+                icon={<IconLock size={22} />}
+                disabled={disabled}
+                onFire={() => run(api.lock, t('ctrl.lock'))}
+              />
+            )}
+            {cloudOrKey && (
+              <ActionButton
+                label={t('ctrl.unlock')}
+                tone="danger"
+                icon={<IconUnlock size={22} />}
+                disabled={disabled}
+                onFire={() => run(api.unlock, t('ctrl.unlock'))}
+              />
+            )}
             <ActionButton
-              label={t('ctrl.lock')}
-              tone="accent"
-              icon={<IconLock size={22} />}
+              label={t('ctrl.flash')}
+              icon={<IconBolt size={22} />}
               disabled={disabled}
-              onFire={() => run(api.lock, t('ctrl.lock'))}
+              onFire={() => run(api.flash, t('ctrl.flash'))}
             />
-          )}
-          {cloudOrKey && (
             <ActionButton
-              label={t('ctrl.unlock')}
-              tone="danger"
-              icon={<IconUnlock size={22} />}
+              label={t('ctrl.find')}
+              icon={<IconBell size={22} />}
               disabled={disabled}
-              onFire={() => run(api.unlock, t('ctrl.unlock'))}
+              onFire={() => run(api.findCar, t('ctrl.find'))}
             />
-          )}
-          <ActionButton
-            label={t('ctrl.flash')}
-            icon={<IconBolt size={22} />}
-            disabled={disabled}
-            onFire={() => run(api.flash, t('ctrl.flash'))}
-          />
-          <ActionButton
-            label={t('ctrl.find')}
-            icon={<IconBell size={22} />}
-            disabled={disabled}
-            onFire={() => run(api.findCar, t('ctrl.find'))}
-          />
-          {cloudOrKey && (
-            <ActionButton
-              label={t('ctrl.trunk_open')}
-              icon={<IconTrunk size={22} />}
-              disabled={disabled}
-              onFire={() => run(() => api.setTrunk('open'), t('ctrl.trunk_open'))}
-            />
-          )}
-          {cloudOrKey && (
-            <ActionButton
-              label={t('ctrl.trunk_close')}
-              icon={<IconTrunk size={22} />}
-              disabled={disabled}
-              onFire={() => run(() => api.setTrunk('close'), t('ctrl.trunk_close'))}
-            />
-          )}
-          {/* Power rides the local remote-key rail — shown only when it exists.
-              Plain tap by default; hold only when the owner turned on the
-              press-and-hold guard (same setting as engine start). */}
-          {hasLocalKey && (
-            <ActionButton
-              label={t('ctrl.power_on')}
-              tone="accent"
-              hold={holdStart.value}
-              icon={<IconPower size={22} />}
-              disabled={disabled}
-              onFire={() => run(api.powerOn, t('ctrl.power_on'))}
-            />
-          )}
-          {hasLocalKey && (
-            <ActionButton
-              label={t('ctrl.power_off')}
-              tone="danger"
-              hold={holdStart.value}
-              icon={<IconPowerOff size={22} />}
-              disabled={disabled}
-              onFire={() => run(api.powerOff, t('ctrl.power_off'))}
-            />
-          )}
-        </div>
+            {cloudOrKey && (
+              <ActionButton
+                label={t('ctrl.trunk_open')}
+                icon={<IconTrunk size={22} />}
+                disabled={disabled}
+                onFire={() => run(() => api.setTrunk('open'), t('ctrl.trunk_open'))}
+              />
+            )}
+            {cloudOrKey && (
+              <ActionButton
+                label={t('ctrl.trunk_close')}
+                icon={<IconTrunk size={22} />}
+                disabled={disabled}
+                onFire={() => run(() => api.setTrunk('close'), t('ctrl.trunk_close'))}
+              />
+            )}
+            {/* Power rides the local remote-key rail — shown only when it exists.
+                Plain tap by default; hold only when the owner turned on the
+                press-and-hold guard (same setting as engine start). */}
+            {hasLocalKey && (
+              <ActionButton
+                label={t('ctrl.power_on')}
+                tone="accent"
+                hold={holdStart.value}
+                icon={<IconPower size={22} />}
+                disabled={disabled}
+                onFire={() => run(api.powerOn, t('ctrl.power_on'))}
+              />
+            )}
+            {hasLocalKey && (
+              <ActionButton
+                label={t('ctrl.power_off')}
+                tone="danger"
+                hold={holdStart.value}
+                icon={<IconPowerOff size={22} />}
+                disabled={disabled}
+                onFire={() => run(api.powerOff, t('ctrl.power_off'))}
+              />
+            )}
+          </div>
+        </>
       )}
     </div>
   )

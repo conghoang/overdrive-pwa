@@ -1,12 +1,16 @@
-import { clearAll, getBaseUrl, getDeviceId } from '../lib/api'
-import { connected, reset, status } from '../lib/store'
+import { CLOUD_DEFAULT_URL, clearAll, cloudState, disableCloud, enrollCloud, removeCloudFromCar, getBaseUrl, getCloudEnrollment, getCloudUrl, getDeviceId, refreshCloud, setCloudUrl, setCloudOnly, cloudOnly } from '../lib/api'
+import type { CloudEnrollment } from '../lib/api'
+import { connected, dataSource, reset, status } from '../lib/store'
 import { hardReset } from '../lib/updater'
-import { IconPower, IconRefresh } from '../components/icons-extra'
-import { useState } from 'preact/hooks'
+import { ago } from '../lib/format'
+import { IconCloud, IconInfo, IconPower, IconRefresh } from '../components/icons-extra'
+import { useEffect, useState } from 'preact/hooks'
 import { AppHeader } from '../components/AppHeader'
 import { DEFAULT_PHOTO } from '../components/CarHero'
 import { Switch } from '../components/Switch'
 import { lazyScreen } from '../lib/lazy'
+// The custom-cloud confirm uses the shared modal styles, which live there.
+import '../components/controls.css'
 
 /*
  * The 51DK editor is a whole second screen — drag-reorder, icon picker, two
@@ -25,6 +29,7 @@ const CAR3D_SWATCHES = [
 import { fileToResizedBlob } from '../lib/image'
 import { toast } from '../lib/toast'
 import { lang, setLang, t } from '../lib/i18n'
+import { rt } from '../lib/rich'
 import { hapticsEnabled, hapticsSupported, setHapticsEnabled, tapFeedback } from '../lib/haptics'
 import { setSoundEnabled, soundEnabled, soundSupported, tapSound, unlockAudio } from '../lib/sound'
 export function Account({ onSignOut }: { onSignOut: () => void }) {
@@ -96,7 +101,7 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
         <div class="srow" style={{ paddingTop: 0, paddingBottom: 0 }}>
           <div class="stack">
             <span class="srow-label">{t('dev.map')}</span>
-            <span class="screen-sub" style={{ marginTop: '2px' }}>{t('dev.map_desc')}</span>
+            <span class="screen-sub" style={{ marginTop: '2px' }}>{rt('dev.map_desc')}</span>
           </div>
           <Switch on={showMap.value} onChange={setShowMap} />
         </div>
@@ -107,7 +112,7 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
         <div class="srow" style={{ paddingTop: 0, paddingBottom: 0 }}>
           <div class="stack">
             <span class="srow-label">{t('dev.model3d')}</span>
-            <span class="screen-sub" style={{ marginTop: '2px' }}>{t('dev.model3d_desc')}</span>
+            <span class="screen-sub" style={{ marginTop: '2px' }}>{rt('dev.model3d_desc')}</span>
           </div>
           <Switch on={show3d.value} onChange={setShow3d} />
         </div>
@@ -218,10 +223,12 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
         <InfoRow label={t('dev.locale')} value={s?.locale || '--'} />
       </div>
 
+      <CloudBackup />
+
       {/* Press-and-hold guards for the actions a stray tap shouldn't fire. */}
       <div class="card" style={{ marginTop: '14px' }}>
         <div class="card-title">{t('dev.hold_title')}</div>
-        <div class="screen-sub" style={{ marginTop: '-4px' }}>{t('dev.hold_desc')}</div>
+        <div class="screen-sub" style={{ marginTop: '-4px' }}>{rt('dev.hold_desc')}</div>
         <div class="srow">
           <span class="srow-label">{t('dev.hold_trunk')}</span>
           <Switch on={holdTrunk.value} onChange={setHoldTrunk} />
@@ -237,7 +244,7 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
         <div class="srow">
           <div class="stack">
             <span class="srow-label">{t('dev.wicarlink')}</span>
-            <span class="screen-sub" style={{ marginTop: '2px' }}>{t('dev.wicarlink_desc')}</span>
+            <span class="screen-sub" style={{ marginTop: '2px' }}>{rt('dev.wicarlink_desc')}</span>
           </div>
           <Switch on={wicarlink.value} onChange={setWicarlink} />
         </div>
@@ -265,7 +272,7 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
         <button class="btn block" onClick={() => { void hardReset() }}>
           <IconRefresh size={18} /> {t('dev.refresh')}
         </button>
-        <p class="screen-sub" style={{ margin: '6px 2px 0', fontSize: '12px' }}>{t('dev.refresh_desc')}</p>
+        <p class="screen-sub" style={{ margin: '6px 2px 0', fontSize: '12px' }}>{rt('dev.refresh_desc')}</p>
         <button class="btn block danger" style={{ marginTop: '12px' }} onClick={signOut}>
           <IconPower size={18} /> {t('dev.sign_out')}
         </button>
@@ -288,7 +295,7 @@ function PairHowTo() {
       <div class="pair-howto-title">{t('dev.pair_how')}</div>
       <ol>
         <li>{before}<span class="pair-addr mono">{WATCH_ADDR}</span>{after}</li>
-        <li>{t('dev.pair_step2')}</li>
+        <li>{rt('dev.pair_step2')}</li>
         <li>
           {b3}
           {/* Same glyph as the watch's check button, so it's recognisable there. */}
@@ -298,6 +305,231 @@ function PairHowTo() {
           {a3}
         </li>
       </ol>
+    </div>
+  )
+}
+
+/*
+ * SL6VN Cloud backup. Entirely optional: never enabled, every request goes to the
+ * car URL exactly as before. Enabled, it is used on its own whenever the car
+ * URL stops answering (see lib/fallback.ts) — there is no switch to flip, which
+ * is the point of a backup. Enabling is one tap: the cloud is handed the car
+ * URL and session this app already has, and nothing is typed.
+ */
+function CloudBackup() {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [feed, setFeed] = useState<CloudEnrollment | null>(null)
+  const [url, setUrl] = useState(getCloudUrl())
+  // A non-default cloud is about to receive the tunnel JWT: ask first.
+  const [confirming, setConfirming] = useState(false)
+  // Turning off asks whether to also remove the car-side setup.
+  const [explaining, setExplaining] = useState(false)
+  const [disabling, setDisabling] = useState(false)
+  const [removing, setRemoving] = useState(false)
+  const [removeError, setRemoveError] = useState<string | null>(null)
+  const state = cloudState.value
+  const viaCloud = dataSource.value === 'cloud'
+  // Enrolling goes THROUGH the tunnel, so it needs the tunnel answering now.
+  const tunnelUp = connected.value && dataSource.value === 'tunnel'
+
+  // Whether the car is reachable via the cloud right now — a nice-to-have.
+  useEffect(() => {
+    if (state !== 'on') { setFeed(null); return }
+    let live = true
+    void getCloudEnrollment().then((e) => { if (live) setFeed(e) }).catch(() => {})
+    return () => { live = false }
+  }, [state])
+
+  async function enable(confirmed = false) {
+    if (busy || !tunnelUp) return
+    if (!confirmed && getCloudUrl() !== CLOUD_DEFAULT_URL) { setConfirming(true); return }
+    setConfirming(false)
+    setBusy(true)
+    setError(null)
+    try {
+      // A lost session usually only needs a new token, which is one quick
+      // exchange — the full enrolment reconfigures the car and takes a minute.
+      if (!(state === 'lost' && (await refreshCloud()))) await enrollCloud()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.failed'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function askDisable() {
+    setRemoveError(null)
+    setDisabling(true)
+  }
+  function turnOff() {
+    setDisabling(false)
+    disableCloud()
+  }
+  async function turnOffAndRemove() {
+    if (removing) return
+    setRemoving(true)
+    setRemoveError(null)
+    try {
+      await removeCloudFromCar()
+      turnOff()
+    } catch (err) {
+      setRemoveError(err instanceof Error ? err.message : t('cloud.remove_failed'))
+    } finally {
+      setRemoving(false)
+    }
+  }
+
+  return (
+    <div class="card" style={{ marginTop: '14px' }}>
+      <div class="spread" style={{ marginBottom: '6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+          <div class="card-title" style={{ margin: 0 }}>{t('cloud.title')}</div>
+          <button class="info-btn" onClick={() => setExplaining(true)} title={t('cloud.how')} aria-label={t('cloud.how')}>
+            <IconInfo size={17} />
+          </button>
+        </div>
+      </div>
+      {state === 'on' ? (
+        <>
+          <div class="screen-sub">{rt('cloud.desc')}</div>
+          {/* One line: is the car reachable through the cloud, and how fresh is it. */}
+          <div class="screen-sub" style={{ marginTop: '8px' }}>
+            {!feed ? '--'
+              : feed.online ? `${t('common.connected')}${feed.updatedAt ? ` · ${ago(feed.updatedAt)}` : ''}`
+              : `${t('common.offline')}${feed.updatedAt ? ` · ${ago(feed.updatedAt)}` : ''}`}
+          </div>
+          {/* Only worth showing when it isn't ours: a custom cloud holds the car session. */}
+          {getCloudUrl() !== CLOUD_DEFAULT_URL && (
+            <div class="cloud-off-hint mono">{getCloudUrl().replace(/^https:\/\//, '')}</div>
+          )}
+          <div class="srow" style={{ paddingBottom: 0 }}>
+            <div class="stack">
+              <span class="srow-label">{t('cloud.only')}</span>
+              <span class="screen-sub" style={{ marginTop: '2px' }}>{rt('cloud.only_desc')}</span>
+            </div>
+            <Switch on={cloudOnly.value} onChange={setCloudOnly} />
+          </div>
+          {/* Turn off on the left, the state at the bottom right. */}
+          <div class="spread" style={{ marginTop: '4px' }}>
+            <button class="btn ghost" onClick={askDisable}>
+              {t('cloud.disable')}
+            </button>
+            {viaCloud
+              ? <span class="pill warn pill-icon" title={t('cloud.in_use')} aria-label={t('cloud.in_use')} role="img"><IconCloud size={16} /></span>
+              : <span class="pill good">{t('common.on')}</span>}
+          </div>
+        </>
+      ) : (
+        <>
+          <div class="screen-sub">{rt('cloud.desc')}</div>
+          <button class="btn accent block" style={{ marginTop: '12px' }} disabled={busy || !tunnelUp} onClick={() => void enable()}>
+            {busy ? <><IconRefresh size={18} class="spin" /> {t('cloud.enabling')}</> : t('cloud.enable')}
+          </button>
+          {busy && <div class="cloud-off-hint">{rt('cloud.enabling_hint')}</div>}
+          {!busy && !tunnelUp && <div class="cloud-off-hint">{rt('cloud.enable_needs_tunnel')}</div>}
+          {error && <div class="screen-sub" style={{ marginTop: '8px', color: 'var(--danger)' }}>{error}</div>}
+          {/* Which cloud to enrol with. Almost nobody needs this, so it stays folded. */}
+          <details class="cloud-adv">
+            <summary>{t('cloud.advanced')}</summary>
+            <input
+              class="wc-input mono"
+              type="url"
+              inputMode="url"
+              autocomplete="off"
+              aria-label={t('cloud.url')}
+              placeholder={CLOUD_DEFAULT_URL}
+              value={url === CLOUD_DEFAULT_URL ? '' : url}
+              onInput={(e) => setUrl((e.target as HTMLInputElement).value)}
+              onBlur={(e) => {
+                const ok = setCloudUrl((e.target as HTMLInputElement).value)
+                setError(ok ? null : t('cloud.url_invalid'))
+                if (ok) setUrl(getCloudUrl())
+              }}
+            />
+          </details>
+          {state === 'lost' && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+              <span class="pill warn">{t('cloud.needs_reenable')}</span>
+            </div>
+          )}
+        </>
+      )}
+
+      {state !== 'on' && cloudOnly.value && (
+        <div class="srow" style={{ paddingBottom: 0 }}>
+          <div class="stack">
+            <span class="srow-label">{t('cloud.only')}</span>
+            <span class="screen-sub" style={{ marginTop: '2px' }}>{rt('cloud.only_desc')}</span>
+          </div>
+          <Switch on={cloudOnly.value} onChange={setCloudOnly} />
+        </div>
+      )}
+
+      {explaining && (
+        <div class="modal-backdrop" onClick={() => setExplaining(false)}>
+          <div
+            class="modal cloud-how"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cloud-how-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 class="modal-title" id="cloud-how-title">{t('cloud.how_title')}</h3>
+            {(['data', 'ctrl', 'when', 'off', 'setup'] as const).map((k) => (
+              <section key={k}>
+                <h4>{t(`cloud.how_${k}_h`)}</h4>
+                <p>{rt(`cloud.how_${k}`)}</p>
+                {k === 'ctrl' && <p>{rt('cloud.how_ctrl_list')}</p>}
+              </section>
+            ))}
+            <button class="btn block" style={{ marginTop: '16px' }} onClick={() => setExplaining(false)}>OK</button>
+          </div>
+        </div>
+      )}
+
+      {disabling && (
+        <div class="modal-backdrop" onClick={() => { if (!removing) setDisabling(false) }}>
+          <div
+            class="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cloud-disable-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 class="modal-title" id="cloud-disable-title">{t('cloud.disable_title')}</h3>
+            <p class="modal-body">{rt('cloud.disable_body')}</p>
+            <button class="btn danger block" disabled={removing || (!tunnelUp && !cloudOnly.value)} onClick={() => void turnOffAndRemove()}>
+              {removing ? <><IconRefresh size={18} class="spin" /> {t('cloud.removing')}</> : t('cloud.disable_remove')}
+            </button>
+            {!removing && !tunnelUp && !cloudOnly.value && <div class="cloud-off-hint">{rt('cloud.remove_needs_tunnel')}</div>}
+            {removeError && <div class="screen-sub" style={{ marginTop: '8px', color: 'var(--danger)' }}>{removeError}</div>}
+            <div class="grid grid-2" style={{ marginTop: '10px' }}>
+              <button class="btn" disabled={removing} onClick={() => setDisabling(false)}>{t('wc.cancel')}</button>
+              <button class="btn" disabled={removing} onClick={turnOff}>{t('cloud.disable_keep')}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirming && (
+        <div class="modal-backdrop" onClick={() => setConfirming(false)}>
+          <div
+            class="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cloud-confirm-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 class="modal-title" id="cloud-confirm-title">{t('cloud.confirm_title')}</h3>
+            <p class="modal-body">{rt('cloud.confirm_custom', { url: getCloudUrl() })}</p>
+            <div class="grid grid-2">
+              <button class="btn" onClick={() => setConfirming(false)}>{t('wc.cancel')}</button>
+              <button class="btn accent" onClick={() => void enable(true)}>{t('cloud.enable')}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

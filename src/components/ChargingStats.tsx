@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks'
 import * as api from '../lib/api'
+import { onCloud } from './CloudOff'
 import { t } from '../lib/i18n'
 import { IconPlug } from './icons'
 import {
@@ -78,7 +79,11 @@ export function ChargingStats({ onOpenDetails }: { onOpenDetails?: () => void })
     () => (readCache(CACHE_KEY, revive) ? 'ready' : 'loading'),
   )
 
+  // SL6VN Cloud does not mirror the charging history: on it, keep the cached
+  // numbers and ask again only once the tunnel is back.
+  const viaCloud = onCloud()
   useEffect(() => {
+    if (viaCloud) return
     let live = true
     api
       .getChargingOverview(DAYS)
@@ -92,7 +97,7 @@ export function ChargingStats({ onOpenDetails }: { onOpenDetails?: () => void })
       // error message the reload will clear anyway.
       .catch(() => { if (live) setState((cur) => (cur === 'ready' ? cur : 'error')) })
     return () => { live = false }
-  }, [])
+  }, [viaCloud])
 
   // Per-day rows, keyed the same way the window is.
   const byDay = new Map<number, number>()

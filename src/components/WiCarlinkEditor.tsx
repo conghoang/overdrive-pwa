@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
 import type { JSX } from 'preact'
 import { t } from '../lib/i18n'
+import { rt } from '../lib/rich'
 import {
   DEFAULT_WC_COMMANDS,
   newCommandId,
@@ -162,7 +163,7 @@ export function WiCarlinkEditor({ onDone }: { onDone: () => void }) {
       </div>
 
       <div class="card" style={{ marginTop: '14px' }}>
-        <p class="wc-note" style={{ marginBottom: '12px' }}>{t('wc.shell_note')}</p>
+        <p class="wc-note" style={{ marginBottom: '12px' }}>{rt('wc.shell_note')}</p>
         <button class="btn accent block" onClick={save}>{t('wc.save')}</button>
         <div class="grid grid-2" style={{ marginTop: '10px' }}>
           <button class="btn" onClick={onDone}>{t('wc.cancel')}</button>
