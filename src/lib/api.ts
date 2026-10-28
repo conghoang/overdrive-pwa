@@ -111,6 +111,11 @@ export const cloudState = signal<CloudState>(readCloudState())
 export function syncCloudState(): void {
   const s = readCloudState()
   if (cloudState.value !== s) cloudState.value = s
+  endSimulationWithoutCloud()
+}
+/** No usable cloud session: a running "Simulate tunnel down" ends, so the real tunnel is used again. */
+function endSimulationWithoutCloud(): void {
+  if (cloudState.value !== 'on' && simulateTunnelDown.value) setSimulateTunnelDown(false)
 }
 
 /** Usable as a fallback right now. Never in demo mode: there is no car behind it. */
@@ -128,6 +133,7 @@ function dropCloudSession(): void {
   localStorage.removeItem(K_CLOUD_TOKEN)
   localStorage.removeItem(K_CLOUD_EXP)
   cloudState.value = readCloudState()
+  endSimulationWithoutCloud()
 }
 /** Disable: forget the cloud session on this phone. The car is left as it is. */
 export function disableCloud(): void {
@@ -150,7 +156,9 @@ export function setSimulateTunnelDown(on: boolean): void {
   simulateTunnelDown.value = on
   resetBreaker() // re-judge the tunnel from the next request either way
 }
-const tunnelSimulatedDown = (base: string): boolean => simulateTunnelDown.value && base === getBaseUrl()
+// Only while a cloud session can stand in: simulating without one would just cut the app off from the car
+// (and from the tunnel it needs to renew or re-enable the cloud).
+const tunnelSimulatedDown = (base: string): boolean => simulateTunnelDown.value && base === getBaseUrl() && cloudReady()
 
 /** POST the tunnel credentials to the cloud; resolves to its new session. */
 async function cloudHandshake(path: string, ms: number): Promise<{ session: CloudSession; deviceId?: string }> {

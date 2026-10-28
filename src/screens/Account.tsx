@@ -416,6 +416,16 @@ function CloudBackup() {
         </>
       )}
 
+      {state !== 'on' && simulateTunnelDown.value && (
+        <div class="srow" style={{ paddingBottom: 0 }}>
+          <div class="stack">
+            <span class="srow-label">{t('cloud.simulate')}</span>
+            <span class="screen-sub" style={{ marginTop: '2px' }}>{t('cloud.simulate_desc')}</span>
+          </div>
+          <Switch on={simulateTunnelDown.value} onChange={setSimulateTunnelDown} />
+        </div>
+      )}
+
       {confirming && (
         <div class="modal-backdrop" onClick={() => setConfirming(false)}>
           <div

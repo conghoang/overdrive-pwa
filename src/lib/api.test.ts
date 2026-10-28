@@ -594,3 +594,33 @@ describe('simulate tunnel down', () => {
     expect(localStorage.getItem('odpwa.odcloud.simulateDown')).toBeNull()
   })
 })
+
+describe('simulate tunnel down without a usable cloud session', () => {
+  it('an expired cloud session ends the simulation and the tunnel is used again', async () => {
+    signIn(); enroll(NOW + 60_000)
+    const api = await load()
+    api.setSimulateTunnelDown(true)
+    vi.setSystemTime(NOW + 120_000) // cloud token lapses while simulating
+    handler = () => json({ status: 'ok' })
+    await api.getStatus()
+    expect(urls()).toEqual([`${CAR}/status`]) // not stuck: the real tunnel answers
+    api.syncCloudState()
+    expect(api.cloudState.value).toBe('lost')
+    expect(api.simulateTunnelDown.value).toBe(false)
+    expect(localStorage.getItem('odpwa.odcloud.simulateDown')).toBeNull()
+  })
+
+  it('a cloud 401 while simulating ends the simulation', async () => {
+    signIn(); enroll()
+    const api = await load()
+    api.setSimulateTunnelDown(true)
+    handler = () => json({ error: 'Unauthorized' }, 401)
+    await expect(api.getStatus()).rejects.toBeInstanceOf(api.ApiError)
+    expect(api.cloudState.value).toBe('lost')
+    expect(api.simulateTunnelDown.value).toBe(false)
+    handler = () => json({ status: 'ok' })
+    calls = []
+    await api.getStatus()
+    expect(urls()).toEqual([`${CAR}/status`])
+  })
+})
