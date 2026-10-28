@@ -29,6 +29,7 @@ const CAR3D_SWATCHES = [
 import { fileToResizedBlob } from '../lib/image'
 import { toast } from '../lib/toast'
 import { lang, setLang, t } from '../lib/i18n'
+import { rt } from '../lib/rich'
 import { hapticsEnabled, hapticsSupported, setHapticsEnabled, tapFeedback } from '../lib/haptics'
 import { setSoundEnabled, soundEnabled, soundSupported, tapSound, unlockAudio } from '../lib/sound'
 export function Account({ onSignOut }: { onSignOut: () => void }) {
@@ -100,7 +101,7 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
         <div class="srow" style={{ paddingTop: 0, paddingBottom: 0 }}>
           <div class="stack">
             <span class="srow-label">{t('dev.map')}</span>
-            <span class="screen-sub" style={{ marginTop: '2px' }}>{t('dev.map_desc')}</span>
+            <span class="screen-sub" style={{ marginTop: '2px' }}>{rt('dev.map_desc')}</span>
           </div>
           <Switch on={showMap.value} onChange={setShowMap} />
         </div>
@@ -111,7 +112,7 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
         <div class="srow" style={{ paddingTop: 0, paddingBottom: 0 }}>
           <div class="stack">
             <span class="srow-label">{t('dev.model3d')}</span>
-            <span class="screen-sub" style={{ marginTop: '2px' }}>{t('dev.model3d_desc')}</span>
+            <span class="screen-sub" style={{ marginTop: '2px' }}>{rt('dev.model3d_desc')}</span>
           </div>
           <Switch on={show3d.value} onChange={setShow3d} />
         </div>
@@ -227,7 +228,7 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
       {/* Press-and-hold guards for the actions a stray tap shouldn't fire. */}
       <div class="card" style={{ marginTop: '14px' }}>
         <div class="card-title">{t('dev.hold_title')}</div>
-        <div class="screen-sub" style={{ marginTop: '-4px' }}>{t('dev.hold_desc')}</div>
+        <div class="screen-sub" style={{ marginTop: '-4px' }}>{rt('dev.hold_desc')}</div>
         <div class="srow">
           <span class="srow-label">{t('dev.hold_trunk')}</span>
           <Switch on={holdTrunk.value} onChange={setHoldTrunk} />
@@ -243,7 +244,7 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
         <div class="srow">
           <div class="stack">
             <span class="srow-label">{t('dev.wicarlink')}</span>
-            <span class="screen-sub" style={{ marginTop: '2px' }}>{t('dev.wicarlink_desc')}</span>
+            <span class="screen-sub" style={{ marginTop: '2px' }}>{rt('dev.wicarlink_desc')}</span>
           </div>
           <Switch on={wicarlink.value} onChange={setWicarlink} />
         </div>
@@ -271,7 +272,7 @@ export function Account({ onSignOut }: { onSignOut: () => void }) {
         <button class="btn block" onClick={() => { void hardReset() }}>
           <IconRefresh size={18} /> {t('dev.refresh')}
         </button>
-        <p class="screen-sub" style={{ margin: '6px 2px 0', fontSize: '12px' }}>{t('dev.refresh_desc')}</p>
+        <p class="screen-sub" style={{ margin: '6px 2px 0', fontSize: '12px' }}>{rt('dev.refresh_desc')}</p>
         <button class="btn block danger" style={{ marginTop: '12px' }} onClick={signOut}>
           <IconPower size={18} /> {t('dev.sign_out')}
         </button>
@@ -294,7 +295,7 @@ function PairHowTo() {
       <div class="pair-howto-title">{t('dev.pair_how')}</div>
       <ol>
         <li>{before}<span class="pair-addr mono">{WATCH_ADDR}</span>{after}</li>
-        <li>{t('dev.pair_step2')}</li>
+        <li>{rt('dev.pair_step2')}</li>
         <li>
           {b3}
           {/* Same glyph as the watch's check button, so it's recognisable there. */}
@@ -389,7 +390,7 @@ function CloudBackup() {
       </div>
       {state === 'on' ? (
         <>
-          <div class="screen-sub">{t('cloud.desc')}</div>
+          <div class="screen-sub">{rt('cloud.desc')}</div>
           {/* One line: is the car reachable through the cloud, and how fresh is it. */}
           <div class="screen-sub" style={{ marginTop: '8px' }}>
             {!feed ? '--'
@@ -403,7 +404,7 @@ function CloudBackup() {
           <div class="srow" style={{ paddingBottom: 0 }}>
             <div class="stack">
               <span class="srow-label">{t('cloud.only')}</span>
-              <span class="screen-sub" style={{ marginTop: '2px' }}>{t('cloud.only_desc')}</span>
+              <span class="screen-sub" style={{ marginTop: '2px' }}>{rt('cloud.only_desc')}</span>
             </div>
             <Switch on={cloudOnly.value} onChange={setCloudOnly} />
           </div>
@@ -413,12 +414,12 @@ function CloudBackup() {
         </>
       ) : (
         <>
-          <div class="screen-sub">{t('cloud.desc')}</div>
+          <div class="screen-sub">{rt('cloud.desc')}</div>
           <button class="btn accent block" style={{ marginTop: '12px' }} disabled={busy || !tunnelUp} onClick={() => void enable()}>
             {busy ? <><IconRefresh size={18} class="spin" /> {t('cloud.enabling')}</> : t('cloud.enable')}
           </button>
-          {busy && <div class="cloud-off-hint">{t('cloud.enabling_hint')}</div>}
-          {!busy && !tunnelUp && <div class="cloud-off-hint">{t('cloud.enable_needs_tunnel')}</div>}
+          {busy && <div class="cloud-off-hint">{rt('cloud.enabling_hint')}</div>}
+          {!busy && !tunnelUp && <div class="cloud-off-hint">{rt('cloud.enable_needs_tunnel')}</div>}
           {error && <div class="screen-sub" style={{ marginTop: '8px', color: 'var(--danger)' }}>{error}</div>}
           {/* Which cloud to enrol with. Almost nobody needs this, so it stays folded. */}
           <details class="cloud-adv">
@@ -446,7 +447,7 @@ function CloudBackup() {
         <div class="srow" style={{ paddingBottom: 0 }}>
           <div class="stack">
             <span class="srow-label">{t('cloud.only')}</span>
-            <span class="screen-sub" style={{ marginTop: '2px' }}>{t('cloud.only_desc')}</span>
+            <span class="screen-sub" style={{ marginTop: '2px' }}>{rt('cloud.only_desc')}</span>
           </div>
           <Switch on={cloudOnly.value} onChange={setCloudOnly} />
         </div>
@@ -462,11 +463,11 @@ function CloudBackup() {
             onClick={(e) => e.stopPropagation()}
           >
             <h3 class="modal-title" id="cloud-disable-title">{t('cloud.disable_title')}</h3>
-            <p class="modal-body">{t('cloud.disable_body')}</p>
+            <p class="modal-body">{rt('cloud.disable_body')}</p>
             <button class="btn danger block" disabled={removing || (!tunnelUp && !cloudOnly.value)} onClick={() => void turnOffAndRemove()}>
               {removing ? <><IconRefresh size={18} class="spin" /> {t('cloud.removing')}</> : t('cloud.disable_remove')}
             </button>
-            {!removing && !tunnelUp && !cloudOnly.value && <div class="cloud-off-hint">{t('cloud.remove_needs_tunnel')}</div>}
+            {!removing && !tunnelUp && !cloudOnly.value && <div class="cloud-off-hint">{rt('cloud.remove_needs_tunnel')}</div>}
             {removeError && <div class="screen-sub" style={{ marginTop: '8px', color: 'var(--danger)' }}>{removeError}</div>}
             <div class="grid grid-2" style={{ marginTop: '10px' }}>
               <button class="btn" disabled={removing} onClick={() => setDisabling(false)}>{t('wc.cancel')}</button>
@@ -486,7 +487,7 @@ function CloudBackup() {
             onClick={(e) => e.stopPropagation()}
           >
             <h3 class="modal-title" id="cloud-confirm-title">{t('cloud.confirm_title')}</h3>
-            <p class="modal-body">{t('cloud.confirm_custom', { url: getCloudUrl() })}</p>
+            <p class="modal-body">{rt('cloud.confirm_custom', { url: getCloudUrl() })}</p>
             <div class="grid grid-2">
               <button class="btn" onClick={() => setConfirming(false)}>{t('wc.cancel')}</button>
               <button class="btn accent" onClick={() => void enable(true)}>{t('cloud.enable')}</button>

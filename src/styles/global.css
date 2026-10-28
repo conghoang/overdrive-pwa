@@ -381,3 +381,6 @@ h1, h2, h3, p { margin: 0; }
 .pair-howto li::marker { color: var(--accent); font-weight: 700; }
 .pair-addr { color: var(--accent-bright); font-weight: 700; user-select: all; -webkit-user-select: all; }
 .pair-icon { display: inline-block; width: 1.25em; height: 1.25em; vertical-align: -0.28em; margin: 0 2px; padding: 2px; border-radius: 50%; background: var(--accent); color: var(--app-bg); }
+
+/* The must-notice part of a description (see lib/rich.tsx): brighter, not louder. */
+.screen-sub b, .cloud-off-hint b, .modal-body b, .wc-note b, .pair-steps b { color: var(--text); font-weight: 600; }
