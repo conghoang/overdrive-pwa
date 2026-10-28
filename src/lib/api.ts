@@ -41,7 +41,7 @@ export function clearAuth(): void { localStorage.removeItem(K_JWT) }
  * user out of the other. Never enabled, every request goes to the tunnel
  * exactly as before.
  */
-export const CLOUD_DEFAULT_URL = 'https://sl6vn-cloud.conghoang.workers.dev'
+export const CLOUD_DEFAULT_URL = 'https://cloud.sl6vn.link'
 // The keys keep the feature's old name (OD Cloud): renaming them would sign
 // every phone out of a backup it already has.
 const K_CLOUD_URL = 'odpwa.odcloud.url' // advanced override; empty = the default

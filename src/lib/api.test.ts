@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
  */
 const CAR = 'https://car.example'
 const DEV = 'byd-e1019f3e'
-const CLOUD = 'https://sl6vn-cloud.conghoang.workers.dev'
+const CLOUD = 'https://cloud.sl6vn.link'
 const NOW = 1_800_000_000_000
 const DAY = 24 * 3600 * 1000
 
