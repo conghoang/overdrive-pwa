@@ -363,8 +363,9 @@ function CloudBackup() {
       </div>
       {state === 'on' ? (
         <>
+          <div class="screen-sub">{t('cloud.desc')}</div>
           {/* One line: is the car reachable through the cloud, and how fresh is it. */}
-          <div class="screen-sub">
+          <div class="screen-sub" style={{ marginTop: '8px' }}>
             {!feed ? '--'
               : feed.online ? `${t('common.connected')}${feed.updatedAt ? ` · ${ago(feed.updatedAt)}` : ''}`
               : `${t('common.offline')}${feed.updatedAt ? ` · ${ago(feed.updatedAt)}` : ''}`}
