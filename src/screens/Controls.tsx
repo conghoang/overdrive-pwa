@@ -104,14 +104,17 @@ async function run(fn: () => Promise<ControlResult>, okMsg: string): Promise<boo
 // first send. Show feedback immediately, then re-send once so a sleeping car still
 // acts — but skip the resend if a newer climate command has since been issued
 // (so a quick ON→OFF can't be undone by ON's late resend).
-async function runClimate(fn: () => Promise<ControlResult>, okMsg: string): Promise<boolean> {
+// Exported for its test (lib/controls.test.ts).
+export async function runClimate(fn: () => Promise<ControlResult>, okMsg: string): Promise<boolean> {
   const gen = ++climateGen
   try {
-    const ok = toastResult(await fn(), okMsg)
-    // Not over SL6VN Cloud: it relays through an automation that queues each
-    // command and waits for the car to confirm, so a resend would only queue
-    // a duplicate behind the first.
-    if (!onCloud()) {
+    const r = await fn()
+    const ok = toastResult(r, okMsg)
+    // Not when SL6VN Cloud relayed it: the cloud queues each command for the
+    // car, so a resend would only queue a duplicate behind the first. Judged
+    // from this reply, not from dataSource — that follows the telemetry poll,
+    // and this command may well have taken the other path.
+    if (r?.source !== 'cloud') {
       void sleep(600).then(() => {
         if (gen === climateGen) fn().catch(() => {})
       })

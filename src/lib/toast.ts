@@ -29,6 +29,8 @@ export function toastResult(r: ControlResult | undefined, okMsg: string): boolea
     return false
   }
   successFeedback()
-  toast((r && r.message) || okMsg, 'ok')
+  // The cloud's message is its own English ("queued for the car"); the
+  // caller's okMsg is localised and says the same thing to the user.
+  toast((r && r.source !== 'cloud' && r.message) || okMsg, 'ok')
   return true
 }

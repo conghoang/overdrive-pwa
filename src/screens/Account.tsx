@@ -1,4 +1,4 @@
-import { CLOUD_DEFAULT_URL, clearAll, cloudState, disableCloud, enrollCloud, getBaseUrl, getCloudDeviceId, getCloudEnrollment, getCloudUrl, getDeviceId, setCloudUrl } from '../lib/api'
+import { CLOUD_DEFAULT_URL, clearAll, cloudState, disableCloud, enrollCloud, getBaseUrl, getCloudDeviceId, getCloudEnrollment, getCloudUrl, getDeviceId, refreshCloud, setCloudUrl } from '../lib/api'
 import type { CloudEnrollment } from '../lib/api'
 import { connected, dataSource, reset, status } from '../lib/store'
 import { hardReset } from '../lib/updater'
@@ -9,6 +9,8 @@ import { AppHeader } from '../components/AppHeader'
 import { DEFAULT_PHOTO } from '../components/CarHero'
 import { Switch } from '../components/Switch'
 import { lazyScreen } from '../lib/lazy'
+// The custom-cloud confirm uses the shared modal styles, which live there.
+import '../components/controls.css'
 
 /*
  * The 51DK editor is a whole second screen — drag-reorder, icon picker, two
@@ -318,6 +320,8 @@ function CloudBackup() {
   const [error, setError] = useState<string | null>(null)
   const [feed, setFeed] = useState<CloudEnrollment | null>(null)
   const [url, setUrl] = useState(getCloudUrl())
+  // A non-default cloud is about to receive the tunnel JWT: ask first.
+  const [confirming, setConfirming] = useState(false)
   const state = cloudState.value
   const viaCloud = dataSource.value === 'cloud'
   // Enrolling goes THROUGH the tunnel, so it needs the tunnel answering now.
@@ -331,12 +335,16 @@ function CloudBackup() {
     return () => { live = false }
   }, [state])
 
-  async function enable() {
+  async function enable(confirmed = false) {
     if (busy || !tunnelUp) return
+    if (!confirmed && getCloudUrl() !== CLOUD_DEFAULT_URL) { setConfirming(true); return }
+    setConfirming(false)
     setBusy(true)
     setError(null)
     try {
-      await enrollCloud()
+      // A lost session usually only needs a new token, which is one quick
+      // exchange — the full enrolment reconfigures the car and takes a minute.
+      if (!(state === 'lost' && (await refreshCloud()))) await enrollCloud()
     } catch (err) {
       setError(err instanceof Error ? err.message : t('common.failed'))
     } finally {
@@ -358,6 +366,7 @@ function CloudBackup() {
       {state === 'on' ? (
         <>
           <InfoRow label={t('dev.device')} value={getCloudDeviceId() || '--'} mono />
+          <InfoRow label={t('cloud.url')} value={getCloudUrl().replace(/^https:\/\//, '')} mono />
           <InfoRow
             label={t('cloud.car_link')}
             value={
@@ -391,12 +400,32 @@ function CloudBackup() {
               value={url === CLOUD_DEFAULT_URL ? '' : url}
               onInput={(e) => setUrl((e.target as HTMLInputElement).value)}
               onBlur={(e) => {
-                setCloudUrl((e.target as HTMLInputElement).value)
-                setUrl(getCloudUrl())
+                const ok = setCloudUrl((e.target as HTMLInputElement).value)
+                setError(ok ? null : t('cloud.url_invalid'))
+                if (ok) setUrl(getCloudUrl())
               }}
             />
           </details>
         </>
+      )}
+
+      {confirming && (
+        <div class="modal-backdrop" onClick={() => setConfirming(false)}>
+          <div
+            class="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cloud-confirm-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 class="modal-title" id="cloud-confirm-title">{t('cloud.confirm_title')}</h3>
+            <p class="modal-body">{t('cloud.confirm_custom', { url: getCloudUrl() })}</p>
+            <div class="grid grid-2">
+              <button class="btn" onClick={() => setConfirming(false)}>{t('wc.cancel')}</button>
+              <button class="btn accent" onClick={() => void enable(true)}>{t('cloud.enable')}</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

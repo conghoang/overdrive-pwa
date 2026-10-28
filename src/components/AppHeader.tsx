@@ -1,7 +1,7 @@
 import { getBaseUrl } from '../lib/api'
 import { ago } from '../lib/format'
 import { t } from '../lib/i18n'
-import { dataSource, status } from '../lib/store'
+import { connected, dataSource, status } from '../lib/store'
 import { setTheme, theme } from '../lib/theme'
 import { IconMoon, IconSun, IconThemeAuto } from './icons'
 
@@ -31,9 +31,10 @@ export function AppHeader({
    * SL6VN Cloud standing in for the tunnel is worth a word, not a banner: the
    * data is real, just second-hand. When the car itself has dropped off the
    * cloud, what is on screen is its last report — say how old, and don't let
-   * the dot claim it is live.
+   * the dot claim it is live. Only while connected: with both paths failing
+   * nothing is coming "via" anything.
    */
-  const viaCloud = dataSource.value === 'cloud'
+  const viaCloud = connected.value && dataSource.value === 'cloud'
   const feed = viaCloud ? status.value?.cloud : undefined
   const carOffline = feed?.online === false
   return (

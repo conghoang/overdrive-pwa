@@ -208,6 +208,10 @@ export interface ControlResult {
   path?: string
   /** Stream enable only: not a failure, means "the pipeline is still coming up — ask again". */
   starting?: boolean
+  /** 'cloud' when SL6VN Cloud relayed it — queued for the car, not yet confirmed. */
+  source?: string
+  /** Cloud relay only: null while the car has not confirmed the command. */
+  confirmed?: boolean | null
 }
 
 export interface LoginResponse {

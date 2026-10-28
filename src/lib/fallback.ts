@@ -33,23 +33,33 @@ export type TunnelOutcome =
  * answered, and the answer was no".
  *
  * Gateway statuses are the tunnel's own: 502/504 from zrok or cloudflared, 503
- * when the share is gone, 530 for a Cloudflare tunnel with no connector. A
- * proxy's error page is HTML, while every OverDrive API route answers JSON —
- * so an HTML error is the tunnel talking whatever its status.
+ * when the share is gone, 530 for a Cloudflare tunnel with no connector. But
+ * OverDrive answers 503 too (a busy or missing subsystem), always as JSON — so
+ * a JSON 503 is the car talking, and only a 503 with any other body is the
+ * tunnel. Every OverDrive API route answers JSON, so an HTML page is a proxy
+ * talking: on a gateway status for a read, and at ANY status for a command
+ * (the command never reached the car). A 200 HTML page is a tunnel
+ * interstitial (zrok's "are you sure" page), not data and not a result. An HTML 404 on a read
+ * is left alone: OverDrive's own web server serves those for unknown routes,
+ * and judging it a dead tunnel would flip a healthy car into the cloud.
  *
  * A POST is held to a stricter standard than a GET, because retrying a command
  * on a second path risks running it twice. A timeout is ambiguous — the car
  * may well have acted and only the reply was lost — so it is never retried,
- * and a gateway status only counts when it is not OverDrive's own JSON.
+ * and a gateway status only counts when it is not OverDrive's own JSON. A
+ * network error on a command is only a CANDIDATE: api.ts probes the tunnel
+ * before retrying it, because "fetch threw" also covers a connection reset
+ * after the request went out.
  */
 export function isTunnelFailure(method: string, o: TunnelOutcome): boolean {
   if (o.kind === 'network') return true
   if (o.kind === 'timeout') return method === 'GET'
-  if (o.status < 400) return false
   const html = o.contentType.includes('text/html')
+  const json = o.contentType.includes('application/json')
+  if (o.status < 400) return html && o.status < 300
+  if (method === 'GET') return o.status === 502 || o.status === 504 || o.status === 530 || (o.status === 503 && !json)
   const gateway = o.status === 502 || o.status === 503 || o.status === 504 || o.status === 530
-  if (method === 'GET') return gateway || html
-  return html || (gateway && !o.contentType.includes('application/json'))
+  return html || (gateway && !json)
 }
 
 /*
@@ -59,16 +69,26 @@ export function isTunnelFailure(method: string, o: TunnelOutcome): boolean {
  * asking the cloud, so a dead tunnel would turn the dashboard into a slideshow.
  * After a failure the tunnel is skipped for BREAKER_MS; the first request after
  * that probes it again, and one success closes the breaker for good.
+ *
+ * One slow read is not a dead tunnel: a single timeout only counts as a strike,
+ * and it takes TIMEOUT_STRIKES in a row to open the breaker. Anything that is
+ * unambiguous (a refused connection, a gateway page) opens it straight away.
  */
 export const BREAKER_MS = 30_000
+export const TIMEOUT_STRIKES = 2
 
-export interface Breaker { openUntil: number }
+export interface Breaker { openUntil: number; strikes: number }
 
-export const newBreaker = (): Breaker => ({ openUntil: 0 })
+export const newBreaker = (): Breaker => ({ openUntil: 0, strikes: 0 })
 /** True while the tunnel should be skipped. */
 export const breakerOpen = (b: Breaker, now: number): boolean => now < b.openUntil
 export function tripBreaker(b: Breaker, now: number): void { b.openUntil = now + BREAKER_MS }
-export function closeBreaker(b: Breaker): void { b.openUntil = 0 }
+export function closeBreaker(b: Breaker): void { b.openUntil = 0; b.strikes = 0 }
+/** Record a tunnel failure; a timeout only opens the breaker on its second strike. */
+export function noteFailure(b: Breaker, now: number, timeout: boolean): void {
+  b.strikes = timeout ? b.strikes + 1 : TIMEOUT_STRIKES
+  if (b.strikes >= TIMEOUT_STRIKES) tripBreaker(b, now)
+}
 
 /**
  * Where a request goes first.
@@ -117,8 +137,12 @@ export function parseCloudSession(body: unknown, status: number): ParsedSession 
   const str = (v: unknown) => (typeof v === 'string' && v ? v : undefined)
   const token = str(b.cloudToken)
   if (b.success === true && token) {
-    const exp = Number(b.expiresAt)
-    return { ok: true, session: { token, expiresAt: isFinite(exp) && exp > 0 ? exp : 0 }, deviceId: str(b.deviceId) }
+    let exp = Number(b.expiresAt)
+    if (!isFinite(exp) || exp <= 0) exp = 0
+    // A JWT-style expiry in seconds would read as January 1970 and the session
+    // would be dead on arrival. No millisecond timestamp is below 1e12 (2001).
+    else if (exp < 1e12) exp *= 1000
+    return { ok: true, session: { token, expiresAt: exp }, deviceId: str(b.deviceId) }
   }
   return { ok: false, error: str(b.error) || `HTTP ${status}`, step: str(b.step) }
 }

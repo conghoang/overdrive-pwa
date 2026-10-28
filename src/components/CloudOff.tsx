@@ -16,7 +16,7 @@ export function CloudOff({ children }: { children: ComponentChildren }) {
   if (!onCloud()) return <>{children}</>
   return (
     <div class="cloud-off">
-      <div inert>{children}</div>
+      <div inert aria-disabled="true">{children}</div>
       <p class="cloud-off-hint">{t('cloud.needs_tunnel')}</p>
     </div>
   )

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   BREAKER_MS, REFRESH_AHEAD_MS, breakerOpen, closeBreaker, cloudSupports, isTunnelFailure, needsRefresh, newBreaker,
-  parseCloudSession, route, sessionUsable, tripBreaker,
+  noteFailure, parseCloudSession, route, sessionUsable, tripBreaker,
 } from './fallback'
 
 const resp = (status: number, contentType = 'application/json') => ({ kind: 'response' as const, status, contentType })
@@ -41,8 +41,20 @@ describe('isTunnelFailure', () => {
     expect(isTunnelFailure('GET', { kind: 'timeout' })).toBe(true)
     expect(isTunnelFailure('POST', { kind: 'timeout' })).toBe(false)
   })
-  it('gateway statuses fail a read whatever the body', () => {
-    for (const s of [502, 503, 504, 530]) expect(isTunnelFailure('GET', resp(s))).toBe(true)
+  it('502/504/530 fail a read whatever the body; 503 only when it is not OverDrive JSON', () => {
+    for (const s of [502, 504, 530]) {
+      expect(isTunnelFailure('GET', resp(s))).toBe(true)
+      expect(isTunnelFailure('GET', resp(s, 'text/html'))).toBe(true)
+    }
+    expect(isTunnelFailure('GET', resp(503))).toBe(false) // OverDrive's own "busy"
+    expect(isTunnelFailure('GET', resp(503, 'text/html'))).toBe(true)
+    expect(isTunnelFailure('GET', resp(503, 'text/plain'))).toBe(true)
+    expect(isTunnelFailure('GET', resp(503, ''))).toBe(true)
+  })
+  it('a 200 HTML page is a tunnel interstitial, not data', () => {
+    expect(isTunnelFailure('GET', resp(200, 'text/html; charset=utf-8'))).toBe(true)
+    expect(isTunnelFailure('POST', resp(200, 'text/html'))).toBe(true)
+    expect(isTunnelFailure('GET', resp(200, ''))).toBe(false) // an empty 2xx reply
   })
   it('a command only fails over on a proxy page, not on OverDrive JSON', () => {
     expect(isTunnelFailure('POST', resp(502))).toBe(false)
@@ -50,9 +62,9 @@ describe('isTunnelFailure', () => {
     expect(isTunnelFailure('POST', resp(502, 'text/html; charset=utf-8'))).toBe(true)
     expect(isTunnelFailure('POST', resp(530, 'text/plain'))).toBe(true)
   })
-  it('an HTML error page is the tunnel talking (zrok share gone)', () => {
-    expect(isTunnelFailure('GET', resp(404, 'text/html'))).toBe(true)
+  it('an HTML error page fails a command, but an HTML 404 read is OverDrive’s own', () => {
     expect(isTunnelFailure('POST', resp(404, 'text/html'))).toBe(true)
+    expect(isTunnelFailure('GET', resp(404, 'text/html'))).toBe(false)
   })
   it('the car answering is not a tunnel failure', () => {
     expect(isTunnelFailure('GET', resp(200))).toBe(false)
@@ -71,6 +83,23 @@ describe('breaker', () => {
     expect(breakerOpen(b, 1000)).toBe(true)
     expect(breakerOpen(b, 1000 + BREAKER_MS - 1)).toBe(true)
     expect(breakerOpen(b, 1000 + BREAKER_MS)).toBe(false)
+  })
+  it('one timeout is a strike; two in a row, or one hard failure, open it', () => {
+    const b = newBreaker()
+    noteFailure(b, 1000, true)
+    expect(breakerOpen(b, 1000)).toBe(false)
+    noteFailure(b, 1000, true)
+    expect(breakerOpen(b, 1000)).toBe(true)
+
+    const c = newBreaker()
+    noteFailure(c, 1000, true)
+    closeBreaker(c) // a success in between resets the count
+    noteFailure(c, 1000, true)
+    expect(breakerOpen(c, 1000)).toBe(false)
+
+    const d = newBreaker()
+    noteFailure(d, 1000, false)
+    expect(breakerOpen(d, 1000)).toBe(true)
   })
   it('closes on success', () => {
     const b = newBreaker()
@@ -108,12 +137,19 @@ describe('cloud session', () => {
     expect(needsRefresh({ token: 'x', expiresAt: 0 }, now)).toBe(false)
   })
   it('parses success and failure replies', () => {
-    expect(parseCloudSession({ success: true, cloudToken: 'tok', expiresAt: now, deviceId: 'byd-1', steps: [] }, 200))
-      .toEqual({ ok: true, session: { token: 'tok', expiresAt: now }, deviceId: 'byd-1' })
+    expect(parseCloudSession({ success: true, cloudToken: 'tok', expiresAt: now, deviceId: 'byd-e1019f3e', steps: [] }, 200))
+      .toEqual({ ok: true, session: { token: 'tok', expiresAt: now }, deviceId: 'byd-e1019f3e' })
     expect(parseCloudSession({ success: false, error: 'Car did not connect', step: 'wait' }, 200))
       .toEqual({ ok: false, error: 'Car did not connect', step: 'wait' })
     // success without a token is not a session
     expect(parseCloudSession({ success: true }, 200)).toEqual({ ok: false, error: 'HTTP 200', step: undefined })
     expect(parseCloudSession(null, 502)).toEqual({ ok: false, error: 'HTTP 502', step: undefined })
+  })
+  it('reads an expiry in seconds as seconds', () => {
+    const sec = Math.floor(now / 1000)
+    expect(parseCloudSession({ success: true, cloudToken: 'tok', expiresAt: sec }, 200))
+      .toEqual({ ok: true, session: { token: 'tok', expiresAt: sec * 1000 }, deviceId: undefined })
+    expect(parseCloudSession({ success: true, cloudToken: 'tok', expiresAt: 'soon' }, 200))
+      .toEqual({ ok: true, session: { token: 'tok', expiresAt: 0 }, deviceId: undefined })
   })
 })

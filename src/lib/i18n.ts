@@ -335,7 +335,10 @@ const EN: Record<string, string> = {
   'cloud.car_offline': 'The car is not connected to SL6VN Cloud',
   'cloud.session_lost': 'Cloud backup was signed out — re-enable it in Settings',
   'cloud.needs_tunnel': 'Needs the direct car connection — unavailable while on SL6VN Cloud.',
-
+  'cloud.cmd_unsure': 'The connection dropped mid-command — it may have reached the car. Check before trying again.',
+  'cloud.url_invalid': 'The cloud URL must start with https://',
+  'cloud.confirm_title': 'Use a custom cloud?',
+  'cloud.confirm_custom': 'Hand your car session to {url}? Only continue if you run or trust this cloud.',
 
   'ago.now': 'just now',
   'ago.s': '{n}s ago',
@@ -649,7 +652,10 @@ const VI: Record<string, string> = {
   'cloud.car_offline': 'Xe chưa kết nối tới SL6VN Cloud',
   'cloud.session_lost': 'Dự phòng cloud đã bị đăng xuất — bật lại trong Cài đặt',
   'cloud.needs_tunnel': 'Cần kết nối trực tiếp tới xe — không dùng được khi đang qua SL6VN Cloud.',
-
+  'cloud.cmd_unsure': 'Kết nối bị ngắt giữa lệnh — lệnh có thể đã tới xe. Hãy kiểm tra trước khi thử lại.',
+  'cloud.url_invalid': 'Địa chỉ cloud phải bắt đầu bằng https://',
+  'cloud.confirm_title': 'Dùng cloud tùy chỉnh?',
+  'cloud.confirm_custom': 'Giao phiên đăng nhập xe cho {url}? Chỉ tiếp tục nếu bạn tự vận hành hoặc tin tưởng cloud này.',
 
   'ago.now': 'vừa xong',
   'ago.s': '{n} giây trước',

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks'
 import * as api from '../lib/api'
+import { onCloud } from './CloudOff'
 import { t } from '../lib/i18n'
 import { IconCar } from './icons-extra'
 import {
@@ -50,7 +51,10 @@ export function TripStats({ onOpenDetails }: { onOpenDetails?: () => void }) {
     () => (readCache(CACHE_KEY, revive) ? 'ready' : 'loading'),
   )
 
+  // The trip log is not on SL6VN Cloud: keep the cached rows until the tunnel is back.
+  const viaCloud = onCloud()
   useEffect(() => {
+    if (viaCloud) return
     let live = true
     Promise.all([api.getTripConfig(), api.getTrips(DAYS)])
       .then(([c, list]) => {
@@ -65,7 +69,7 @@ export function TripStats({ onOpenDetails }: { onOpenDetails?: () => void }) {
       })
       .catch(() => { if (live) setState((cur) => (cur === 'ready' ? cur : 'error')) })
     return () => { live = false }
-  }, [])
+  }, [viaCloud])
 
   /*
    * Trip recording is a setting the owner can turn off, and with it off the

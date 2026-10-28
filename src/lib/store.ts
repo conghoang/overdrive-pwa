@@ -1,5 +1,8 @@
 import { signal } from '@preact/signals'
-import { AuthError, dataSource, getCloudStatus, getOdometer, getStatus, getSummary, getVehicleState, maybeRefreshCloud } from './api'
+import {
+  AuthError, dataSource, getCloudStatus, getOdometer, getStatus, getSummary, getVehicleState, maybeRefreshCloud, resetBreaker,
+  syncCloudState,
+} from './api'
 import type { Odometer } from './api'
 import type { DeviceOdometer, StatusResponse, VehicleState } from './types'
 
@@ -173,8 +176,6 @@ function readLocalKey(): boolean | null {
 }
 export const localRemoteKey = signal<boolean | null>(readLocalKey())
 let cloudFetched = false
-// Whether the cloud backup's token has been checked for renewal this session.
-let cloudTokenChecked = false
 
 async function fetchCloud(): Promise<void> {
   try {
@@ -243,6 +244,8 @@ async function runTick(): Promise<void> {
 }
 
 async function tick(): Promise<void> {
+  // A cloud token can lapse while the app sits open; Settings should say so.
+  syncCloudState()
   try {
     const s = await getStatus()
     if (!active) return // dropped during sign-out / auth-loss
@@ -250,11 +253,10 @@ async function tick(): Promise<void> {
     connected.value = true
     lastError.value = null
     // The tunnel just answered, so its session is good — the one thing a
-    // cloud token renewal needs. Once per session; silent either way.
-    if (!cloudTokenChecked && dataSource.value === 'tunnel') {
-      cloudTokenChecked = true
-      maybeRefreshCloud()
-    }
+    // cloud token renewal needs. Every such tick, because a session can be
+    // lost mid-visit; maybeRefreshCloud does nothing unless the token needs it,
+    // and rate-limits itself. Silent either way.
+    if (dataSource.value === 'tunnel') maybeRefreshCloud()
     if (!cloudFetched && dataSource.value !== 'cloud') {
       cloudFetched = true
       void fetchCloud() // once per session; don't block the poll
@@ -376,11 +378,19 @@ export function start(): void {
   active = true
   if (!listenerBound) {
     listenerBound = true
+    // Back in view or back online: the tunnel gets a fresh try before the
+    // cloud, whatever the breaker remembers from before.
     document.addEventListener('visibilitychange', () => {
-      if (active && !document.hidden) requestNow()
+      if (active && !document.hidden) {
+        resetBreaker()
+        requestNow()
+      }
     })
     // Poll immediately when the network comes back.
-    window.addEventListener('online', requestNow)
+    window.addEventListener('online', () => {
+      resetBreaker()
+      requestNow()
+    })
   }
   runTick()
 }
@@ -423,7 +433,6 @@ export function reset(): void {
   cloudConfigured.value = null
   localRemoteKey.value = null
   cloudFetched = false
-  cloudTokenChecked = false
   localStorage.removeItem(K_CLOUD)
   localStorage.removeItem(K_LOCALKEY)
 }
