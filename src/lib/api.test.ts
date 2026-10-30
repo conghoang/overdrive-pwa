@@ -703,3 +703,89 @@ describe('trunk and windows on the cloud', () => {
     expect(JSON.parse(String(calls[0].init.body))).toEqual({ action: 'vent' })
   })
 })
+
+describe('car setup migration', () => {
+  const SETUP = {
+    version: 'v2',
+    connection: { qos: 1, minIntervalSeconds: 15, changeOnly: true },
+    connectionNames: ['SL6VN Cloud', 'OD Cloud'],
+    automation: {
+      name: 'SL6VN Cloud: Commands',
+      triggers: [{ type: 'mqttTrigger', variables: { channel: 'sl6vn_cmd' } }],
+      conditions: [],
+      actions: [{ type: 'if', variables: { value: 'lock' }, childActions: [{ type: 'lock', variables: {} }] }],
+    },
+    automationNames: ['SL6VN Cloud: Commands', 'OD Cloud: Commands'],
+  }
+  const CLOUD = 'https://cloud.sl6vn.link'
+  function car(conn: Record<string, unknown>, auto: Record<string, unknown>) {
+    return (url: string, init: RequestInit) => {
+      if (url === CLOUD + '/car-setup') return json(SETUP)
+      if (url === `${CAR}/api/mqtt/connections` && !init.method?.match(/PUT/)) {
+        return json({ connections: [
+          { id: 'ha', name: 'Home Assistant', brokerUrl: 'tcp://ha:1883', qos: 0, minIntervalSeconds: 5 },
+          { id: 'c1', name: 'SL6VN Cloud', brokerUrl: 'wss://cloud.sl6vn.link:443/mqtt/' + DEV, ...conn },
+        ] })
+      }
+      if (url === `${CAR}/api/automations/list`) return json({ a1: auto, a2: { name: 'Lock at night', actions: [] } })
+      return json({ success: true })
+    }
+  }
+  const puts = () => calls.filter((c) => c.init.method === 'PUT').map((c) => [c.url, JSON.parse(String(c.init.body))])
+
+  it('patches only the differing fields of the cloud connection, leaves other connections alone', async () => {
+    signIn(); enroll()
+    const api = await load()
+    handler = car({ qos: 0, minIntervalSeconds: 5, changeOnly: true }, { ...SETUP.automation })
+    expect(await api.migrateCarSetup()).toEqual(['connection:qos,minIntervalSeconds'])
+    expect(puts()).toEqual([[`${CAR}/api/mqtt/connections/c1`, { qos: 1, minIntervalSeconds: 15 }]])
+    expect(localStorage.getItem('odpwa.odcloud.setupVersion')).toBe('v2')
+  })
+
+  it('rewrites the automation only when what it does differs (key order ignored)', async () => {
+    signIn(); enroll()
+    let api = await load()
+    const same = { name: 'SL6VN Cloud: Commands', conditions: [], triggers: [{ variables: { channel: 'sl6vn_cmd' }, type: 'mqttTrigger' }],
+      actions: [{ type: 'if', variables: { value: 'lock', comparator: 'eq' }, childActions: [{ variables: {}, type: 'lock' }] }] }
+    handler = car({ qos: 1, minIntervalSeconds: 15, changeOnly: true }, same)
+    expect(await api.migrateCarSetup()).toEqual([])
+    expect(puts()).toEqual([])
+
+    localStorage.removeItem('odpwa.odcloud.setupVersion'); calls = []
+    api = await load()
+    handler = car({ qos: 1, minIntervalSeconds: 15, changeOnly: true }, { ...same, actions: [] })
+    expect(await api.migrateCarSetup()).toEqual(['automation'])
+    expect(puts()).toEqual([[`${CAR}/api/automations/automation/a1`, SETUP.automation]])
+  })
+
+  it('does nothing once this version is applied, without the cloud, or more than once per start', async () => {
+    signIn(); enroll()
+    localStorage.setItem('odpwa.odcloud.setupVersion', 'v2')
+    let api = await load()
+    handler = car({ qos: 0 }, {})
+    expect(await api.migrateCarSetup()).toEqual([])
+    expect(urls()).toEqual([CLOUD + '/car-setup'])
+
+    localStorage.clear(); signIn(); calls = [] // not enrolled
+    api = await load()
+    expect(await api.migrateCarSetup()).toEqual([])
+    expect(calls).toEqual([])
+
+    enroll(); calls = []
+    api = await load()
+    handler = car({ qos: 0, minIntervalSeconds: 15, changeOnly: true }, { ...SETUP.automation })
+    await api.migrateCarSetup()
+    calls = []
+    expect(await api.migrateCarSetup()).toEqual([])
+    expect(calls).toEqual([])
+  })
+
+  it('keeps the version unapplied when the car refuses, so the next start retries', async () => {
+    signIn(); enroll()
+    const api = await load()
+    const base = car({ qos: 0 }, { ...SETUP.automation })
+    handler = (url, init) => (init.method === 'PUT' ? json({ success: false }, 500) : base(url, init))
+    expect(await api.migrateCarSetup()).toEqual([])
+    expect(localStorage.getItem('odpwa.odcloud.setupVersion')).toBeNull()
+  })
+})
