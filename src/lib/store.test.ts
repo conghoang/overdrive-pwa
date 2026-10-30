@@ -42,7 +42,9 @@ function respond(url: string): Response | Promise<Response> {
 }
 
 /** Cloud reads made: the requests the live socket exists to save. */
-const cloudReads = (path?: string) => calls.filter((u) => u.startsWith(CLOUD) && (!path || u === CLOUD + path))
+// Car data asked of the cloud. /car-setup is not data: it is the once-per-start setup check (migrateCarSetup).
+const cloudReads = (path?: string) =>
+  calls.filter((u) => u.startsWith(CLOUD) && u !== CLOUD + '/car-setup' && (!path || u === CLOUD + path))
 
 function signIn() {
   localStorage.setItem('odpwa.baseUrl', CAR)

@@ -175,6 +175,7 @@ function dropCloudSession(): void {
 export function disableCloud(): void {
   dropCloudSession()
   localStorage.removeItem(K_CLOUD_DEVICE)
+  localStorage.removeItem('odpwa.odcloud.setupVersion') // re-enabling checks the car again
   cloudState.value = 'off'
   setCloudOnly(false)
 }
@@ -184,13 +185,20 @@ const CAR_SETUP_CONNECTION_NAMES = ['SL6VN Cloud', 'OD Cloud']
 const CAR_SETUP_AUTOMATION_NAMES = ['SL6VN Cloud: Commands', 'OD Cloud: Commands']
 
 /** One call to the car's own API through the tunnel (never the cloud, even in "cloud only"). */
-async function carApi(method: string, path: string): Promise<{ status: number; data: any }> {
+async function carApi(method: string, path: string, body?: unknown): Promise<{ status: number; data: any }> {
   const base = getBaseUrl()
   const jwt = getJwt()
   if (!base || !jwt) throw new AuthError('Not configured')
+  const headers: Record<string, string> = { Authorization: 'Bearer ' + jwt }
+  if (body !== undefined) headers['Content-Type'] = 'application/json'
   const t0 = timeoutSignal(REQUEST_TIMEOUT_MS)
   try {
-    const res = await fetch(base + path, { method, headers: { Authorization: 'Bearer ' + jwt }, signal: t0.signal })
+    const res = await fetch(base + path, {
+      method,
+      headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: t0.signal,
+    })
     let data: any = null
     try { data = await res.json() } catch { /* not JSON */ }
     return { status: res.status, data }
@@ -228,6 +236,95 @@ export async function removeCloudFromCar(): Promise<void> {
     const r = await carApi('DELETE', '/api/automations/automation/' + encodeURIComponent(id))
     if (r.status !== 200 && r.status !== 404) fail()
   }
+}
+
+const K_CLOUD_SETUP = 'odpwa.odcloud.setupVersion'
+
+/** What SL6VN Cloud wants on the car (GET /car-setup). */
+interface CarSetup {
+  version: string
+  connection: Record<string, unknown>
+  connectionNames: string[]
+  automation: { name: string; triggers?: unknown; conditions?: unknown; actions?: Array<{ variables?: { value?: unknown }; childActions?: Array<{ type?: string; variables?: unknown }> }> }
+  automationNames: string[]
+}
+
+/** Key-sorted JSON, so two objects that differ only in key order compare equal. */
+const canon = (v: unknown): string =>
+  JSON.stringify(v, (_k, x) => (x && typeof x === 'object' && !Array.isArray(x)
+    ? Object.fromEntries(Object.entries(x as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)))
+    : x))
+/** The parts of the commands automation that decide what it does (the car stores the rest its own way). */
+const automationShape = (a: CarSetup['automation']): string => canon({
+  name: a.name,
+  t: a.triggers,
+  c: a.conditions,
+  a: (a.actions || []).map((x) => [x.variables?.value, (x.childActions || []).map((c) => [c.type, c.variables])]),
+})
+
+let setupChecked = false
+/**
+ * Bring an enrolled car's SL6VN Cloud setup up to date: the cloud publishes the connection settings
+ * and commands automation it wants (GET /car-setup); this compares them with the car through the
+ * tunnel and writes only what differs. Once per app start, only while the tunnel answers, and
+ * skipped entirely once this phone has applied the cloud's current version. Only the connection
+ * that points at the cloud and the automation with the cloud's name are touched — never created,
+ * never their identity or credentials. Silent: a failure is simply retried on the next start.
+ * Returns what changed (for tests).
+ */
+export async function migrateCarSetup(): Promise<string[]> {
+  if (setupChecked || !cloudReady() || getBaseUrl() === DEMO_BASE) return []
+  setupChecked = true
+  const t0 = timeoutSignal(REQUEST_TIMEOUT_MS)
+  let want: CarSetup
+  try {
+    const res = await fetch(getCloudUrl() + '/car-setup', { signal: t0.signal })
+    if (!res.ok) return []
+    want = await res.json()
+  } catch {
+    return []
+  } finally {
+    t0.done()
+  }
+  if (!want?.version || !want.connection || !want.automation) return []
+  if (localStorage.getItem(K_CLOUD_SETUP) === want.version) return []
+
+  const changed: string[] = []
+  let cloudHost = ''
+  try { cloudHost = new URL(getCloudUrl()).host } catch { /* match by name */ }
+  const sameHost = (u: unknown): boolean => {
+    try { return !!cloudHost && new URL(String(u)).host.replace(/:443$/, '') === cloudHost } catch { return false }
+  }
+  try {
+    const conns = await carApi('GET', '/api/mqtt/connections')
+    if (conns.status !== 200 || !Array.isArray(conns.data?.connections)) return []
+    const list = conns.data.connections as Array<Record<string, unknown>>
+    const conn = list.find((c) => sameHost(c.brokerUrl)) || list.find((c) => want.connectionNames.includes(String(c.name)))
+    if (conn) {
+      const patch: Record<string, unknown> = {}
+      for (const [k, v] of Object.entries(want.connection)) if (canon(conn[k]) !== canon(v)) patch[k] = v
+      if (Object.keys(patch).length) {
+        const r = await carApi('PUT', '/api/mqtt/connections/' + encodeURIComponent(String(conn.id)), patch)
+        if (r.status !== 200 || r.data?.success === false) return changed
+        changed.push('connection:' + Object.keys(patch).join(','))
+      }
+    }
+
+    const autos = await carApi('GET', '/api/automations/list')
+    if (autos.status !== 200 || !autos.data || typeof autos.data !== 'object') return changed
+    const entries = Object.entries(autos.data as Record<string, CarSetup['automation'] | null>)
+    const found = entries.find(([, a]) => a?.name === want.automation.name)
+      || entries.find(([, a]) => !!a && want.automationNames.includes(a.name))
+    if (found && found[1] && automationShape(found[1]) !== automationShape(want.automation)) {
+      const r = await carApi('PUT', '/api/automations/automation/' + encodeURIComponent(found[0]), want.automation)
+      if (r.status !== 200 || r.data?.success === false) return changed
+      changed.push('automation')
+    }
+  } catch {
+    return changed // tunnel dropped mid-way: the next start tries again
+  }
+  localStorage.setItem(K_CLOUD_SETUP, want.version)
+  return changed
 }
 
 /*

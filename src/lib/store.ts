@@ -1,7 +1,7 @@
 import { batch, effect, signal } from '@preact/signals'
 import {
   AuthError, cloudLiveRejected, cloudLiveUrl, cloudOnly, cloudRouted, cloudState, cloudUsable, dataSource, getCloudStatus, getOdometer,
-  getStatus, getSummary, getTunnelStatus, getVehicleState, maybeRefreshCloud, resetBreaker, syncCloudState,
+  getStatus, getSummary, getTunnelStatus, getVehicleState, maybeRefreshCloud, migrateCarSetup, resetBreaker, syncCloudState,
 } from './api'
 import type { Odometer } from './api'
 import { t } from './i18n'
@@ -422,6 +422,9 @@ async function tick(): Promise<void> {
       // lost mid-visit; maybeRefreshCloud does nothing unless the token needs it,
       // and rate-limits itself. Silent either way.
       maybeRefreshCloud()
+      // Same moment is right for keeping the car's cloud setup current: it needs the tunnel.
+      // Once per app start, and a no-op once this phone applied the cloud's current version.
+      void migrateCarSetup()
       dropCloudAnswer()
     }
     if (dataSource.value === 'cloud') {
