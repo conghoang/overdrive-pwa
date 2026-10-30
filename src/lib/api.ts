@@ -239,6 +239,13 @@ export async function removeCloudFromCar(): Promise<void> {
 }
 
 const K_CLOUD_SETUP = 'odpwa.odcloud.setupVersion'
+/**
+ * The car-setup migration this app ships. Bump it whenever SL6VN Cloud's /car-setup changes (connection
+ * settings or the commands automation): a phone that applied this number never asks the cloud or the
+ * car again, so normal app starts cost nothing.
+ *   1 — QoS 1 reports, 15 s minimum interval (2026-10-30)
+ */
+export const CAR_SETUP_MIGRATION = 1
 
 /** What SL6VN Cloud wants on the car (GET /car-setup). */
 interface CarSetup {
@@ -266,8 +273,8 @@ let setupChecked = false
 /**
  * Bring an enrolled car's SL6VN Cloud setup up to date: the cloud publishes the connection settings
  * and commands automation it wants (GET /car-setup); this compares them with the car through the
- * tunnel and writes only what differs. Once per app start, only while the tunnel answers, and
- * skipped entirely once this phone has applied the cloud's current version. Only the connection
+ * tunnel and writes only what differs. Only while the tunnel answers, at most once per app start,
+ * and only until this phone has applied CAR_SETUP_MIGRATION — after that, no request at all. Only the connection
  * that points at the cloud and the automation with the cloud's name are touched — never created,
  * never their identity or credentials. Silent: a failure is simply retried on the next start.
  * Returns what changed (for tests).
@@ -275,6 +282,8 @@ let setupChecked = false
 export async function migrateCarSetup(): Promise<string[]> {
   if (setupChecked || !cloudReady() || getBaseUrl() === DEMO_BASE) return []
   setupChecked = true
+  // Up to date: no request at all, to the cloud or to the car.
+  if (Number(localStorage.getItem(K_CLOUD_SETUP)) >= CAR_SETUP_MIGRATION) return []
   const t0 = timeoutSignal(REQUEST_TIMEOUT_MS)
   let want: CarSetup
   try {
@@ -287,7 +296,6 @@ export async function migrateCarSetup(): Promise<string[]> {
     t0.done()
   }
   if (!want?.version || !want.connection || !want.automation) return []
-  if (localStorage.getItem(K_CLOUD_SETUP) === want.version) return []
 
   const changed: string[] = []
   let cloudHost = ''
@@ -323,7 +331,7 @@ export async function migrateCarSetup(): Promise<string[]> {
   } catch {
     return changed // tunnel dropped mid-way: the next start tries again
   }
-  localStorage.setItem(K_CLOUD_SETUP, want.version)
+  localStorage.setItem(K_CLOUD_SETUP, String(CAR_SETUP_MIGRATION))
   return changed
 }
 

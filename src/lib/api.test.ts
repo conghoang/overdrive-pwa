@@ -739,7 +739,7 @@ describe('car setup migration', () => {
     handler = car({ qos: 0, minIntervalSeconds: 5, changeOnly: true }, { ...SETUP.automation })
     expect(await api.migrateCarSetup()).toEqual(['connection:qos,minIntervalSeconds'])
     expect(puts()).toEqual([[`${CAR}/api/mqtt/connections/c1`, { qos: 1, minIntervalSeconds: 15 }]])
-    expect(localStorage.getItem('odpwa.odcloud.setupVersion')).toBe('v2')
+    expect(localStorage.getItem('odpwa.odcloud.setupVersion')).toBe(String(api.CAR_SETUP_MIGRATION))
   })
 
   it('rewrites the automation only when what it does differs (key order ignored)', async () => {
@@ -758,13 +758,19 @@ describe('car setup migration', () => {
     expect(puts()).toEqual([[`${CAR}/api/automations/automation/a1`, SETUP.automation]])
   })
 
-  it('does nothing once this version is applied, without the cloud, or more than once per start', async () => {
+  it('makes no request at all once this migration is applied; nothing without the cloud or twice per start', async () => {
     signIn(); enroll()
-    localStorage.setItem('odpwa.odcloud.setupVersion', 'v2')
     let api = await load()
+    localStorage.setItem('odpwa.odcloud.setupVersion', String(api.CAR_SETUP_MIGRATION))
     handler = car({ qos: 0 }, {})
     expect(await api.migrateCarSetup()).toEqual([])
-    expect(urls()).toEqual([CLOUD + '/car-setup'])
+    expect(calls).toEqual([])
+
+    // An older migration number does run.
+    localStorage.setItem('odpwa.odcloud.setupVersion', String(api.CAR_SETUP_MIGRATION - 1)); calls = []
+    api = await load()
+    handler = car({ qos: 0, minIntervalSeconds: 15, changeOnly: true }, { ...SETUP.automation })
+    expect(await api.migrateCarSetup()).toEqual(['connection:qos'])
 
     localStorage.clear(); signIn(); calls = [] // not enrolled
     api = await load()
