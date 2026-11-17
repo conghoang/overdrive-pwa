@@ -10,6 +10,7 @@ import type {
   VehicleState,
 } from './types'
 import { signal } from '@preact/signals'
+import { statusFromSummary, type GpsReply } from './composite-status'
 import { DEMO_BASE, DEMO_TOKEN } from './demo'
 import { t } from './i18n'
 import {
@@ -655,6 +656,51 @@ async function send(base: string, jwt: string, method: string, path: string, bod
   }
 }
 
+/*
+ * OverDrive v61.1 answers GET /status without Access-Control-Allow-Origin, so the
+ * browser throws "Failed to fetch" on a tunnel that is perfectly alive. When that
+ * happens /status is rebuilt from the summary + GPS endpoints (which still carry
+ * CORS), and the tunnel is remembered as CORS-blocked so later polls skip the
+ * doomed fetch. A re-probe every STATUS_REPROBE_MS notices OD fixing it.
+ */
+const STATUS_REPROBE_MS = 10 * 60_000
+const statusBlocked = new Map<string, number>() // tunnel base -> when /status was last seen blocked
+
+/** Summary + GPS in parallel, wrapped as a 200 /status reply; the summary decides reachability. */
+async function compositeStatus(base: string, jwt: string, ms: number): Promise<Sent> {
+  const [sum, gps] = await Promise.all([
+    send(base, jwt, 'GET', '/api/launcher/v1/summary', undefined, ms),
+    send(base, jwt, 'GET', '/api/gps', undefined, ms),
+  ])
+  if (!('res' in sum)) return sum
+  if (!sum.res.ok || !(sum.res.headers.get('content-type') || '').includes('application/json')) return sum
+  let summary: LauncherSummary
+  try { summary = (await sum.res.json()) as LauncherSummary } catch { return { fail: 'network' } }
+  let fix: GpsReply | null = null
+  if ('res' in gps && gps.res.ok) { try { fix = (await gps.res.json()) as GpsReply } catch { /* no fix */ } }
+  return {
+    res: new Response(JSON.stringify(statusFromSummary(summary, fix)), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    }),
+  }
+}
+
+/** The tunnel's /status — the car's own when the browser can read it, else the composite. */
+async function sendStatus(base: string, jwt: string, ms: number): Promise<Sent> {
+  const now = Date.now()
+  const since = statusBlocked.get(base)
+  if (since !== undefined && now - since < STATUS_REPROBE_MS) return compositeStatus(base, jwt, ms)
+  const sent = await send(base, jwt, 'GET', '/status', undefined, ms)
+  if ('res' in sent) { statusBlocked.delete(base); return sent }
+  // A timeout is a slow tunnel, not a CORS block; only a fast network error is.
+  if (sent.fail !== 'network' || tunnelBypassed(base)) return sent
+  const comp = await compositeStatus(base, jwt, ms)
+  if (!('res' in comp)) return sent
+  if (comp.res.ok) statusBlocked.set(base, now)
+  return comp
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const base = getBaseUrl()
   const jwt = getJwt()
@@ -670,7 +716,9 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   if (way === 'cloud') return viaCloud<T>(method, path, body)
 
   const ms = way === 'both' && method === 'GET' ? TUNNEL_GET_TIMEOUT_MS : REQUEST_TIMEOUT_MS
-  const sent = await send(base, jwt, method, path, body, ms)
+  const sent = method === 'GET' && path === '/status'
+    ? await sendStatus(base, jwt, ms)
+    : await send(base, jwt, method, path, body, ms)
   const outcome: TunnelOutcome =
     'res' in sent
       ? { kind: 'response', status: sent.res.status, contentType: sent.res.headers.get('content-type') || '' }
@@ -704,7 +752,7 @@ export async function getTunnelStatus(): Promise<StatusResponse | null> {
   const jwt = getJwt()
   if (!base || !jwt) throw new AuthError('Not configured')
   if (base === DEMO_BASE || tunnelBypassed(base) || breakerOpen(breaker, Date.now())) return null
-  const sent = await send(base, jwt, 'GET', '/status', undefined, TUNNEL_GET_TIMEOUT_MS)
+  const sent = await sendStatus(base, jwt, TUNNEL_GET_TIMEOUT_MS)
   const outcome: TunnelOutcome =
     'res' in sent
       ? { kind: 'response', status: sent.res.status, contentType: sent.res.headers.get('content-type') || '' }
