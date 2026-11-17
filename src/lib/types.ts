@@ -25,6 +25,9 @@ export interface ChargingInfo {
   fault?: boolean
   isDischarging?: boolean
   powerSource?: string
+  isEstimated?: boolean
+  /** Energy added this session, kWh. */
+  sessionKwh?: number | null
 }
 export interface SohInfo { percent?: number; estimatedCapacityKwh?: number; nominalCapacityKwh?: number }
 export interface GpsInfo {
@@ -171,6 +174,10 @@ export interface VehicleState {
 }
 
 export interface LauncherSummary {
+  vehicle?: { isPhev?: boolean }
+  /** acc: 'on' | 'off' (as of OD v61.1). */
+  state?: { acc?: string | null }
+  range?: { totalKm?: number | null; elecKm?: number | null; fuelKm?: number | null; fuelPct?: number | null; socPct?: number | null }
   /** Ambient, NOT cabin: weather cache, falling back to the car's external sensor. */
   env?: { tempC?: number | null }
   /** Cabin vs ambient particulates, µg/m³. */
@@ -181,9 +188,10 @@ export interface LauncherSummary {
     kwEstimated?: boolean
     etaMin?: number | null
     targetPct?: number | null
+    addedKwh?: number | null
   }
   /** Usable pack capacity, used to estimate time-to-full before the car reports one. */
-  battery?: { usableKwh?: number | null; socPct?: number | null }
+  battery?: { usableKwh?: number | null; socPct?: number | null; healthPct?: number | null }
   /** Recent trip block; whPerKm is OD's computed consumption for the last drive. */
   trip?: { whPerKm?: number | null; distanceKm?: number; durationMin?: number; cost?: number; currency?: string }
 }

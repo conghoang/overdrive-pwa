@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import fixture from './fixtures/od-v61-composite.json'
 
 /*
  * api.ts against a mocked fetch. Each test gets a fresh module, so the circuit
@@ -22,6 +23,8 @@ const down = () => Promise.reject(new TypeError('Failed to fetch'))
 const hang = (_url: string, init: RequestInit) =>
   new Promise<Response>((_, reject) =>
     init.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError'))))
+/** A /status that fails to fetch is followed by the summary + gps probe (the CORS fallback). */
+const PROBED = [`${CAR}/status`, `${CAR}/api/launcher/v1/summary`, `${CAR}/api/gps`]
 const urls = () => calls.map((c) => c.url)
 const auth = (c: Call) => (c.init.headers as Record<string, string> | undefined)?.Authorization
 
@@ -64,7 +67,7 @@ describe('without cloud backup', () => {
     const api = await load()
     handler = down
     await expect(api.getStatus()).rejects.toBeInstanceOf(api.ApiError)
-    expect(calls.map((c) => c.url)).toEqual([`${CAR}/status`])
+    expect(calls.map((c) => c.url)).toEqual(PROBED)
   })
 })
 
@@ -321,7 +324,7 @@ describe('one car per cloud session', () => {
     expect(api.cloudState.value).toBe('off')
     handler = (url) => (url.startsWith(CAR) ? down() : json({ status: 'ok' }))
     await expect(api.getStatus()).rejects.toBeInstanceOf(api.ApiError)
-    expect(urls()).toEqual([`${CAR}/status`])
+    expect(urls()).toEqual(PROBED)
   })
 })
 
@@ -341,7 +344,7 @@ describe('auth', () => {
     calls = []
     vi.setSystemTime(NOW + 31_000)
     await api.getStatus().catch(() => {})
-    expect(calls.map((c) => c.url)).toEqual([`${CAR}/status`])
+    expect(calls.map((c) => c.url)).toEqual(PROBED)
   })
 
   it('a tunnel 401 keeps the existing sign-out behaviour and leaves the cloud alone', async () => {
@@ -793,5 +796,92 @@ describe('car setup migration', () => {
     handler = (url, init) => (init.method === 'PUT' ? json({ success: false }, 500) : base(url, init))
     expect(await api.migrateCarSetup()).toEqual([])
     expect(localStorage.getItem('odpwa.odcloud.setupVersion')).toBeNull()
+  })
+})
+
+describe('status without CORS (OD v61.1)', () => {
+  const SUMMARY = fixture.summary
+  const GPS = fixture.gps
+  /** /status is unreadable (fetch throws); summary + gps answer. */
+  const corsBlocked = (url: string) => {
+    if (url === CAR + '/status') return down()
+    if (url === CAR + '/api/launcher/v1/summary') return json(SUMMARY)
+    if (url === CAR + '/api/gps') return json(GPS)
+    return json({})
+  }
+
+  it('builds /status from summary + gps and counts as the tunnel', async () => {
+    signIn(); enroll()
+    handler = (url) => (url === CLOUD + '/status' ? json({ source: 'cloud' }) : corsBlocked(url))
+    const api = await load()
+    const s = await api.getStatus()
+    expect(api.dataSource.value).toBe('tunnel')
+    expect(urls().some((u) => u.startsWith(CLOUD))).toBe(false)
+    expect(s.soc?.percent).toBe(95)
+    expect(s.range).toMatchObject({ elecRangeKm: 93, fuelRangeKm: 241, totalRangeKm: 334, fuelPercent: 20, isPhev: true })
+    expect(s.acc).toBe(false)
+    expect(s.gps).toMatchObject({ lat: 10, lng: 106, hasLocation: true })
+    expect(s.charging).toMatchObject({ charging: false, chargingPowerKW: 0 })
+    expect(s.soh).toEqual({ percent: 100, estimatedCapacityKwh: 18.3 })
+    expect(s.network).toBeUndefined()
+    expect(s.distanceUnit).toBeUndefined()
+    expect(s.appVersion).toBeUndefined()
+  })
+
+  it('remembers the block: later polls skip /status, until the re-probe', async () => {
+    signIn()
+    handler = (url) => corsBlocked(url)
+    const api = await load()
+    await api.getStatus()
+    const n = () => urls().filter((u) => u === CAR + '/status').length
+    expect(n()).toBe(1)
+    await api.getStatus()
+    expect(n()).toBe(1)
+    vi.setSystemTime(NOW + 11 * 60_000)
+    await api.getStatus()
+    expect(n()).toBe(2)
+  })
+
+  it('goes back to the real /status once OD answers it again', async () => {
+    signIn()
+    handler = (url) => corsBlocked(url)
+    const api = await load()
+    await api.getStatus()
+    vi.setSystemTime(NOW + 11 * 60_000)
+    handler = (url) => (url === CAR + '/status' ? json({ status: 'ok', appVersion: 'v62' }) : corsBlocked(url))
+    expect((await api.getStatus()).appVersion).toBe('v62')
+    const before = urls().length
+    await api.getStatus()
+    expect(urls().slice(before)).toEqual([CAR + '/status'])
+  })
+
+  it('a charging summary maps state, power and session energy', async () => {
+    signIn()
+    handler = (url) => url === CAR + '/api/launcher/v1/summary'
+      ? json({ ...SUMMARY, state: { acc: 'on' }, charging: { active: true, kw: 7.2, kwEstimated: true, addedKwh: 3.4 } })
+      : corsBlocked(url)
+    const api = await load()
+    const s = await api.getStatus()
+    expect(s.acc).toBe(true)
+    expect(s.charging).toMatchObject({ charging: true, plugged: true, chargingPowerKW: 7.2, powerKw: 7.2, isEstimated: true, sessionKwh: 3.4 })
+  })
+
+  it('tunnel fully down still falls back to the cloud', async () => {
+    signIn(); enroll()
+    handler = (url) => (url.startsWith(CLOUD) ? json({ source: 'cloud', soc: { percent: 50 } }) : down())
+    const api = await load()
+    const s = await api.getStatus()
+    expect(s.soc?.percent).toBe(50)
+    expect(api.dataSource.value).toBe('cloud')
+  })
+
+  it('a working /status is untouched', async () => {
+    signIn()
+    handler = (url) => (url === CAR + '/status' ? json({ status: 'ok', appVersion: 'v60' }) : json({}))
+    const api = await load()
+    const s = await api.getStatus()
+    expect(s.appVersion).toBe('v60')
+    expect(urls()).toEqual([CAR + '/status'])
+    expect(api.dataSource.value).toBe('tunnel')
   })
 })
