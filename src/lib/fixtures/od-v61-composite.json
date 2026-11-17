@@ -1,0 +1,86 @@
+{
+ "summary": {
+  "ts": 1794896272245,
+  "vehicle": {
+   "modelId": "seal-u-dmi",
+   "color": "#C8102E",
+   "driveSide": "lhd",
+   "name": "BYD Seal U DM-i",
+   "isPhev": true
+  },
+  "state": {
+   "acc": "off",
+   "gear": "P",
+   "locked": null,
+   "driverLocked": false,
+   "parked": true
+  },
+  "range": {
+   "totalKm": 334,
+   "elecKm": 93,
+   "fuelKm": 241,
+   "fuelPct": 20,
+   "socPct": 95
+  },
+  "battery": {
+   "socPct": 95,
+   "usableKwh": 18.3,
+   "healthPct": 100,
+   "tempC": 30
+  },
+  "charging": {
+   "active": false,
+   "kw": 0,
+   "kwEstimated": false,
+   "targetPct": null,
+   "etaMin": null,
+   "lossPct": null,
+   "schedule": {
+    "enabled": null,
+    "startHhmm": null
+   },
+   "addedKwh": null,
+   "cost": null,
+   "currency": null,
+   "costEstimated": false
+  },
+  "air": {
+   "pm25Inside": 5,
+   "pm25Outside": 22
+  },
+  "env": {
+   "tempC": 32,
+   "condition": "rain",
+   "place": null,
+   "area": null,
+   "isNight": false
+  }
+ },
+ "gps": {
+  "success": true,
+  "location": {
+   "lat": 10.0,
+   "lng": 106.0,
+   "speed": 0,
+   "heading": 242.60000610351562,
+   "accuracy": 11.385144233703613,
+   "altitude": 0.0220947265625,
+   "lastUpdate": 1794896272606,
+   "provider": "sidecar",
+   "isMoving": false,
+   "hasLocation": true,
+   "ageMs": 142,
+   "isStale": false,
+   "isCached": false,
+   "loadedFromCache": false,
+   "fixAgeMs": 142,
+   "isFixStale": false,
+   "canSpeedKmh": 0,
+   "accelPercent": 0,
+   "brakePercent": 0,
+   "accOn": false,
+   "latitude": 10.0,
+   "longitude": 106.0
+  }
+ }
+}
