@@ -14,7 +14,7 @@ import { statusFromSummary, type GpsReply } from './composite-status'
 import { DEMO_BASE, DEMO_TOKEN } from './demo'
 import { t } from './i18n'
 import {
-  breakerOpen, closeBreaker, cloudSupports, isTunnelFailure, needsRefresh, newBreaker, noteFailure, parseCloudSession,
+  breakerOpen, closeBreaker, cloudSupports, historyBody, historyDue, historyKind, isTunnelFailure, needsRefresh, newBreaker, noteFailure, parseCloudSession,
   route, sessionUsable,
 } from './fallback'
 import type { CloudSession, TunnelOutcome } from './fallback'
@@ -737,7 +737,9 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     closeBreaker(breaker) // the car answered through the tunnel — it is back
   }
   if (!('res' in sent)) throw new ApiError(t('err.network'), 0)
-  return readResponse<T>(sent.res, method, path, 'tunnel')
+  const data = await readResponse<T>(sent.res, method, path, 'tunnel')
+  pushHistory(method, path, data)
+  return data
 }
 
 /**
@@ -763,6 +765,27 @@ export async function getTunnelStatus(): Promise<StatusResponse | null> {
   }
   closeBreaker(breaker)
   return readResponse<StatusResponse>(sent.res, 'GET', '/status', 'tunnel')
+}
+
+/*
+ * Trips, charging and trip config read through the tunnel are copied to the
+ * cloud, at most once per HISTORY_PUSH_MS per kind, so the cloud can serve them
+ * when the tunnel is down. Fire-and-forget: it never delays or fails the read.
+ */
+function pushHistory(method: string, path: string, data: unknown): void {
+  try {
+    const kind = historyKind(method, path)
+    if (!kind || !cloudReady()) return
+    const key = `odpwa.cloudHist.${kind}.${getDeviceId()}`
+    const now = Date.now()
+    if (!historyDue(Number(localStorage.getItem(key)) || 0, now)) return
+    const body = historyBody(kind, data)
+    if (!body) return
+    localStorage.setItem(key, String(now))
+    void send(getCloudUrl(), readCloudSession()?.token || '', 'POST', '/api/cloud/history', body, CLOUD_POST_TIMEOUT_MS)
+      .then((r) => { if (!('res' in r) || !r.res.ok) console.debug('cloud history push failed') })
+      .catch(() => { /* silent */ })
+  } catch { /* never reaches the caller */ }
 }
 
 async function viaCloud<T>(method: string, path: string, body?: unknown): Promise<T> {

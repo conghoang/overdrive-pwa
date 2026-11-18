@@ -12,7 +12,8 @@
 /** POST /api/vehicle/<action> commands the cloud can relay to the car. */
 const CLOUD_COMMANDS = new Set(['lock', 'unlock', 'power-on', 'power-off', 'flash', 'find-car', 'climate', 'seat', 'trunk', 'window'])
 /** GETs the cloud serves from its MQTT snapshot. */
-const CLOUD_READS = new Set(['/status', '/api/vehicle/state', '/api/launcher/v1/summary', '/api/vehicle/cloud-status'])
+const CLOUD_READS = new Set(['/status', '/api/vehicle/state', '/api/launcher/v1/summary', '/api/vehicle/cloud-status',
+  '/api/trips', '/api/trips/config', '/api/charging/overview'])
 
 /** Whether SL6VN Cloud can serve this request. Query strings never matter here. */
 export function cloudSupports(method: string, path: string): boolean {
@@ -145,4 +146,49 @@ export function parseCloudSession(body: unknown, status: number): ParsedSession 
     return { ok: true, session: { token, expiresAt: exp }, deviceId: str(b.deviceId) }
   }
   return { ok: false, error: str(b.error) || `HTTP ${status}`, step: str(b.step) }
+}
+
+/*
+ * History push: what a tunnel read of trips / charging / trip config sends up to
+ * the cloud, so the cloud can answer the same reads when the tunnel is down.
+ */
+export type HistoryKind = 'trips' | 'sessions' | 'config'
+export const HISTORY_PUSH_MS = 15 * 60_000
+export const HISTORY_MAX_ROWS = 500
+
+/** The history kind a tunnel GET path carries, or null for any other path. */
+export function historyKind(method: string, path: string): HistoryKind | null {
+  if (method !== 'GET') return null
+  switch (path.split('?')[0]) {
+    case '/api/trips': return 'trips'
+    case '/api/charging/overview': return 'sessions'
+    case '/api/trips/config': return 'config'
+    default: return null
+  }
+}
+
+/** Whether the last push of this kind is old enough to push again. */
+export function historyDue(last: number, now: number): boolean {
+  return !(last > 0 && now >= last && now - last < HISTORY_PUSH_MS)
+}
+
+/**
+ * The POST /api/cloud/history body for a tunnel reply, or null when there is
+ * nothing to send. Rows still in progress are dropped (the server skips them
+ * anyway) and each list is capped at HISTORY_MAX_ROWS, newest kept.
+ */
+export function historyBody(kind: HistoryKind, data: unknown): Record<string, unknown> | null {
+  const d = (data && typeof data === 'object' ? data : {}) as Record<string, unknown>
+  if (kind === 'config') {
+    const c = d.config
+    return c && typeof c === 'object' ? { config: c } : null
+  }
+  const rows = kind === 'trips' ? d.trips : d.sessions
+  if (!Array.isArray(rows)) return null
+  const start = (r: unknown) => Number((r as { startTime?: unknown }).startTime) || 0
+  const keep = rows
+    .filter((r) => r && typeof r === 'object' && !(r as { inProgress?: unknown }).inProgress && !(r as { chargingNow?: unknown }).chargingNow)
+    .sort((a, b) => start(b) - start(a))
+    .slice(0, HISTORY_MAX_ROWS)
+  return keep.length ? { [kind]: keep } : null
 }
