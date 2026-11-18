@@ -18,10 +18,13 @@ describe('cloudSupports', () => {
     }
     for (const a of ['sunroof', 'media', 'setting']) expect(cloudSupports('POST', `/api/vehicle/${a}`)).toBe(false)
   })
-  it('never takes trips, charging, camera, keymap or settings', () => {
-    expect(cloudSupports('GET', '/api/trips?days=7&limit=200')).toBe(false)
-    expect(cloudSupports('GET', '/api/trips/config')).toBe(false)
-    expect(cloudSupports('GET', '/api/charging/overview?days=7')).toBe(false)
+  it('serves trips, trip config and charging history', () => {
+    expect(cloudSupports('GET', '/api/trips?days=7&limit=200')).toBe(true)
+    expect(cloudSupports('GET', '/api/trips/config')).toBe(true)
+    expect(cloudSupports('GET', '/api/charging/overview?days=7')).toBe(true)
+    expect(cloudSupports('POST', '/api/trips')).toBe(false)
+  })
+  it('never takes camera, keymap or settings', () => {
     expect(cloudSupports('GET', '/api/stream/quality')).toBe(false)
     expect(cloudSupports('POST', '/api/stream/enable')).toBe(false)
     expect(cloudSupports('POST', '/api/keymap/fire')).toBe(false)

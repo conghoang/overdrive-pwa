@@ -2,6 +2,7 @@ import { render } from 'preact'
 import { App } from './app'
 import { isConfigured } from './lib/api'
 import * as store from './lib/store'
+import { startHistorySync } from './lib/history-sync'
 import { startUpdateChecks } from './lib/updater'
 import { initTheme } from './lib/theme'
 import { initCarPhoto } from './lib/settings'
@@ -15,7 +16,7 @@ initTheme()
 // photo swaps in when it resolves.
 void initCarPhoto()
 
-if (isConfigured()) store.start()
+if (isConfigured()) { store.start(); startHistorySync() }
 startUpdateChecks()
 
 render(<App />, document.getElementById('app')!)

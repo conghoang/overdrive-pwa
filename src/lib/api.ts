@@ -765,6 +765,35 @@ export async function getTunnelStatus(): Promise<StatusResponse | null> {
   return readResponse<StatusResponse>(sent.res, 'GET', '/status', 'tunnel')
 }
 
+/*
+ * Transport for history-sync.ts. Tunnel reads never fall back to the cloud
+ * (copying the cloud's own answer back to it would be pointless), and the
+ * cloud calls carry the cloud token.
+ */
+/** Whether history can be copied tunnel -> cloud for this car right now. */
+export function historySyncReady(): boolean {
+  const base = getBaseUrl()
+  return !!base && !!getJwt() && base !== DEMO_BASE && cloudReady() && !cloudOnly.value
+    && !browserOffline() && !breakerOpen(breaker, Date.now())
+}
+
+async function historyCall<T>(side: 'tunnel' | 'cloud', method: string, path: string, body?: unknown): Promise<T> {
+  const tunnel = side === 'tunnel'
+  const sent = await send(tunnel ? getBaseUrl() : getCloudUrl(), tunnel ? getJwt() : readCloudSession()?.token || '',
+    method, path, body, tunnel ? REQUEST_TIMEOUT_MS : CLOUD_POST_TIMEOUT_MS)
+  if (!('res' in sent)) throw new ApiError(t('err.network'), 0)
+  if (tunnel && isTunnelFailure(method, { kind: 'response', status: sent.res.status, contentType: sent.res.headers.get('content-type') || '' })) {
+    throw new ApiError(t('err.cannot_reach'), sent.res.status)
+  }
+  const data = await readResponse<T>(sent.res, method, path, side)
+  if (data === undefined) throw new ApiError(t('err.network'), sent.res.status)
+  return data
+}
+/** A GET straight from the tunnel; throws when it fails, never asks the cloud. */
+export const tunnelGet = <T>(path: string): Promise<T> => historyCall<T>('tunnel', 'GET', path)
+export const cloudHistoryGet = <T>(path: string): Promise<T> => historyCall<T>('cloud', 'GET', path)
+export const cloudHistoryPost = <T>(path: string, body: unknown): Promise<T> => historyCall<T>('cloud', 'POST', path, body)
+
 async function viaCloud<T>(method: string, path: string, body?: unknown): Promise<T> {
   const ms = method === 'GET' ? REQUEST_TIMEOUT_MS : CLOUD_POST_TIMEOUT_MS
   const sent = await send(getCloudUrl(), readCloudSession()?.token || '', method, path, body, ms)

@@ -104,7 +104,7 @@ describe('fallback', () => {
     signIn(); enroll()
     const api = await load()
     handler = (url) => (url.startsWith(CAR) ? down() : json({}))
-    await expect(api.getTrips(7)).rejects.toBeInstanceOf(api.ApiError)
+    await expect(api.getStreamQuality()).rejects.toBeInstanceOf(api.ApiError)
     await expect(api.fireShell('true')).rejects.toBeInstanceOf(api.ApiError)
     await expect(api.streamEnable()).rejects.toBeInstanceOf(api.ApiError)
     expect(calls.every((c) => c.url.startsWith(CAR))).toBe(true)
@@ -616,7 +616,7 @@ describe('use cloud only', () => {
     signIn(); enroll()
     const api = await load()
     api.setCloudOnly(true)
-    await expect(api.getTrips(7)).rejects.toBeInstanceOf(api.ApiError)
+    await expect(api.getStreamQuality()).rejects.toBeInstanceOf(api.ApiError)
     expect(urls()).toEqual([])
   })
 

@@ -12,7 +12,8 @@
 /** POST /api/vehicle/<action> commands the cloud can relay to the car. */
 const CLOUD_COMMANDS = new Set(['lock', 'unlock', 'power-on', 'power-off', 'flash', 'find-car', 'climate', 'seat', 'trunk', 'window'])
 /** GETs the cloud serves from its MQTT snapshot. */
-const CLOUD_READS = new Set(['/status', '/api/vehicle/state', '/api/launcher/v1/summary', '/api/vehicle/cloud-status'])
+const CLOUD_READS = new Set(['/status', '/api/vehicle/state', '/api/launcher/v1/summary', '/api/vehicle/cloud-status',
+  '/api/trips', '/api/trips/config', '/api/charging/overview'])
 
 /** Whether SL6VN Cloud can serve this request. Query strings never matter here. */
 export function cloudSupports(method: string, path: string): boolean {
