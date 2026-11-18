@@ -2,6 +2,7 @@ import { effect, signal } from '@preact/signals'
 import type { JSX } from 'preact'
 import { isConfigured } from './lib/api'
 import * as store from './lib/store'
+import { startHistorySync } from './lib/history-sync'
 import { Dashboard } from './screens/Dashboard'
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks'
 import { lazyScreen } from './lib/lazy'
@@ -169,6 +170,7 @@ export function App() {
           store.authLost.value = false
           configured.value = true
           store.start()
+          startHistorySync()
         }}
       />
     )

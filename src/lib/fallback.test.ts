@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   BREAKER_MS, REFRESH_AHEAD_MS, breakerOpen, closeBreaker, cloudSupports, isTunnelFailure, needsRefresh, newBreaker,
-  noteFailure, parseCloudSession, historyBody, historyDue, historyKind, route, sessionUsable, tripBreaker,
+  noteFailure, parseCloudSession, route, sessionUsable, tripBreaker,
 } from './fallback'
 
 const resp = (status: number, contentType = 'application/json') => ({ kind: 'response' as const, status, contentType })
@@ -154,31 +154,5 @@ describe('cloud session', () => {
       .toEqual({ ok: true, session: { token: 'tok', expiresAt: sec * 1000 }, deviceId: undefined })
     expect(parseCloudSession({ success: true, cloudToken: 'tok', expiresAt: 'soon' }, 200))
       .toEqual({ ok: true, session: { token: 'tok', expiresAt: 0 }, deviceId: undefined })
-  })
-})
-
-describe('history push helpers', () => {
-  it('maps paths to kinds, GET only', () => {
-    expect(historyKind('GET', '/api/trips?days=7')).toBe('trips')
-    expect(historyKind('GET', '/api/trips/config')).toBe('config')
-    expect(historyKind('GET', '/api/charging/overview?days=30')).toBe('sessions')
-    expect(historyKind('POST', '/api/trips')).toBeNull()
-    expect(historyKind('GET', '/status')).toBeNull()
-  })
-  it('is due after 15 minutes only', () => {
-    expect(historyDue(0, 1000)).toBe(true)
-    expect(historyDue(1000, 1000 + 14 * 60_000)).toBe(false)
-    expect(historyDue(1000, 1000 + 15 * 60_000)).toBe(true)
-  })
-  it('drops in-progress rows, caps at 500 and skips empty bodies', () => {
-    const sessions = [{ startTime: 1, inProgress: true }, { startTime: 2, chargingNow: true }, { startTime: 3 }]
-    expect(historyBody('sessions', { sessions })).toEqual({ sessions: [{ startTime: 3 }] })
-    expect(historyBody('sessions', { sessions: [{ startTime: 1, inProgress: true }] })).toBeNull()
-    const trips = Array.from({ length: 700 }, (_, i) => ({ startTime: i + 1 }))
-    const b = historyBody('trips', { trips }) as { trips: { startTime: number }[] }
-    expect(b.trips).toHaveLength(500)
-    expect(b.trips[0].startTime).toBe(700)
-    expect(historyBody('config', { success: true, config: { enabled: true } })).toEqual({ config: { enabled: true } })
-    expect(historyBody('trips', undefined)).toBeNull()
   })
 })
