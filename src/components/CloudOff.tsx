@@ -6,10 +6,11 @@ import { dataSource } from '../lib/store'
 export const onCloud = (): boolean => dataSource.value === 'cloud'
 
 /**
- * Tabs with nothing SL6VN Cloud can serve: the camera streams from the car, and
- * Data is the car's own trip/charging history. Disabled in the tab bar on cloud.
+ * Tabs with nothing SL6VN Cloud can serve: the camera streams from the car.
+ * Disabled in the tab bar on cloud. Data stays: the cloud keeps a synced copy of
+ * the trip/charging history (lib/history-sync.ts).
  */
-export const tabOffOnCloud = (tab: string): boolean => onCloud() && (tab === 'camera' || tab === 'data')
+export const tabOffOnCloud = (tab: string): boolean => onCloud() && tab === 'camera'
 
 /**
  * Grey out something SL6VN Cloud cannot serve, and say why.
