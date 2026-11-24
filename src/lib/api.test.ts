@@ -885,3 +885,15 @@ describe('status without CORS (OD v61.1)', () => {
     expect(api.dataSource.value).toBe('tunnel')
   })
 })
+
+describe('isValidAccessCode', () => {
+  it('accepts demo and 8- or 20-char codes only', async () => {
+    const { isValidAccessCode } = await import('./api')
+    expect(isValidAccessCode('demo')).toBe(true)
+    expect(isValidAccessCode('abcd1234')).toBe(true)
+    expect(isValidAccessCode(' abcdefghij0123456789 ')).toBe(true)
+    for (const c of ['', 'abc1234', 'abcd12345', 'abcdefghij012345678', 'abcdefghij0123456789x']) {
+      expect(isValidAccessCode(c)).toBe(false)
+    }
+  })
+})

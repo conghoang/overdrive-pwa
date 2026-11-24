@@ -486,10 +486,10 @@ export function normalizeBase(url: string): string {
   }
 }
 
-/** demo, or an 8-char access code. */
+/** demo, or an access code: 8 chars (older OD pairings) or 20 chars (new format). */
 export function isValidAccessCode(code: string): boolean {
   const c = (code || '').trim()
-  return c.toLowerCase() === 'demo' || c.length === 8
+  return c.toLowerCase() === 'demo' || (c.length === 8 || c.length === 20)
 }
 
 export class AuthError extends Error {}
@@ -503,7 +503,7 @@ export class ApiError extends Error {
 
 /** Exchange a device token for a session JWT and persist base URL + JWT. */
 /**
- * Pair with a car. `accessCode` is the 8-char code shown in the OverDrive app
+ * Pair with a car. `accessCode` is the 8- or 20-char code shown in the OverDrive app
  * (Dashboard → Access Code) / web login page. Mirrors OD's own login page: the
  * real token sent to /auth/token is `<deviceId>-<accessCode>`, where deviceId
  * comes from the public /auth/status endpoint.
